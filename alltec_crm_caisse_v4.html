@@ -9,7 +9,1883 @@
    VARIABLES & RESET
 ═══════════════════════════════════════════════════════════ */
 :root {
+  --bg: #0d1117;<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllTEC CRM — v4</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════════════════════════ */
+:root {
   --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2333;
+  --border: #21262d;
+  --accent: #2563eb;
+  --accent-light: #3b82f6;
+  --accent2: #0891b2;
+  --success: #16a34a;
+  --success-light: #22c55e;
+  --warning: #d97706;
+  --warning-light: #f59e0b;
+  --danger: #dc2626;
+  --danger-light: #ef4444;
+  --purple: #7c3aed;
+  --purple-light: #a855f7;
+  --text: #e6edf3;
+  --text2: #7d8590;
+  --text3: #b1bac4;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+input,select,textarea,button{font-family:inherit}
+
+/* ═══════════════════════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════════════════════ */
+#login-screen {
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background: radial-gradient(ellipse at 60% 40%, rgba(37,99,235,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 80%, rgba(8,145,178,0.08) 0%, transparent 50%),
+              var(--bg);
+}
+.login-box{
+  width:400px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:40px;box-shadow:0 25px 50px rgba(0,0,0,0.5);
+}
+.login-logo{
+  text-align:center;margin-bottom:32px;
+  font-size:28px;font-weight:800;letter-spacing:-1px;
+}
+.login-logo span{color:var(--accent-light)}
+.login-logo small{display:block;font-size:12px;font-weight:400;color:var(--text2);margin-top:4px;letter-spacing:1px;text-transform:uppercase}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.login-field input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius);padding:11px 14px;color:var(--text);font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+.login-field input:focus{border-color:var(--accent-light)}
+.btn-login{
+  width:100%;background:var(--accent);border:none;border-radius:var(--radius);
+  padding:12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+  margin-top:8px;transition:all .2s;
+}
+.btn-login:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 20px rgba(37,99,235,.4)}
+.login-error{
+  background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);
+  border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#fca5a5;
+  margin-top:12px;display:none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════════════ */
+#app{display:none;height:100vh;flex-direction:column}
+#app.visible{display:flex}
+
+/* TOP BAR */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:52px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;z-index:50;
+  position:sticky;top:0;
+}
+.topbar-logo{font-weight:800;font-size:18px;letter-spacing:-.5px}
+.topbar-logo span{color:var(--accent-light)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.user-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;
+}
+.user-avatar{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.user-info{line-height:1.2}
+.user-name-top{font-weight:500;font-size:12px}
+.user-role-top{font-size:10px;color:var(--text2)}
+.btn-logout{
+  background:transparent;border:1px solid var(--border);border-radius:var(--radius);
+  padding:5px 10px;color:var(--text3);font-size:12px;cursor:pointer;transition:all .2s;
+}
+.btn-logout:hover{border-color:var(--danger-light);color:var(--danger-light)}
+
+/* LAYOUT */
+.app-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
+}
+.sidebar-section{padding:12px 10px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);font-weight:600}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 12px;
+  border-radius:var(--radius);margin:2px 6px;cursor:pointer;
+  font-size:13px;color:var(--text3);transition:all .15s;border:none;background:transparent;
+  width:calc(100% - 12px);text-align:left;
+}
+.nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-item.active{background:rgba(37,99,235,.15);color:var(--accent-light);font-weight:500}
+.nav-item .nav-icon{font-size:15px;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding:10px}
+
+/* MAIN CONTENT */
+.main-content{flex:1;overflow-y:auto;padding:24px}
+.page{display:none}
+.page.active{display:block}
+
+/* ═══════════════════════════════════════════════════════════
+   COMMON COMPONENTS
+═══════════════════════════════════════════════════════════ */
+.page-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title{font-weight:600;font-size:14px}
+.card-body{padding:18px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.stat-card.green::before{background:linear-gradient(90deg,var(--success),var(--success-light))}
+.stat-card.amber::before{background:linear-gradient(90deg,var(--warning),var(--warning-light))}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--purple),var(--purple-light))}
+.stat-card.red::before{background:linear-gradient(90deg,var(--danger),var(--danger-light))}
+.stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.stat-val{font-size:26px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent-light);color:var(--accent-light)}
+.btn-danger-ghost{background:transparent;color:var(--danger-light);border:1px solid rgba(239,68,68,.3)}
+.btn-danger-ghost:hover{background:rgba(239,68,68,.1)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px}
+
+/* TABLES */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+tbody td{padding:11px 14px;border-bottom:1px solid rgba(33,38,45,.5);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.form-control{
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;
+  width:100%;
+}
+.form-control:focus{border-color:var(--accent-light)}
+select.form-control{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237d8590' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+textarea.form-control{resize:vertical;min-height:80px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-blue{background:rgba(37,99,235,.15);color:#60a5fa;border:1px solid rgba(37,99,235,.3)}
+.badge-green{background:rgba(22,163,74,.12);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
+.badge-amber{background:rgba(217,119,6,.12);color:#fbbf24;border:1px solid rgba(217,119,6,.3)}
+.badge-red{background:rgba(220,38,38,.12);color:#f87171;border:1px solid rgba(220,38,38,.3)}
+.badge-purple{background:rgba(124,58,237,.12);color:#c084fc;border:1px solid rgba(124,58,237,.3)}
+.badge-cyan{background:rgba(8,145,178,.12);color:#22d3ee;border:1px solid rgba(8,145,178,.3)}
+.badge-gray{background:rgba(125,133,144,.1);color:var(--text2);border:1px solid var(--border)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.6);animation:modalIn .2s ease}
+.modal-lg{max-width:750px}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)}
+.modal-title{font-weight:700;font-size:16px}
+.modal-close{width:30px;height:30px;border-radius:6px;background:var(--surface2);border:none;cursor:pointer;color:var(--text3);font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.modal-close:hover{background:rgba(220,38,38,.15);color:var(--danger-light)}
+.modal-body{padding:22px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid var(--border)}
+
+/* SEARCH BAR */
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 12px}
+.search-bar input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;width:200px}
+.search-bar input::placeholder{color:var(--text2)}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface);border-radius:10px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastIn .3s ease;border-left:3px solid var(--success)}
+.toast.error{border-left-color:var(--danger-light)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:50px 20px;color:var(--text2)}
+.empty-state .icon{font-size:40px;margin-bottom:10px;opacity:.4}
+.empty-state p{font-size:14px}
+
+/* PERMISSIONS GRID */
+.perm-section{margin:16px 0 8px;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:600;display:flex;align-items:center;gap:8px}
+.perm-section::after{content:'';flex:1;height:1px;background:var(--border)}
+.perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.perm-item{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px;cursor:pointer;transition:all .15s;user-select:none}
+.perm-item:hover{border-color:rgba(59,130,246,.4)}
+.perm-item.checked{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.06)}
+.perm-check{width:15px;height:15px;border-radius:3px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;transition:all .15s}
+.perm-item.checked .perm-check{background:var(--accent);border-color:var(--accent);color:#fff}
+.perm-info{flex:1}
+.perm-name{font-size:12px;font-weight:500}
+.perm-desc{font-size:10px;color:var(--text2)}
+.perm-modes{display:flex;gap:3px;margin-left:auto}
+.perm-mode-btn{font-size:9px;padding:2px 5px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.perm-mode-btn.on{background:rgba(37,99,235,.2);border-color:var(--accent-light);color:var(--accent-light)}
+
+/* AGENCE TOGGLES */
+.agence-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.agence-toggle{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;user-select:none}
+.agence-toggle.on{border-color:var(--accent-light);background:rgba(59,130,246,.1);color:var(--accent-light)}
+
+/* TABLE ROLES MATRIX */
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-on{background:var(--success-light);box-shadow:0 0 6px rgba(34,197,94,.4)}
+.dot-off{background:var(--border)}
+
+/* ACCESS DENIED */
+.access-denied{text-align:center;padding:60px 20px}
+.access-denied .icon{font-size:48px;margin-bottom:12px}
+
+/* LOADING */
+.loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;padding:20px}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent-light);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .form-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║         LOGIN SCREEN             ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">All<span>TEC</span> <span style="color:var(--accent2)">CRM</span>
+      <small>Système de gestion intégré</small>
+    </div>
+    <div class="login-field">
+      <label>Identifiant</label>
+      <input type="text" id="login-user" placeholder="Votre login" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()" id="login-btn">Connexion</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║            APP SHELL             ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-logo">All<span>TEC</span> CRM</div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="top-avatar" style="background:var(--accent)">A</div>
+        <div class="user-info">
+          <div class="user-name-top" id="top-name">—</div>
+          <div class="user-role-top" id="top-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">⏻ Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div id="sidebar-nav"></div>
+      <div class="sidebar-footer" id="sidebar-admin-btn" style="display:none">
+        <button class="nav-item" style="width:100%" onclick="showPage('admin')">
+          <span class="nav-icon">⚙️</span> Administration
+        </button>
+      </div>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <div class="main-content" id="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <div><div class="page-title">📊 Tableau de bord</div><div class="page-sub">Vue d'ensemble AllTEC</div></div>
+        </div>
+        <div class="stats-grid" id="dash-stats"></div>
+        <div id="dash-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="page" id="page-clients">
+        <div class="page-header">
+          <div><div class="page-title">👥 Clients</div><div class="page-sub">Gestion du portefeuille clients</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="clients-search" oninput="loadClients()"></div>
+            <button class="btn btn-primary" id="btn-add-client" onclick="openClientModal()">＋ Nouveau client</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nom</th><th>Type</th><th>Secteur</th><th>Site web</th><th>Actions</th></tr></thead>
+            <tbody id="clients-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- DEVIS -->
+      <div class="page" id="page-devis">
+        <div class="page-header">
+          <div><div class="page-title">📄 Devis</div><div class="page-sub">Gestion des devis</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="devis-search" oninput="loadDevis()"></div>
+            <button class="btn btn-primary" id="btn-add-devis" onclick="openDevisModal()">＋ Nouveau devis</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Numéro</th><th>Client</th><th>Date</th><th>Montant TTC</th><th>TVA</th><th>Actions</th></tr></thead>
+            <tbody id="devis-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- COMMANDES -->
+      <div class="page" id="page-commandes">
+        <div class="page-header">
+          <div><div class="page-title">📦 Commandes</div><div class="page-sub">Suivi des commandes</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="commandes-search" oninput="loadCommandes()"></div>
+            <button class="btn btn-primary" id="btn-add-commande" onclick="openCommandeModal()">＋ Nouvelle commande</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Numéro</th><th>Client</th><th>Montant TTC</th><th>Actions</th></tr></thead>
+            <tbody id="commandes-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- SAV -->
+      <div class="page" id="page-sav">
+        <div class="page-header">
+          <div><div class="page-title">🔧 SAV</div><div class="page-sub">Service après-vente</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="sav-search" oninput="loadSAV()"></div>
+            <button class="btn btn-primary" id="btn-add-ticket" onclick="openTicketModal()">＋ Nouveau ticket</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Titre</th><th>Client</th><th>Statut</th><th>Priorité</th><th>Actions</th></tr></thead>
+            <tbody id="sav-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- CAISSE -->
+      <div class="page" id="page-caisse">
+        <div class="page-header">
+          <div><div class="page-title">💰 Caisse</div><div class="page-sub">Opérations de caisse par agence</div></div>
+          <div class="toolbar">
+            <select class="form-control" style="width:140px" id="caisse-agence" onchange="loadCaisse()">
+              <option value="">Toutes agences</option>
+              <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+            </select>
+            <select class="form-control" style="width:120px" id="caisse-mois" onchange="loadCaisse()"></select>
+            <button class="btn btn-primary" id="btn-add-caisse" onclick="openCaisseModal()">＋ Opération</button>
+          </div>
+        </div>
+
+        <!-- Dashboard soldes par agence -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px" id="caisse-agence-cards">
+          <div class="card" id="dash-charguia" style="cursor:pointer" onclick="filterByAgence('Charguia')">
+            <div class="card-body" style="padding:16px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span style="font-size:13px;font-weight:600;color:var(--text3)">🏢 Charguia</span>
+                <span class="badge badge-cyan" id="dash-charguia-ops">— ops</span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:3px">Solde actuel</div>
+              <div style="font-size:22px;font-weight:700" id="dash-charguia-solde">—</div>
+              <div style="display:flex;gap:12px;margin-top:10px;font-size:11px">
+                <span style="color:var(--success-light)">↑ <span id="dash-charguia-in">—</span></span>
+                <span style="color:var(--danger-light)">↓ <span id="dash-charguia-out">—</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="dash-kairouan" style="cursor:pointer" onclick="filterByAgence('Kairouan')">
+            <div class="card-body" style="padding:16px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span style="font-size:13px;font-weight:600;color:var(--text3)">🏢 Kairouan</span>
+                <span class="badge badge-purple" id="dash-kairouan-ops">— ops</span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:3px">Solde actuel</div>
+              <div style="font-size:22px;font-weight:700" id="dash-kairouan-solde">—</div>
+              <div style="display:flex;gap:12px;margin-top:10px;font-size:11px">
+                <span style="color:var(--success-light)">↑ <span id="dash-kairouan-in">—</span></span>
+                <span style="color:var(--danger-light)">↓ <span id="dash-kairouan-out">—</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="dash-sousse" style="cursor:pointer" onclick="filterByAgence('Sousse')">
+            <div class="card-body" style="padding:16px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span style="font-size:13px;font-weight:600;color:var(--text3)">🏢 Sousse</span>
+                <span class="badge badge-amber" id="dash-sousse-ops">— ops</span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:3px">Solde actuel</div>
+              <div style="font-size:22px;font-weight:700" id="dash-sousse-solde">—</div>
+              <div style="display:flex;gap:12px;margin-top:10px;font-size:11px">
+                <span style="color:var(--success-light)">↑ <span id="dash-sousse-in">—</span></span>
+                <span style="color:var(--danger-light)">↓ <span id="dash-sousse-out">—</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats globales filtrées -->
+        <div class="stats-grid" id="caisse-stats"></div>
+
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Date</th><th>Agence</th><th>N° Pièce</th><th>Description</th><th>Catégorie</th><th>Sens</th><th>Montant</th><th>Solde</th></tr></thead>
+            <tbody id="caisse-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- RAPPORTS -->
+      <div class="page" id="page-rapports">
+        <div class="page-header">
+          <div><div class="page-title">📊 Rapports</div><div class="page-sub">Rapports hebdomadaires et mensuels</div></div>
+        </div>
+        <div class="stats-grid" id="rapports-stats"></div>
+        <div class="card card-body" style="margin-top:16px">
+          <p style="color:var(--text2);font-size:14px">Les rapports automatiques seront disponibles après configuration des rapports hebdo/mensuel dans Supabase.</p>
+        </div>
+      </div>
+
+      <!-- ANALYSE -->
+      <div class="page" id="page-analyse">
+        <div class="page-header">
+          <div><div class="page-title">📈 Analyse</div><div class="page-sub">KPIs et indicateurs</div></div>
+        </div>
+        <div class="stats-grid" id="analyse-stats"></div>
+      </div>
+
+      <!-- COMMERCIAL -->
+      <div class="page" id="page-commercial">
+        <div class="page-header">
+          <div><div class="page-title">💼 Commercial</div><div class="page-sub">Pipeline commercial</div></div>
+          <button class="btn btn-primary" onclick="openDevisModal()">＋ Nouveau devis</button>
+        </div>
+        <div class="stats-grid" id="commercial-stats"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Devis récents</span></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Numéro</th><th>Client</th><th>Montant TTC</th><th>Date</th></tr></thead>
+            <tbody id="commercial-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ═══════════ ADMIN PANEL ═══════════ -->
+      <div class="page" id="page-admin">
+        <div class="page-header">
+          <div><div class="page-title">⚙️ Administration</div><div class="page-sub">Gestion des utilisateurs et des droits d'accès</div></div>
+          <button class="btn btn-primary" onclick="openUserModal()">＋ Nouvel utilisateur</button>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div style="display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:10px;margin-bottom:20px;width:fit-content">
+          <button class="btn btn-ghost" id="atab-users" onclick="switchAdminTab('users')" style="border-radius:7px">👥 Utilisateurs</button>
+          <button class="btn btn-ghost" id="atab-roles" onclick="switchAdminTab('roles')" style="border-radius:7px">🎭 Rôles</button>
+          <button class="btn btn-ghost" id="atab-matrix" onclick="switchAdminTab('matrix')" style="border-radius:7px">🔐 Matrice</button>
+          <button class="btn btn-ghost" id="atab-log" onclick="switchAdminTab('log')" style="border-radius:7px">📋 Journal</button>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="atab-content-users">
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+            <div class="stat-card blue"><div class="stat-label">Total</div><div class="stat-val" id="ast-total">0</div></div>
+            <div class="stat-card green"><div class="stat-label">Actifs</div><div class="stat-val" id="ast-active">0</div></div>
+            <div class="stat-card amber"><div class="stat-label">Admins</div><div class="stat-val" id="ast-admin">0</div></div>
+            <div class="stat-card purple"><div class="stat-label">Agences</div><div class="stat-val">3</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Liste des utilisateurs</span>
+              <div class="toolbar">
+                <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="users-search" oninput="renderUsersTable()"></div>
+                <select class="form-control" style="width:120px" id="users-filter-role" onchange="renderUsersTable()">
+                  <option value="">Tous rôles</option>
+                  <option>Admin</option><option>Technicien</option><option>Commercial</option><option>Caisse</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Utilisateur</th><th>Login</th><th>Rôle</th><th>Agences</th><th>Modules</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="admin-users-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Roles Tab -->
+        <div id="atab-content-roles" style="display:none">
+          <div style="display:flex;gap:4px;margin-bottom:16px">
+            <button class="btn btn-ghost btn-sm" onclick="showRoleTab('Admin')" id="rtab-Admin">👑 Admin</button>
+            <button class="btn btn-ghost btn-sm" onclick="showRoleTab('Technicien')" id="rtab-Technicien">🔧 Technicien</button>
+            <button class="btn btn-ghost btn-sm" onclick="showRoleTab('Commercial')" id="rtab-Commercial">💼 Commercial</button>
+            <button class="btn btn-ghost btn-sm" onclick="showRoleTab('Caisse')" id="rtab-Caisse">💰 Caisse</button>
+          </div>
+          <div class="card" id="role-detail-card"></div>
+        </div>
+
+        <!-- Matrix Tab -->
+        <div id="atab-content-matrix" style="display:none">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Matrice des droits — tous rôles</span></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Module</th><th>👑 Admin</th><th>🔧 Technicien</th><th>💼 Commercial</th><th>💰 Caisse</th></tr></thead>
+              <tbody id="matrix-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- Log Tab -->
+        <div id="atab-content-log" style="display:none">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Journal d'activité</span></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Heure</th><th>Utilisateur</th><th>Action</th><th>Détail</th></tr></thead>
+              <tbody id="log-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+      </div><!-- /page-admin -->
+
+    </div><!-- /main-content -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- User Modal -->
+<div class="overlay" id="user-modal-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="user-modal-title">Nouvel utilisateur</div>
+      <button class="modal-close" onclick="closeUserModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Prénom & Nom *</label><input class="form-control" id="um-name" placeholder="Ahmed Ben Salem"></div>
+        <div class="form-group"><label class="form-label">Login *</label><input class="form-control" id="um-login" placeholder="ahmed.bensalem"></div>
+        <div class="form-group"><label class="form-label">Mot de passe *</label><input class="form-control" type="password" id="um-pwd" placeholder="••••••••"></div>
+        <div class="form-group">
+          <label class="form-label">Rôle *</label>
+          <select class="form-control" id="um-role" onchange="applyRolePreset()">
+            <option>Admin</option><option>Technicien</option><option>Commercial</option><option>Caisse</option>
+          </select>
+        </div>
+      </div>
+      <div class="perm-section">Agences accessibles</div>
+      <div class="agence-row" id="um-agences">
+        <div class="agence-toggle on" data-ag="Charguia" onclick="this.classList.toggle('on')">🏢 Charguia</div>
+        <div class="agence-toggle on" data-ag="Kairouan" onclick="this.classList.toggle('on')">🏢 Kairouan</div>
+        <div class="agence-toggle on" data-ag="Sousse" onclick="this.classList.toggle('on')">🏢 Sousse</div>
+      </div>
+      <div class="perm-section">Modules & Droits</div>
+      <div class="perm-grid" id="um-perms"></div>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select class="form-control" id="um-status"><option>Actif</option><option>Inactif</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveUser()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client Modal -->
+<div class="overlay" id="client-modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="client-modal-title">Nouveau client</div><button class="modal-close" onclick="closeModal('client-modal-overlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Nom *</label><input class="form-control" id="cm-nom" placeholder="Société XYZ"></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-control" id="cm-type"><option>Entreprise</option><option>Particulier</option><option>Administration</option></select></div>
+        <div class="form-group"><label class="form-label">Secteur</label><input class="form-control" id="cm-secteur" placeholder="Informatique"></div>
+        <div class="form-group"><label class="form-label">Site web</label><input class="form-control" id="cm-site" placeholder="https://"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('client-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveClient()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Devis Modal -->
+<div class="overlay" id="devis-modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="devis-modal-title">Nouveau devis</div><button class="modal-close" onclick="closeModal('devis-modal-overlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Numéro *</label><input class="form-control" id="dm-num" placeholder="DEV-2026-001"></div>
+        <div class="form-group"><label class="form-label">Client</label>
+          <select class="form-control" id="dm-client"></select></div>
+        <div class="form-group"><label class="form-label">Date émission</label><input class="form-control" type="date" id="dm-date"></div>
+        <div class="form-group"><label class="form-label">Montant TTC</label><input class="form-control" type="number" id="dm-ttc" placeholder="0.000"></div>
+        <div class="form-group"><label class="form-label">TVA (%)</label><input class="form-control" type="number" id="dm-tva" value="19"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('devis-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveDevis()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Commande Modal -->
+<div class="overlay" id="commande-modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="commande-modal-title">Nouvelle commande</div><button class="modal-close" onclick="closeModal('commande-modal-overlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Numéro *</label><input class="form-control" id="cmod-num" placeholder="CMD-2026-001"></div>
+        <div class="form-group"><label class="form-label">Client</label>
+          <select class="form-control" id="cmod-client"></select></div>
+        <div class="form-group"><label class="form-label">Montant TTC</label><input class="form-control" type="number" id="cmod-ttc" placeholder="0.000"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('commande-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCommande()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Modal -->
+<div class="overlay" id="ticket-modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="ticket-modal-title">Nouveau ticket SAV</div><button class="modal-close" onclick="closeModal('ticket-modal-overlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Titre *</label><input class="form-control" id="tm-titre" placeholder="Description courte"></div>
+        <div class="form-group"><label class="form-label">Client</label><select class="form-control" id="tm-client"></select></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="tm-statut"><option>Ouvert</option><option>En cours</option><option>Résolu</option><option>Fermé</option></select></div>
+        <div class="form-group"><label class="form-label">Priorité</label>
+          <select class="form-control" id="tm-priorite"><option>Normale</option><option>Haute</option><option>Urgente</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ticket-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveTicket()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Caisse Modal -->
+<div class="overlay" id="caisse-modal-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title">Nouvelle opération de caisse</div><button class="modal-close" onclick="closeModal('caisse-modal-overlay')">✕</button></div>
+    <div class="modal-body">
+
+      <!-- Ligne 1 : Agence / Date / N° Pièce -->
+      <div class="form-grid cols-3">
+        <div class="form-group"><label class="form-label">Agence *</label>
+          <select class="form-control" id="cop-agence">
+            <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Date *</label>
+          <input class="form-control" type="date" id="cop-date">
+        </div>
+        <div class="form-group"><label class="form-label">N° Pièce</label>
+          <input class="form-control" id="cop-piece" placeholder="ex: PIEC-001">
+        </div>
+      </div>
+
+      <!-- Ligne 2 : Sens → Catégorie → Type opération (liés) -->
+      <div class="form-grid cols-3" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Sens *</label>
+          <select class="form-control" id="cop-sens" onchange="updateCaisseCategories()">
+            <option value="Entrée">↑ Entrée</option>
+            <option value="Sortie">↓ Sortie</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie *</label>
+          <select class="form-control" id="cop-cat" onchange="updateCaisseTypes()">
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type d'opération *</label>
+          <select class="form-control" id="cop-type">
+          </select>
+        </div>
+      </div>
+
+      <!-- Ligne 3 : Description / Montant -->
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <input class="form-control" id="cop-desc" placeholder="Détail de l'opération">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Montant (TND) *</label>
+          <input class="form-control" type="number" id="cop-montant" placeholder="0.000" step="0.001" min="0">
+        </div>
+      </div>
+
+      <!-- Ligne 4 : Remarque -->
+      <div class="form-grid full" style="margin-top:12px">
+        <div class="form-group">
+          <label class="form-label">Remarque / Notes</label>
+          <textarea class="form-control" id="cop-notes" rows="2" placeholder="Observations complémentaires..."></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('caisse-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCaisse()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG SUPABASE
+// ─────────────────────────────────────────────────────────────────────────────
+const SB_URL = 'https://amojtdnqkvmypjdoitsx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtb2p0ZG5xa3ZteXBqZG9pdHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDM3MDYsImV4cCI6MjA5Mjg3OTcwNn0.BE0yAvkSTL8td3k4fof-7bxA90UvlNT2HRfkbDT4sjA';
+
+async function sb(table, options = {}) {
+  const { method = 'GET', filter = '', body, select = '*', order = '' } = options;
+  let url = `${SB_URL}/rest/v1/${table}?select=${select}`;
+  if (filter) url += `&${filter}`;
+  if (order) url += `&order=${order}`;
+  const headers = {
+    'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json', 'Prefer': 'return=representation'
+  };
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) { const e = await res.json().catch(()=>({message:res.statusText})); throw new Error(e.message || res.statusText); }
+  const ct = res.headers.get('content-type')||'';
+  return ct.includes('json') ? res.json() : [];
+}
+async function sbPost(table, body) { return sb(table, { method:'POST', body }); }
+async function sbPatch(table, id, body) { return sb(table, { method:'PATCH', filter:`id=eq.${id}`, body }); }
+async function sbDelete(table, id) { return sb(table, { method:'DELETE', filter:`id=eq.${id}` }); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULES & ROLE PRESETS
+// ─────────────────────────────────────────────────────────────────────────────
+const MODULES = [
+  { id:'clients',    name:'Clients',    icon:'👥', desc:'Fiche client' },
+  { id:'devis',      name:'Devis',      icon:'📄', desc:'Devis & offres' },
+  { id:'commandes',  name:'Commandes',  icon:'📦', desc:'Bons de commande' },
+  { id:'sav',        name:'SAV',        icon:'🔧', desc:'Tickets SAV' },
+  { id:'caisse',     name:'Caisse',     icon:'💰', desc:'Opérations caisse' },
+  { id:'rapports',   name:'Rapports',   icon:'📊', desc:'Rapports périodiques' },
+  { id:'analyse',    name:'Analyse',    icon:'📈', desc:'KPIs & dashboard' },
+  { id:'commercial', name:'Commercial', icon:'💼', desc:'Pipeline commercial' },
+];
+
+const ROLE_PRESETS = {
+  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw' },
+  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'' },
+  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw' },
+  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'' },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION
+// ─────────────────────────────────────────────────────────────────────────────
+let SESSION = null; // { id, name, login, role, agences, perms, status }
+let EDIT_USER_ID = null;
+let EDIT_RECORD_ID = null;
+let CLIENTS_CACHE = [];
+let USERS_DB = []; // in-memory (synced with Supabase app_users if exists)
+let ACTIVITY_LOG = [];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const login = document.getElementById('login-user').value.trim();
+  const pwd = document.getElementById('login-pass').value.trim();
+  if (!login || !pwd) { showLoginError('Veuillez remplir tous les champs.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Connexion...'; btn.disabled = true;
+
+  try {
+    // Chercher dans app_users Supabase
+    let user = null;
+    try {
+      const rows = await sb('app_users', { filter:`login=eq.${encodeURIComponent(login)}&mot_de_passe=eq.${encodeURIComponent(pwd)}&statut=eq.Actif` });
+      if (rows && rows.length > 0) user = rows[0];
+    } catch(e) {
+      // Table inexistante → fallback admin par défaut
+    }
+
+    // Fallback : compte admin par défaut
+    if (!user && login === 'AllTEC@admin2025' && pwd === 'AllTEC@admin2025') {
+      user = {
+        id: 0, nom: 'Super Admin', login: 'AllTEC@admin2025',
+        role: 'Admin', agences: ['Charguia','Kairouan','Sousse'],
+        permissions: ROLE_PRESETS.Admin, statut: 'Actif'
+      };
+    }
+
+    if (!user) { showLoginError('Identifiant ou mot de passe incorrect.'); btn.textContent='Connexion'; btn.disabled=false; return; }
+
+    SESSION = {
+      id: user.id,
+      name: user.nom || user.name || 'Utilisateur',
+      login: user.login,
+      role: user.role,
+      agences: typeof user.agences === 'string' ? JSON.parse(user.agences) : (user.agences || ['Charguia','Kairouan','Sousse']),
+      perms: typeof user.permissions === 'string' ? JSON.parse(user.permissions) : (user.permissions || ROLE_PRESETS[user.role] || {}),
+    };
+
+    logActivity(SESSION.name, 'Connexion', `Rôle: ${SESSION.role}`);
+    initApp();
+
+  } catch(e) {
+    showLoginError('Erreur de connexion : ' + e.message);
+    btn.textContent='Connexion'; btn.disabled=false;
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function doLogout() {
+  SESSION = null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP INIT
+// ─────────────────────────────────────────────────────────────────────────────
+function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  // Top bar
+  const colors = { Admin:'#2563eb', Technicien:'#0891b2', Commercial:'#7c3aed', Caisse:'#d97706' };
+  document.getElementById('top-avatar').style.background = colors[SESSION.role] || '#64748b';
+  document.getElementById('top-avatar').textContent = SESSION.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('top-name').textContent = SESSION.name;
+  document.getElementById('top-role').textContent = SESSION.role;
+
+  buildSidebar();
+  showPage('dashboard');
+  loadDashboard();
+  populateMonthFilter();
+
+  // Show admin sidebar btn only for Admin
+  document.getElementById('sidebar-admin-btn').style.display = SESSION.role === 'Admin' ? 'block' : 'none';
+
+  // Pre-load users list if admin
+  if (SESSION.role === 'Admin') loadUsers();
+}
+
+function buildSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+
+  const sections = [
+    { title: 'Principal', items: [{ id:'dashboard', icon:'📊', name:'Tableau de bord' }] },
+    { title: 'CRM', items: [
+      { id:'clients', icon:'👥', name:'Clients', perm:'clients' },
+      { id:'devis', icon:'📄', name:'Devis', perm:'devis' },
+      { id:'commandes', icon:'📦', name:'Commandes', perm:'commandes' },
+      { id:'sav', icon:'🔧', name:'SAV', perm:'sav' },
+      { id:'commercial', icon:'💼', name:'Commercial', perm:'commercial' },
+    ]},
+    { title: 'Finances', items: [
+      { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
+      { id:'rapports', icon:'📊', name:'Rapports', perm:'rapports' },
+      { id:'analyse', icon:'📈', name:'Analyse', perm:'analyse' },
+    ]},
+  ];
+
+  sections.forEach(sec => {
+    const visibleItems = sec.items.filter(item => !item.perm || (SESSION.perms[item.perm]));
+    if (visibleItems.length === 0) return;
+    const secEl = document.createElement('div');
+    secEl.innerHTML = `<div class="sidebar-section">${sec.title}</div>`;
+    visibleItems.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.id = `nav-${item.id}`;
+      btn.innerHTML = `<span class="nav-icon">${item.icon}</span>${item.name}`;
+      btn.onclick = () => showPage(item.id);
+      secEl.appendChild(btn);
+    });
+    nav.appendChild(secEl);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE ROUTING
+// ─────────────────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById(`page-${id}`);
+  if (page) page.classList.add('active');
+  const nav = document.getElementById(`nav-${id}`);
+  if (nav) nav.classList.add('active');
+
+  // Load data
+  const loaders = {
+    dashboard: loadDashboard, clients: loadClients, devis: loadDevis,
+    commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
+    rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
+    admin: () => { switchAdminTab('users'); renderUsersTable(); renderMatrix(); }
+  };
+  if (loaders[id]) loaders[id]();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const stats = document.getElementById('dash-stats');
+  stats.innerHTML = '<div class="loading"><div class="spinner"></div> Chargement...</div>';
+  try {
+    const [clients, devis, commandes, tickets] = await Promise.all([
+      sb('clients').catch(()=>[]),
+      sb('devis').catch(()=>[]),
+      sb('commandes').catch(()=>[]),
+      sb('tickets_sav').catch(()=>[]),
+    ]);
+    const ttc = devis.reduce((s,d)=>s+(d.montant_ttc||0),0);
+    stats.innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">Clients</div><div class="stat-val">${clients.length}</div></div>
+      <div class="stat-card green"><div class="stat-label">Devis</div><div class="stat-val">${devis.length}</div><div class="stat-sub">${fmtMoney(ttc)} TND</div></div>
+      <div class="stat-card amber"><div class="stat-label">Commandes</div><div class="stat-val">${commandes.length}</div></div>
+      <div class="stat-card purple"><div class="stat-label">Tickets SAV</div><div class="stat-val">${tickets.length}</div></div>`;
+  } catch(e) {
+    stats.innerHTML = `<div style="color:var(--danger-light);padding:10px">Erreur: ${e.message}</div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLIENTS
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadClients() {
+  const tbody = document.getElementById('clients-tbody');
+  tbody.innerHTML = loadingRow(5);
+  try {
+    const q = document.getElementById('clients-search').value;
+    let filter = '';
+    if (q) filter = `nom=ilike.*${encodeURIComponent(q)}*`;
+    const data = await sb('clients', { filter, order: 'nom.asc' });
+    CLIENTS_CACHE = data;
+    if (!data.length) { tbody.innerHTML = emptyRow(5,'Aucun client'); return; }
+    tbody.innerHTML = data.map(c => `<tr>
+      <td><strong>${esc(c.nom)}</strong></td>
+      <td><span class="badge badge-blue">${esc(c.type||'—')}</span></td>
+      <td>${esc(c.secteur||'—')}</td>
+      <td>${c.site_web ? `<a href="${esc(c.site_web)}" target="_blank" style="color:var(--accent-light)">${esc(c.site_web)}</a>` : '—'}</td>
+      <td>${canWrite('clients') ? `<button class="btn btn-ghost btn-xs" onclick="openClientModal('${c.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('clients','${c.id}',loadClients)">🗑</button>` : '—'}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = errorRow(5, e.message); }
+}
+
+let EDIT_CLIENT_ID = null;
+async function openClientModal(id = null) {
+  EDIT_CLIENT_ID = id;
+  document.getElementById('client-modal-title').textContent = id ? 'Modifier client' : 'Nouveau client';
+  if (id) {
+    try {
+      const [c] = await sb('clients', { filter:`id=eq.${id}` });
+      document.getElementById('cm-nom').value = c.nom||'';
+      document.getElementById('cm-type').value = c.type||'Entreprise';
+      document.getElementById('cm-secteur').value = c.secteur||'';
+      document.getElementById('cm-site').value = c.site_web||'';
+    } catch{}
+  } else {
+    ['cm-nom','cm-secteur','cm-site'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('cm-type').value = 'Entreprise';
+  }
+  openModal('client-modal-overlay');
+}
+
+async function saveClient() {
+  const body = { nom:v('cm-nom'), type:v('cm-type'), secteur:v('cm-secteur'), site_web:v('cm-site') };
+  if (!body.nom) { toast('Le nom est requis','error'); return; }
+  try {
+    if (EDIT_CLIENT_ID) await sbPatch('clients', EDIT_CLIENT_ID, body);
+    else await sbPost('clients', body);
+    closeModal('client-modal-overlay'); loadClients(); toast(EDIT_CLIENT_ID?'Client mis à jour':'Client créé');
+    EDIT_CLIENT_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEVIS
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadDevis() {
+  const tbody = document.getElementById('devis-tbody');
+  tbody.innerHTML = loadingRow(6);
+  try {
+    const q = document.getElementById('devis-search').value;
+    let filter = q ? `numero=ilike.*${encodeURIComponent(q)}*` : '';
+    const data = await sb('devis', { filter, order:'date_emission.desc' });
+    if (!data.length) { tbody.innerHTML = emptyRow(6,'Aucun devis'); return; }
+    tbody.innerHTML = data.map(d => `<tr>
+      <td><strong>${esc(d.numero||'—')}</strong></td>
+      <td>${clientName(d.client_id)}</td>
+      <td>${d.date_emission||'—'}</td>
+      <td><strong>${fmtMoney(d.montant_ttc)}</strong> TND</td>
+      <td>${d.tva||0}%</td>
+      <td>${canWrite('devis')?`<button class="btn btn-ghost btn-xs" onclick="openDevisModal('${d.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('devis','${d.id}',loadDevis)">🗑</button>`:'—'}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = errorRow(6, e.message); }
+}
+
+let EDIT_DEVIS_ID = null;
+async function openDevisModal(id = null) {
+  EDIT_DEVIS_ID = id;
+  document.getElementById('devis-modal-title').textContent = id ? 'Modifier devis' : 'Nouveau devis';
+  await fillClientSelect('dm-client');
+  if (id) {
+    try {
+      const [d] = await sb('devis', { filter:`id=eq.${id}` });
+      document.getElementById('dm-num').value = d.numero||'';
+      document.getElementById('dm-client').value = d.client_id||'';
+      document.getElementById('dm-date').value = d.date_emission||'';
+      document.getElementById('dm-ttc').value = d.montant_ttc||'';
+      document.getElementById('dm-tva').value = d.tva||19;
+    } catch{}
+  } else {
+    document.getElementById('dm-num').value = '';
+    document.getElementById('dm-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('dm-ttc').value = '';
+    document.getElementById('dm-tva').value = 19;
+  }
+  openModal('devis-modal-overlay');
+}
+
+async function saveDevis() {
+  const body = { numero:v('dm-num'), client_id:v('dm-client')||null, date_emission:v('dm-date'), montant_ttc:parseFloat(v('dm-ttc'))||0, tva:parseFloat(v('dm-tva'))||19 };
+  if (!body.numero) { toast('Le numéro est requis','error'); return; }
+  try {
+    if (EDIT_DEVIS_ID) await sbPatch('devis', EDIT_DEVIS_ID, body);
+    else await sbPost('devis', body);
+    closeModal('devis-modal-overlay'); loadDevis(); toast(EDIT_DEVIS_ID?'Devis mis à jour':'Devis créé');
+    EDIT_DEVIS_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMANDES
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadCommandes() {
+  const tbody = document.getElementById('commandes-tbody');
+  tbody.innerHTML = loadingRow(4);
+  try {
+    const q = document.getElementById('commandes-search').value;
+    let filter = q ? `numero=ilike.*${encodeURIComponent(q)}*` : '';
+    const data = await sb('commandes', { filter });
+    if (!data.length) { tbody.innerHTML = emptyRow(4,'Aucune commande'); return; }
+    tbody.innerHTML = data.map(c => `<tr>
+      <td><strong>${esc(c.numero||'—')}</strong></td>
+      <td>${clientName(c.client_id)}</td>
+      <td><strong>${fmtMoney(c.montant_ttc)}</strong> TND</td>
+      <td>${canWrite('commandes')?`<button class="btn btn-ghost btn-xs" onclick="openCommandeModal('${c.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('commandes','${c.id}',loadCommandes)">🗑</button>`:'—'}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = errorRow(4, e.message); }
+}
+
+let EDIT_CMD_ID = null;
+async function openCommandeModal(id = null) {
+  EDIT_CMD_ID = id;
+  document.getElementById('commande-modal-title').textContent = id ? 'Modifier commande' : 'Nouvelle commande';
+  await fillClientSelect('cmod-client');
+  if (id) {
+    const [c] = await sb('commandes', { filter:`id=eq.${id}` });
+    document.getElementById('cmod-num').value = c.numero||'';
+    document.getElementById('cmod-client').value = c.client_id||'';
+    document.getElementById('cmod-ttc').value = c.montant_ttc||'';
+  } else {
+    document.getElementById('cmod-num').value = '';
+    document.getElementById('cmod-ttc').value = '';
+  }
+  openModal('commande-modal-overlay');
+}
+
+async function saveCommande() {
+  const body = { numero:v('cmod-num'), client_id:v('cmod-client')||null, montant_ttc:parseFloat(v('cmod-ttc'))||0 };
+  if (!body.numero) { toast('Le numéro est requis','error'); return; }
+  try {
+    if (EDIT_CMD_ID) await sbPatch('commandes', EDIT_CMD_ID, body);
+    else await sbPost('commandes', body);
+    closeModal('commande-modal-overlay'); loadCommandes(); toast('Commande enregistrée');
+    EDIT_CMD_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAV
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadSAV() {
+  const tbody = document.getElementById('sav-tbody');
+  tbody.innerHTML = loadingRow(5);
+  try {
+    const q = document.getElementById('sav-search').value;
+    let filter = q ? `titre=ilike.*${encodeURIComponent(q)}*` : '';
+    const data = await sb('tickets_sav', { filter, order:'created_at.desc' });
+    if (!data.length) { tbody.innerHTML = emptyRow(5,'Aucun ticket'); return; }
+    const statColors = { Ouvert:'amber', 'En cours':'blue', Résolu:'green', Fermé:'gray' };
+    const prioColors = { Normale:'gray', Haute:'amber', Urgente:'red' };
+    tbody.innerHTML = data.map(t => `<tr>
+      <td><strong>${esc(t.titre||'—')}</strong></td>
+      <td>${clientName(t.client_id)}</td>
+      <td><span class="badge badge-${statColors[t.statut]||'gray'}">${esc(t.statut||'—')}</span></td>
+      <td><span class="badge badge-${prioColors[t.priorite]||'gray'}">${esc(t.priorite||'—')}</span></td>
+      <td>${canWrite('sav')?`<button class="btn btn-ghost btn-xs" onclick="openTicketModal('${t.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('tickets_sav','${t.id}',loadSAV)">🗑</button>`:'—'}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = errorRow(5, e.message); }
+}
+
+let EDIT_TICKET_ID = null;
+async function openTicketModal(id = null) {
+  EDIT_TICKET_ID = id;
+  document.getElementById('ticket-modal-title').textContent = id ? 'Modifier ticket' : 'Nouveau ticket SAV';
+  await fillClientSelect('tm-client');
+  if (id) {
+    const [t] = await sb('tickets_sav', { filter:`id=eq.${id}` });
+    document.getElementById('tm-titre').value = t.titre||'';
+    document.getElementById('tm-client').value = t.client_id||'';
+    document.getElementById('tm-statut').value = t.statut||'Ouvert';
+    document.getElementById('tm-priorite').value = t.priorite||'Normale';
+  } else {
+    document.getElementById('tm-titre').value='';
+    document.getElementById('tm-statut').value='Ouvert';
+    document.getElementById('tm-priorite').value='Normale';
+  }
+  openModal('ticket-modal-overlay');
+}
+
+async function saveTicket() {
+  const body = { titre:v('tm-titre'), client_id:v('tm-client')||null, statut:v('tm-statut'), priorite:v('tm-priorite') };
+  if (!body.titre) { toast('Le titre est requis','error'); return; }
+  try {
+    if (EDIT_TICKET_ID) await sbPatch('tickets_sav', EDIT_TICKET_ID, body);
+    else await sbPost('tickets_sav', body);
+    closeModal('ticket-modal-overlay'); loadSAV(); toast('Ticket enregistré');
+    EDIT_TICKET_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAISSE
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// CAISSE — CATÉGORIES & TYPES (depuis Excel AllTEC)
+// ─────────────────────────────────────────────────────────────────────────────
+const CAISSE_DATA = {
+  Entrée: {
+    'Opération Financière': [
+      'Solde départ',
+      'Clôture de journée',
+      'Apport Caisse',
+      'Approvisionnement Bancaire',
+    ],
+    'Vente': [
+      'Autre vente',
+    ],
+  },
+  Sortie: {
+    'Opération Financière': [
+      'Remise en Banque',
+      'Autres frais financiers',
+    ],
+    'Frais Généraux': [
+      'Pdts de nettoyage et d\'hygiène',
+      'Fournitures du bureau',
+      'Travaux et Fournitures bricolage',
+      'Electricité (STEG)',
+      'SONED',
+      'Internet et Fixe',
+      'Loyer Agence',
+      'Autres frais interne',
+    ],
+    'Logistique': [
+      'Carburant',
+      'Réparation et entretien',
+      'Frais déplacement',
+      'Amendes routières',
+      'Visite technique',
+      'Assurance',
+      'Autres frais logistique',
+    ],
+    'Achat': [
+      'Achat stocké',
+      'Autre Achat',
+    ],
+    'Vente': [
+      'Commission sur vente',
+    ],
+    'Ressources Humaines': [
+      'Salaires',
+      'Primes',
+      'Frais sociaux',
+    ],
+    'Associée': [
+      'Consommation',
+      'Loyer',
+      'Autre dépense',
+    ],
+    'Extra': [
+      'Don et Zakat',
+      'Autres Comptes',
+    ],
+  }
+};
+
+function updateCaisseCategories() {
+  const sens = document.getElementById('cop-sens').value;
+  const catSel = document.getElementById('cop-cat');
+  const categories = Object.keys(CAISSE_DATA[sens] || {});
+  catSel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+  updateCaisseTypes();
+}
+
+function updateCaisseTypes() {
+  const sens = document.getElementById('cop-sens').value;
+  const cat = document.getElementById('cop-cat').value;
+  const typeSel = document.getElementById('cop-type');
+  const types = (CAISSE_DATA[sens] && CAISSE_DATA[sens][cat]) || [];
+  typeSel.innerHTML = types.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+
+function populateMonthFilter() {
+  const sel = document.getElementById('caisse-mois');
+  const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const now = new Date();
+  sel.innerHTML = '<option value="">Tous les mois</option>';
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), i, 1);
+    const val = `${d.getFullYear()}-${String(i+1).padStart(2,'0')}`;
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = `${months[i]} ${d.getFullYear()}`;
+    if (i === now.getMonth()) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+async function loadCaisse() {
+  const tbody = document.getElementById('caisse-tbody');
+  tbody.innerHTML = loadingRow(8);
+  try {
+    // Charger TOUTES les opérations pour les cartes dashboard
+    const allData = await sb('caisse_operations', { order:'date_op.asc,created_at.asc' });
+
+    // Calculer soldes par agence (cumulatif sur toutes les opérations)
+    const agenceStats = { Charguia:{in:0,out:0,count:0}, Kairouan:{in:0,out:0,count:0}, Sousse:{in:0,out:0,count:0} };
+    allData.forEach(op => {
+      const ag = op.agence;
+      if (!agenceStats[ag]) return;
+      agenceStats[ag].count++;
+      if (op.sens==='Entrée') agenceStats[ag].in += Number(op.montant);
+      else agenceStats[ag].out += Number(op.montant);
+    });
+
+    // Mettre à jour les cartes dashboard
+    ['Charguia','Kairouan','Sousse'].forEach(ag => {
+      const key = ag.toLowerCase();
+      const s = agenceStats[ag];
+      const solde = s.in - s.out;
+      const soldeEl = document.getElementById(`dash-${key}-solde`);
+      const opsEl = document.getElementById(`dash-${key}-ops`);
+      const inEl = document.getElementById(`dash-${key}-in`);
+      const outEl = document.getElementById(`dash-${key}-out`);
+      if (soldeEl) {
+        soldeEl.textContent = fmtMoney(solde) + ' TND';
+        soldeEl.style.color = solde >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+      }
+      if (opsEl) opsEl.textContent = s.count + ' op' + (s.count>1?'s':'');
+      if (inEl) inEl.textContent = fmtMoney(s.in);
+      if (outEl) outEl.textContent = fmtMoney(s.out);
+    });
+
+    // Appliquer les filtres pour le tableau
+    const agence = document.getElementById('caisse-agence').value;
+    const mois = document.getElementById('caisse-mois').value;
+    let data = allData.slice().reverse(); // desc pour affichage
+    if (agence) data = data.filter(op => op.agence === agence);
+    if (mois) data = data.filter(op => op.date_op && op.date_op.startsWith(mois));
+
+    // Highlight carte active
+    ['Charguia','Kairouan','Sousse'].forEach(ag => {
+      const card = document.getElementById(`dash-${ag.toLowerCase()}`);
+      if (card) card.style.borderColor = (agence===ag) ? 'var(--accent-light)' : 'var(--border)';
+    });
+
+    if (!data.length) {
+      tbody.innerHTML = emptyRow(8,'Aucune opération pour cette sélection');
+      document.getElementById('caisse-stats').innerHTML = '';
+      return;
+    }
+
+    let entrees=0, sorties=0;
+    data.forEach(op => { if(op.sens==='Entrée') entrees+=Number(op.montant); else sorties+=Number(op.montant); });
+
+    document.getElementById('caisse-stats').innerHTML = `
+      <div class="stat-card green"><div class="stat-label">Entrées (filtre)</div><div class="stat-val" style="color:var(--success-light);font-size:18px">${fmtMoney(entrees)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card red"><div class="stat-label">Sorties (filtre)</div><div class="stat-val" style="color:var(--danger-light);font-size:18px">${fmtMoney(sorties)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card ${entrees-sorties>=0?'blue':'amber'}"><div class="stat-label">Solde net</div><div class="stat-val" style="font-size:18px">${fmtMoney(entrees-sorties)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card amber"><div class="stat-label">Opérations</div><div class="stat-val">${data.length}</div></div>`;
+
+    tbody.innerHTML = data.map(op => `<tr>
+      <td>${op.date_op||'—'}</td>
+      <td><span class="badge badge-cyan">${esc(op.agence||'—')}</span></td>
+      <td style="font-size:11px;color:var(--text3)">${esc(op.n_piece||'—')}</td>
+      <td>${esc(op.description||'—')}</td>
+      <td><span class="badge badge-gray">${esc(op.categorie||'—')}</span></td>
+      <td><span class="badge ${op.sens==='Entrée'?'badge-green':'badge-red'}">${esc(op.sens||'—')}</span></td>
+      <td><strong style="color:${op.sens==='Entrée'?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(op.montant)}</strong></td>
+      <td>${fmtMoney(op.solde_cumule)}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = errorRow(8, e.message); document.getElementById('caisse-stats').innerHTML=''; }
+}
+
+function filterByAgence(ag) {
+  const sel = document.getElementById('caisse-agence');
+  sel.value = sel.value === ag ? '' : ag; // toggle
+  loadCaisse();
+}
+
+async function openCaisseModal() {
+  document.getElementById('cop-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cop-montant').value = '';
+  document.getElementById('cop-desc').value = '';
+  document.getElementById('cop-notes').value = '';
+  document.getElementById('cop-piece').value = '';
+  document.getElementById('cop-sens').value = 'Entrée';
+  updateCaisseCategories(); // initialise catégories et types
+  openModal('caisse-modal-overlay');
+}
+
+async function saveCaisse() {
+  const body = {
+    agence: v('cop-agence'),
+    date_op: v('cop-date'),
+    n_piece: v('cop-piece'),
+    description: v('cop-desc'),
+    categorie: v('cop-cat'),
+    sens: v('cop-sens'),
+    type_operation: v('cop-type'),
+    montant: parseFloat(v('cop-montant'))||0,
+    saisi_par: SESSION.name,
+    notes: v('cop-notes')
+  };
+  if (!body.description) { toast('La description est requise','error'); return; }
+  if (!body.montant || body.montant <= 0) { toast('Le montant doit être supérieur à 0','error'); return; }
+  try {
+    await sbPost('caisse_operations', body);
+    closeModal('caisse-modal-overlay'); loadCaisse(); toast('Opération enregistrée ✓');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RAPPORTS & ANALYSE & COMMERCIAL
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadRapports() {
+  const stats = document.getElementById('rapports-stats');
+  const [hebdo, mensuel] = await Promise.all([
+    sb('rapports_hebdo').catch(()=>[]),
+    sb('rapports_mensuel').catch(()=>[]),
+  ]);
+  stats.innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Rapports hebdo</div><div class="stat-val">${hebdo.length}</div></div>
+    <div class="stat-card green"><div class="stat-label">Rapports mensuels</div><div class="stat-val">${mensuel.length}</div></div>`;
+}
+
+async function loadAnalyse() {
+  const stats = document.getElementById('analyse-stats');
+  stats.innerHTML = '<div class="loading"><div class="spinner"></div> Chargement KPIs...</div>';
+  try {
+    const [clients, devis, commandes, tickets, caisse] = await Promise.all([
+      sb('clients').catch(()=>[]), sb('devis').catch(()=>[]),
+      sb('commandes').catch(()=>[]), sb('tickets_sav').catch(()=>[]),
+      sb('caisse_operations').catch(()=>[]),
+    ]);
+    const ttcDevis = devis.reduce((s,d)=>s+(d.montant_ttc||0),0);
+    const ttcCmd = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
+    const caisseTot = caisse.filter(o=>o.sens==='Entrée').reduce((s,o)=>s+(o.montant||0),0);
+    const ticketsOuv = tickets.filter(t=>t.statut==='Ouvert').length;
+    stats.innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">Total clients</div><div class="stat-val">${clients.length}</div></div>
+      <div class="stat-card green"><div class="stat-label">CA Devis</div><div class="stat-val" style="font-size:18px">${fmtMoney(ttcDevis)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card amber"><div class="stat-label">CA Commandes</div><div class="stat-val" style="font-size:18px">${fmtMoney(ttcCmd)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card purple"><div class="stat-label">Encaissements</div><div class="stat-val" style="font-size:18px">${fmtMoney(caisseTot)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card red"><div class="stat-label">Tickets ouverts</div><div class="stat-val">${ticketsOuv}</div></div>
+      <div class="stat-card green"><div class="stat-label">Tickets résolus</div><div class="stat-val">${tickets.filter(t=>t.statut==='Résolu').length}</div></div>`;
+  } catch(e) { stats.innerHTML = `<div style="color:var(--danger-light)">Erreur: ${e.message}</div>`; }
+}
+
+async function loadCommercial() {
+  const stats = document.getElementById('commercial-stats');
+  const tbody = document.getElementById('commercial-tbody');
+  try {
+    const [devis, commandes] = await Promise.all([
+      sb('devis', { order:'date_emission.desc' }).catch(()=>[]),
+      sb('commandes').catch(()=>[]),
+    ]);
+    const ttcD = devis.reduce((s,d)=>s+(d.montant_ttc||0),0);
+    const ttcC = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
+    stats.innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">Devis émis</div><div class="stat-val">${devis.length}</div></div>
+      <div class="stat-card green"><div class="stat-label">Commandes</div><div class="stat-val">${commandes.length}</div></div>
+      <div class="stat-card amber"><div class="stat-label">Valeur devis</div><div class="stat-val" style="font-size:18px">${fmtMoney(ttcD)}</div></div>
+      <div class="stat-card purple"><div class="stat-label">Valeur commandes</div><div class="stat-val" style="font-size:18px">${fmtMoney(ttcC)}</div></div>`;
+    tbody.innerHTML = devis.slice(0,10).map(d=>`<tr>
+      <td>${esc(d.numero||'—')}</td><td>${clientName(d.client_id)}</td>
+      <td>${fmtMoney(d.montant_ttc)} TND</td><td>${d.date_emission||'—'}</td>
+    </tr>`).join('');
+  } catch{}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — USERS
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const rows = await sb('app_users', { order:'created_at.asc' });
+    USERS_DB = rows;
+  } catch {
+    // Table n'existe pas encore → liste vide (l'admin par défaut est géré via fallback)
+    USERS_DB = [];
+  }
+  renderUsersTable();
+  updateUserStats();
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById('admin-users-tbody');
+  const q = (document.getElementById('users-search')?.value||'').toLowerCase();
+  const roleFilter = document.getElementById('users-filter-role')?.value||'';
+  let list = USERS_DB.filter(u => {
+    const nm = (u.nom||'').toLowerCase();
+    const lg = (u.login||'').toLowerCase();
+    return (!q || nm.includes(q) || lg.includes(q)) && (!roleFilter || u.role === roleFilter);
+  });
+
+  if (!list.length && USERS_DB.length === 0) {
+    // Show default admin
+    tbody.innerHTML = `<tr>
+      <td><strong>Super Admin</strong></td>
+      <td><code style="font-size:11px;color:var(--text3)">AllTEC@admin2025</code></td>
+      <td><span class="badge badge-blue">👑 Admin</span></td>
+      <td><span class="badge badge-gray">Toutes</span></td>
+      <td><span class="badge badge-gray">Tous</span></td>
+      <td><span class="badge badge-green">● Actif</span></td>
+      <td><em style="color:var(--text2);font-size:11px">Compte système</em></td>
+    </tr>`;
+    return;
+  }
+
+  if (!list.length) { tbody.innerHTML = emptyRow(7,'Aucun utilisateur trouvé'); return; }
+
+  const roleColors = { Admin:'blue', Technicien:'cyan', Commercial:'purple', Caisse:'amber' };
+  tbody.innerHTML = list.map(u => {
+    const perms = typeof u.permissions==='string' ? JSON.parse(u.permissions||'{}') : (u.permissions||{});
+    const agences = typeof u.agences==='string' ? JSON.parse(u.agences||'[]') : (u.agences||[]);
+    const modCount = Object.values(perms).filter(v=>v).length;
+    return `<tr>
+      <td><strong>${esc(u.nom||'—')}</strong></td>
+      <td><code style="font-size:11px;color:var(--text3)">${esc(u.login||'—')}</code></td>
+      <td><span class="badge badge-${roleColors[u.role]||'gray'}">${roleIcon(u.role)} ${esc(u.role||'—')}</span></td>
+      <td><span class="badge badge-gray">${agences.length===3?'Toutes':agences.join(', ')||'—'}</span></td>
+      <td><span class="badge badge-gray">${modCount} module${modCount>1?'s':''}</span></td>
+      <td><span class="badge badge-${u.statut==='Actif'?'green':'gray'}">${u.statut==='Actif'?'● Actif':'○ Inactif'}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="openUserModal('${u.id}')">✏️ Éditer</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteUser('${u.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateUserStats() {
+  document.getElementById('ast-total').textContent = USERS_DB.length + 1; // +1 for default admin
+  document.getElementById('ast-active').textContent = USERS_DB.filter(u=>u.statut==='Actif').length + 1;
+  document.getElementById('ast-admin').textContent = USERS_DB.filter(u=>u.role==='Admin').length + 1;
+}
+
+function roleIcon(r) {
+  return { Admin:'👑', Technicien:'🔧', Commercial:'💼', Caisse:'💰' }[r]||'👤';
+}
+
+// ── USER MODAL ──
+async function openUserModal(id = null) {
+  EDIT_USER_ID = id;
+  document.getElementById('user-modal-title').textContent = id ? 'Modifier utilisateur' : 'Nouvel utilisateur';
+  if (id) {
+    const u = USERS_DB.find(x=>x.id==id);
+    if (u) {
+      document.getElementById('um-name').value = u.nom||'';
+      document.getElementById('um-login').value = u.login||'';
+      document.getElementById('um-pwd').value = '';
+      document.getElementById('um-role').value = u.role||'Commercial';
+      document.getElementById('um-status').value = u.statut||'Actif';
+      const agences = typeof u.agences==='string' ? JSON.parse(u.agences||'[]') : (u.agences||[]);
+      document.querySelectorAll('.agence-toggle').forEach(t => t.classList.toggle('on', agences.includes(t.dataset.ag)));
+      const perms = typeof u.permissions==='string' ? JSON.parse(u.permissions||'{}') : (u.permissions||{});
+      buildPermGrid(perms);
+    }
+  } else {
+    document.getElementById('um-name').value = '';
+    document.getElementById('um-login').value = '';
+    document.getElementById('um-pwd').value = '';
+    document.getElementById('um-role').value = 'Commercial';
+    document.getElementById('um-status').value = 'Actif';
+    document.querySelectorAll('.agence-toggle').forEach(t => t.classList.add('on'));
+    buildPermGrid(ROLE_PRESETS.Commercial);
+  }
+  openModal('user-modal-overlay');
+}
+
+function buildPermGrid(preset = {}) {
+  const grid = document.getElementById('um-perms');
+  grid.innerHTML = MODULES.map(m => {
+    const val = preset[m.id]||'';
+    const checked = val !== '';
+    return `<div class="perm-item ${checked?'checked':''}" data-mod="${m.id}" onclick="togglePermItem(this)">
+      <div class="perm-check">${checked?'✓':''}</div>
+      <div class="perm-info"><div class="perm-name">${m.icon} ${m.name}</div><div class="perm-desc">${m.desc}</div></div>
+      <div class="perm-modes" onclick="event.stopPropagation()">
+        <button class="perm-mode-btn ${val.includes('r')?'on':''}" data-mode="r" onclick="togglePermMode(this)">Lecture</button>
+        <button class="perm-mode-btn ${val.includes('w')?'on':''}" data-mode="w" onclick="togglePermMode(this)">Écriture</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePermItem(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.perm-check').textContent = el.classList.contains('checked') ? '✓' : '';
+  if (!el.classList.contains('checked')) el.querySelectorAll('.perm-mode-btn').forEach(b=>b.classList.remove('on'));
+  else el.querySelector('[data-mode="r"]').classList.add('on');
+}
+
+function togglePermMode(btn) {
+  const item = btn.closest('.perm-item');
+  item.classList.add('checked'); item.querySelector('.perm-check').textContent = '✓';
+  btn.classList.toggle('on');
+}
+
+function applyRolePreset() {
+  const role = document.getElementById('um-role').value;
+  buildPermGrid(ROLE_PRESETS[role]||{});
+}
+
+function getPermsFromGrid() {
+  const perms = {};
+  document.querySelectorAll('.perm-item').forEach(item => {
+    const mod = item.dataset.mod;
+    if (!item.classList.contains('checked')) { perms[mod]=''; return; }
+    const r = item.querySelector('[data-mode="r"]').classList.contains('on') ? 'r' : '';
+    const w = item.querySelector('[data-mode="w"]').classList.contains('on') ? 'w' : '';
+    perms[mod] = (r+w) || 'r';
+  });
+  return perms;
+}
+
+async function saveUser() {
+  const nom = v('um-name'), login = v('um-login'), pwd = v('um-pwd'),
+        role = v('um-role'), statut = v('um-status');
+  if (!nom || !login) { toast('Nom et login sont requis','error'); return; }
+  const agences = [...document.querySelectorAll('.agence-toggle.on')].map(t=>t.dataset.ag);
+  const permissions = getPermsFromGrid();
+
+  const body = {
+    nom, login, role, statut,
+    agences: JSON.stringify(agences),
+    permissions: JSON.stringify(permissions),
+  };
+  if (pwd) body.mot_de_passe = pwd;
+
+  try {
+    if (EDIT_USER_ID) {
+      await sbPatch('app_users', EDIT_USER_ID, body);
+      const idx = USERS_DB.findIndex(u=>u.id==EDIT_USER_ID);
+      if (idx>=0) USERS_DB[idx] = {...USERS_DB[idx], ...body, agences, permissions};
+      logActivity(SESSION.name, 'Modif. utilisateur', nom);
+      toast('Utilisateur mis à jour');
+    } else {
+      const [created] = await sbPost('app_users', body);
+      USERS_DB.push({...body, id:created.id, agences, permissions});
+      logActivity(SESSION.name, 'Création utilisateur', `${nom} — ${role}`);
+      toast('Utilisateur créé');
+    }
+    closeUserModal();
+    renderUsersTable();
+    updateUserStats();
+    EDIT_USER_ID = null;
+  } catch(e) { toast('Erreur: ' + e.message,'error'); }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Supprimer cet utilisateur ?')) return;
+  try {
+    await sbDelete('app_users', id);
+    const u = USERS_DB.find(x=>x.id==id);
+    logActivity(SESSION.name, 'Suppression utilisateur', u?.nom||id);
+    USERS_DB = USERS_DB.filter(x=>x.id!=id);
+    renderUsersTable(); updateUserStats(); toast('Utilisateur supprimé');
+  } catch(e) { toast('Erreur: '+e.message,'error'); }
+}
+
+function closeUserModal() { closeModal('user-modal-overlay'); EDIT_USER_ID = null; }
+
+// ── ROLES TAB ──
+function showRoleTab(role) {
+  document.querySelectorAll('[id^="rtab-"]').forEach(b=>b.classList.remove('btn-primary'));
+  document.getElementById(`rtab-${role}`).classList.add('btn-primary');
+  const roleDesc = { Admin:'Accès complet à tous les modules', Technicien:'SAV + consultation clients', Commercial:'Devis, commandes, pipeline ventes', Caisse:'Opérations caisse et finances' };
+  const card = document.getElementById('role-detail-card');
+  const preset = ROLE_PRESETS[role];
+  card.innerHTML = `<div class="card-header"><span class="card-title">${roleIcon(role)} ${role} — ${roleDesc[role]}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Module</th><th>Accès</th><th>Lecture</th><th>Écriture</th></tr></thead>
+    <tbody>${MODULES.map(m=>{
+      const val=preset[m.id]||'';
+      const hasAccess = val!=='';
+      return `<tr>
+        <td>${m.icon} <strong>${m.name}</strong> <span style="color:var(--text2);font-size:11px">${m.desc}</span></td>
+        <td><span class="dot ${hasAccess?'dot-on':'dot-off'}"></span></td>
+        <td><span class="dot ${val.includes('r')?'dot-on':'dot-off'}"></span></td>
+        <td><span class="dot ${val.includes('w')?'dot-on':'dot-off'}"></span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── MATRIX TAB ──
+function renderMatrix() {
+  const tbody = document.getElementById('matrix-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = MODULES.map(m => {
+    const cell = (role) => {
+      const val = ROLE_PRESETS[role][m.id]||'';
+      if (val.includes('r')&&val.includes('w')) return '<span style="color:var(--success-light)">R + W</span>';
+      if (val.includes('r')) return '<span style="color:var(--accent-light)">Lecture</span>';
+      return '<span style="color:var(--border)">—</span>';
+    };
+    return `<tr>
+      <td><strong>${m.icon} ${m.name}</strong></td>
+      <td>${cell('Admin')}</td><td>${cell('Technicien')}</td>
+      <td>${cell('Commercial')}</td><td>${cell('Caisse')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ADMIN TABS ──
+function switchAdminTab(tab) {
+  ['users','roles','matrix','log'].forEach(t => {
+    document.getElementById(`atab-content-${t}`).style.display = t===tab?'block':'none';
+    const btn = document.getElementById(`atab-${t}`);
+    if (btn) btn.classList.toggle('btn-primary', t===tab);
+  });
+  if (tab==='matrix') renderMatrix();
+  if (tab==='log') renderLog();
+  if (tab==='roles') showRoleTab('Admin');
+}
+
+// ── LOG ──
+function logActivity(user, action, detail) {
+  ACTIVITY_LOG.unshift({ time: new Date().toLocaleString('fr-FR'), user, action, detail });
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-tbody');
+  if (!tbody) return;
+  if (!ACTIVITY_LOG.length) { tbody.innerHTML = emptyRow(4,'Aucune activité'); return; }
+  tbody.innerHTML = ACTIVITY_LOG.map(l=>`<tr>
+    <td style="font-size:11px;color:var(--text3)">${l.time}</td>
+    <td>${esc(l.user)}</td>
+    <td><span class="badge badge-green">${esc(l.action)}</span></td>
+    <td style="color:var(--text3)">${esc(l.detail)}</td>
+  </tr>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function v(id) { return document.getElementById(id)?.value?.trim()||''; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtMoney(n) { return Number(n||0).toLocaleString('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}); }
+function clientName(id) { const c = CLIENTS_CACHE.find(x=>x.id==id); return c?esc(c.nom):`<span style="color:var(--text2)">${id?'#'+id:'—'}</span>`; }
+function canWrite(mod) { return (SESSION?.perms[mod]||'').includes('w'); }
+function loadingRow(cols) { return `<tr><td colspan="${cols}"><div class="loading"><div class="spinner"></div> Chargement...</div></td></tr>`; }
+function emptyRow(cols, msg) { return `<tr><td colspan="${cols}"><div class="empty-state"><div class="icon">📭</div><p>${msg}</p></div></td></tr>`; }
+function errorRow(cols, msg) { return `<tr><td colspan="${cols}" style="color:var(--danger-light);padding:20px">⚠️ Erreur Supabase : ${esc(msg)}</td></tr>`; }
+
+async function fillClientSelect(selId) {
+  try {
+    if (!CLIENTS_CACHE.length) CLIENTS_CACHE = await sb('clients', { order:'nom.asc' });
+    const sel = document.getElementById(selId);
+    sel.innerHTML = '<option value="">— Sélectionner un client —</option>' +
+      CLIENTS_CACHE.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('');
+  } catch {}
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function toast(msg, type='success') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast${type==='error'?' error':''}`;
+  el.innerHTML = `${type==='error'?'⚠️':'✅'} ${esc(msg)}`;
+  container.appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+async function deleteRecord(table, id, reloadFn) {
+  if (!confirm('Supprimer cet enregistrement ?')) return;
+  try { await sbDelete(table, id); reloadFn(); toast('Supprimé'); }
+  catch(e) { toast('Erreur: '+e.message,'error'); }
+}
+
+// Hide write buttons based on permissions
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-user').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-pass').focus();
+  });
+});
+</script>
+
+<!-- ══════════════════════════════════════
+     SQL DE MIGRATION — COPIEZ CE BLOC
+     DANS Supabase SQL Editor
+══════════════════════════════════════
+
+-- ═══════════════════════════════════════
+-- MIGRATION AllTEC v4 — Table app_users
+-- À exécuter dans Supabase SQL Editor
+-- ═══════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.app_users (
+  id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at      timestamptz DEFAULT now(),
+  nom             text NOT NULL,
+  login           text NOT NULL UNIQUE,
+  mot_de_passe    text NOT NULL,
+  role            text NOT NULL CHECK (role IN ('Admin','Technicien','Commercial','Caisse')),
+  agences         text DEFAULT '["Charguia","Kairouan","Sousse"]',
+  permissions     text DEFAULT '{}',
+  statut          text DEFAULT 'Actif' CHECK (statut IN ('Actif','Inactif'))
+);
+
+-- Activer RLS
+ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
+
+-- Policy : accès total via anon key (l'app gère l'auth elle-même)
+CREATE POLICY "allow_all_app_users" ON public.app_users
+  FOR ALL USING (true) WITH CHECK (true);
+
+-- Index pour les logins
+CREATE INDEX IF NOT EXISTS idx_app_users_login ON public.app_users(login);
+
+-- Exemple d'insertion d'un utilisateur Technicien :
+-- INSERT INTO app_users (nom, login, mot_de_passe, role, agences, permissions)
+-- VALUES (
+--   'Mohamed Technicien',
+--   'mohamed.tech',
+--   'MonMotDePasse123',
+--   'Technicien',
+--   '["Charguia","Sousse"]',
+--   '{"clients":"r","devis":"","commandes":"","sav":"rw","caisse":"","rapports":"r","analyse":"","commercial":""}'
+-- );
+
+-->
+</body>
+</html>
+
   --surface: #161b22;
   --surface2: #1c2333;
   --border: #21262d;
