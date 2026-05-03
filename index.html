@@ -749,24 +749,20 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
-      <!-- Ligne 2 : Sens → Catégorie → Type opération (liés) -->
+      <!-- Ligne 2 : Type d'opération → Catégorie (auto) → Sens (auto) -->
       <div class="form-grid cols-3" style="margin-top:12px">
         <div class="form-group">
-          <label class="form-label">Sens *</label>
-          <select class="form-control" id="cop-sens" onchange="updateCaisseCategories()">
-            <option value="Entrée">↑ Entrée</option>
-            <option value="Sortie">↓ Sortie</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Catégorie *</label>
-          <select class="form-control" id="cop-cat" onchange="updateCaisseTypes()">
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label">Type d'opération *</label>
-          <select class="form-control" id="cop-type">
+          <select class="form-control" id="cop-type" onchange="onCaisseTypeChange()">
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie <span style="color:var(--text2);font-size:10px">(auto)</span></label>
+          <input class="form-control" id="cop-cat" readonly style="color:var(--accent-light);cursor:default;background:var(--surface2)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sens <span style="color:var(--text2);font-size:10px">(auto)</span></label>
+          <input class="form-control" id="cop-sens" readonly style="cursor:default;background:var(--surface2);font-weight:600">
         </div>
       </div>
 
@@ -1246,83 +1242,68 @@ async function saveTicket() {
 // CAISSE
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
-// CAISSE — CATÉGORIES & TYPES (depuis Excel AllTEC)
+// CAISSE — CASCADE : Type d'opération → Catégorie + Sens automatique
+// Source : liste.xlsx AllTEC
 // ─────────────────────────────────────────────────────────────────────────────
-const CAISSE_DATA = {
-  Entrée: {
-    'Opération Financière': [
-      'Solde départ',
-      'Clôture de journée',
-      'Apport Caisse',
-      'Approvisionnement Bancaire',
-    ],
-    'Vente': [
-      'Autre vente',
-    ],
-  },
-  Sortie: {
-    'Opération Financière': [
-      'Remise en Banque',
-      'Autres frais financiers',
-    ],
-    'Frais Généraux': [
-      'Pdts de nettoyage et d\'hygiène',
-      'Fournitures du bureau',
-      'Travaux et Fournitures bricolage',
-      'Electricité (STEG)',
-      'SONED',
-      'Internet et Fixe',
-      'Loyer Agence',
-      'Autres frais interne',
-    ],
-    'Logistique': [
-      'Carburant',
-      'Réparation et entretien',
-      'Frais déplacement',
-      'Amendes routières',
-      'Visite technique',
-      'Assurance',
-      'Autres frais logistique',
-    ],
-    'Achat': [
-      'Achat stocké',
-      'Autre Achat',
-    ],
-    'Vente': [
-      'Commission sur vente',
-    ],
-    'Ressources Humaines': [
-      'Salaires',
-      'Primes',
-      'Frais sociaux',
-    ],
-    'Associée': [
-      'Consommation',
-      'Loyer',
-      'Autre dépense',
-    ],
-    'Extra': [
-      'Don et Zakat',
-      'Autres Comptes',
-    ],
-  }
-};
+const CAISSE_TYPES = [
+  { type: 'Solde départ',                      categorie: 'Opération Financière', sens: 'Entrée' },
+  { type: 'Clôture de journée',                categorie: 'Opération Financière', sens: 'Entrée' },
+  { type: 'Apport Caisse',                     categorie: 'Opération Financière', sens: 'Entrée' },
+  { type: 'Approvisionnement Bancaire',        categorie: 'Opération Financière', sens: 'Entrée' },
+  { type: 'Remise en Banque',                  categorie: 'Opération Financière', sens: 'Sortie' },
+  { type: 'Autres frais financiers',           categorie: 'Opération Financière', sens: 'Sortie' },
+  { type: 'Pdts de nettoyage et d\'hygiène',   categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Fournitures du bureau',             categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Travaux et Fournitures bricolage',  categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Electricité (STEG)',                categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'SONED',                             categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Internet et Fixe',                  categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Loyer Agence',                      categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Autres frais interne',              categorie: 'Frais Généraux',       sens: 'Sortie' },
+  { type: 'Carburant',                         categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Réparation et entretien',           categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Frais déplacement',                 categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Amendes routières',                 categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Visite technique',                  categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Assurance',                         categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Autres frais logistique',           categorie: 'Logistique',           sens: 'Sortie' },
+  { type: 'Achat stocké',                      categorie: 'Achat',                sens: 'Sortie' },
+  { type: 'Autre Achat',                       categorie: 'Achat',                sens: 'Sortie' },
+  { type: 'Commission sur vente',              categorie: 'Vente',                sens: 'Sortie' },
+  { type: 'Autre vente',                       categorie: 'Vente',                sens: 'Entrée' },
+  { type: 'Salaires',                          categorie: 'Ressources Humaines',  sens: 'Sortie' },
+  { type: 'Primes',                            categorie: 'Ressources Humaines',  sens: 'Sortie' },
+  { type: 'Frais sociaux',                     categorie: 'Ressources Humaines',  sens: 'Sortie' },
+  { type: 'Consommation',                      categorie: 'Associée',             sens: 'Sortie' },
+  { type: 'Loyer',                             categorie: 'Associée',             sens: 'Sortie' },
+  { type: 'Autre dépense',                     categorie: 'Associée',             sens: 'Sortie' },
+  { type: 'Don et Zakat',                      categorie: 'Extra',                sens: 'Sortie' },
+  { type: 'Autres Comptes',                    categorie: 'Extra',                sens: 'Sortie' },
+];
 
-function updateCaisseCategories() {
-  const sens = document.getElementById('cop-sens').value;
-  const catSel = document.getElementById('cop-cat');
-  const categories = Object.keys(CAISSE_DATA[sens] || {});
-  catSel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-  updateCaisseTypes();
-}
-
-function updateCaisseTypes() {
-  const sens = document.getElementById('cop-sens').value;
-  const cat = document.getElementById('cop-cat').value;
+function initCaisseTypeSelect() {
   const typeSel = document.getElementById('cop-type');
-  const types = (CAISSE_DATA[sens] && CAISSE_DATA[sens][cat]) || [];
-  typeSel.innerHTML = types.map(t => `<option value="${t}">${t}</option>`).join('');
+  typeSel.innerHTML = CAISSE_TYPES.map(t =>
+    `<option value="${t.type}">${t.type}</option>`
+  ).join('');
+  onCaisseTypeChange();
 }
+
+function onCaisseTypeChange() {
+  const typeVal = document.getElementById('cop-type').value;
+  const found = CAISSE_TYPES.find(t => t.type === typeVal);
+  if (found) {
+    document.getElementById('cop-cat').value = found.categorie;
+    document.getElementById('cop-sens').value = found.sens;
+    // Couleur visuelle du sens
+    const sensEl = document.getElementById('cop-sens');
+    sensEl.style.color = found.sens === 'Entrée' ? '#4ade80' : '#f87171';
+  }
+}
+
+// Garder compatibilité avec les anciens appels
+function updateCaisseCategories() { initCaisseTypeSelect(); }
+function updateCaisseTypes() { onCaisseTypeChange(); }
 
 
 function populateMonthFilter() {
@@ -1428,8 +1409,7 @@ async function openCaisseModal() {
   document.getElementById('cop-desc').value = '';
   document.getElementById('cop-notes').value = '';
   document.getElementById('cop-piece').value = '';
-  document.getElementById('cop-sens').value = 'Entrée';
-  updateCaisseCategories(); // initialise catégories et types
+  initCaisseTypeSelect(); // charge types → catégorie + sens auto
   openModal('caisse-modal-overlay');
 }
 
@@ -1439,8 +1419,8 @@ async function saveCaisse() {
     date_op: v('cop-date'),
     n_piece: v('cop-piece'),
     description: v('cop-desc'),
-    categorie: v('cop-cat'),
-    sens: v('cop-sens'),
+    categorie: document.getElementById('cop-cat').value,
+    sens: document.getElementById('cop-sens').value,
     type_operation: v('cop-type'),
     montant: parseFloat(v('cop-montant'))||0,
     saisi_par: SESSION.name,
