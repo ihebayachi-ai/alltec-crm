@@ -478,12 +478,68 @@ textarea.form-control{resize:vertical;min-height:80px}
         <!-- Stats globales filtrées -->
         <div class="stats-grid" id="caisse-stats"></div>
 
-        <div class="card">
-          <div class="table-wrap"><table>
-            <thead><tr><th>Date</th><th>Agence</th><th>N° Pièce</th><th>Description</th><th>Catégorie</th><th>Sens</th><th>Montant</th><th>Solde</th></tr></thead>
-            <tbody id="caisse-tbody"></tbody>
-          </table></div>
+        <!-- Tabs caisse -->
+        <div style="display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:10px;margin-bottom:16px;width:fit-content">
+          <button class="btn btn-primary btn-sm" id="ctab-operations" onclick="switchCaisseTab('operations')" style="border-radius:7px">📋 Opérations</button>
+          <button class="btn btn-ghost btn-sm" id="ctab-categories" onclick="switchCaisseTab('categories')" style="border-radius:7px">📊 Par Catégorie</button>
+          <button class="btn btn-ghost btn-sm" id="ctab-mensuel" onclick="switchCaisseTab('mensuel')" style="border-radius:7px">📅 Récap Mensuel</button>
         </div>
+
+        <!-- TAB 1 : Opérations -->
+        <div id="ctab-content-operations">
+          <div class="card">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Date</th><th>Agence</th><th>N° Pièce</th><th>Description</th><th>Catégorie</th><th>Type</th><th>Sens</th><th>Montant</th><th>Solde</th></tr></thead>
+              <tbody id="caisse-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- TAB 2 : Par Catégorie -->
+        <div id="ctab-content-categories" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📊 Dépenses & Entrées par Catégorie — Toutes Agences</span>
+            </div>
+            <div class="table-wrap"><table>
+              <thead><tr>
+                <th>Catégorie / Type d'opération</th>
+                <th>Sens</th>
+                <th style="text-align:right">Charguia</th>
+                <th style="text-align:right">Kairouan</th>
+                <th style="text-align:right">Sousse</th>
+                <th style="text-align:right">TOTAL</th>
+                <th style="text-align:right">%</th>
+              </tr></thead>
+              <tbody id="caisse-cat-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- TAB 3 : Récap Mensuel -->
+        <div id="ctab-content-mensuel" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📅 Récapitulatif Mensuel — 3 Agences</span>
+              <select class="form-control" style="width:120px" id="mensuel-agence-filter" onchange="renderMensuel()">
+                <option value="">Toutes agences</option>
+                <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+              </select>
+            </div>
+            <div class="table-wrap"><table>
+              <thead><tr>
+                <th>Mois</th><th>Agence</th>
+                <th style="text-align:right">Entrées (TND)</th>
+                <th style="text-align:right">Sorties (TND)</th>
+                <th style="text-align:right">Solde Net</th>
+                <th style="text-align:right">Nb Ops</th>
+                <th style="text-align:right">% Entrées</th>
+              </tr></thead>
+              <tbody id="caisse-mensuel-tbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- RAPPORTS -->
@@ -1390,6 +1446,7 @@ async function loadCaisse() {
       <td style="font-size:11px;color:var(--text3)">${esc(op.n_piece||'—')}</td>
       <td>${esc(op.description||'—')}</td>
       <td><span class="badge badge-gray">${esc(op.categorie||'—')}</span></td>
+      <td style="font-size:11px;color:var(--text3)">${esc(op.type_operation||'—')}</td>
       <td><span class="badge ${op.sens==='Entrée'?'badge-green':'badge-red'}">${esc(op.sens||'—')}</span></td>
       <td><strong style="color:${op.sens==='Entrée'?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(op.montant)}</strong></td>
       <td>${fmtMoney(op.solde_cumule)}</td>
@@ -1729,6 +1786,193 @@ function renderMatrix() {
 }
 
 // ── ADMIN TABS ──
+function switchCaisseTab(tab) {
+  ['operations','categories','mensuel'].forEach(t => {
+    document.getElementById(`ctab-content-${t}`).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById(`ctab-${t}`);
+    btn.classList.toggle('btn-primary', t===tab);
+    btn.classList.toggle('btn-ghost', t!==tab);
+  });
+  if (tab==='categories') renderCategories();
+  if (tab==='mensuel') renderMensuel();
+}
+
+// ── BLOC 2 : Par Catégorie ──────────────────────────────────────────────────
+const CATEGORIES_ORDER = [
+  'Opération Financière',
+  'Frais Généraux',
+  'Logistique',
+  'Achat',
+  'Vente',
+  'Ressources Humaines',
+  'Associée',
+  'Extra',
+];
+
+function renderCategories() {
+  const tbody = document.getElementById('caisse-cat-tbody');
+  tbody.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div> Calcul en cours...</div></td></tr>';
+
+  // Utiliser les données déjà chargées
+  sb('caisse_operations').then(allData => {
+    // Construire structure : cat → type → agence → montant
+    const struct = {};
+    CAISSE_TYPES.forEach(t => {
+      if (!struct[t.categorie]) struct[t.categorie] = {};
+      if (!struct[t.categorie][t.type]) {
+        struct[t.categorie][t.type] = { sens: t.sens, Charguia:0, Kairouan:0, Sousse:0 };
+      }
+    });
+
+    // Remplir avec les données réelles
+    allData.forEach(op => {
+      const cat = op.categorie;
+      const type = op.type_operation;
+      if (struct[cat] && struct[cat][type]) {
+        struct[cat][type][op.agence] = (struct[cat][type][op.agence]||0) + Number(op.montant);
+      }
+    });
+
+    // Calculer total global pour %
+    let grandTotal = 0;
+    CATEGORIES_ORDER.forEach(cat => {
+      if (!struct[cat]) return;
+      Object.values(struct[cat]).forEach(row => {
+        const tot = row.Charguia + row.Kairouan + row.Sousse;
+        grandTotal += tot;
+      });
+    });
+
+    let html = '';
+    CATEGORIES_ORDER.forEach(cat => {
+      if (!struct[cat]) return;
+      let catTotC=0, catTotK=0, catTotS=0;
+
+      // Lignes types
+      const typeRows = Object.entries(struct[cat]).map(([type, row]) => {
+        const tot = row.Charguia + row.Kairouan + row.Sousse;
+        catTotC += row.Charguia; catTotK += row.Kairouan; catTotS += row.Sousse;
+        const sensColor = row.sens==='Entrée' ? 'var(--success-light)' : 'var(--danger-light)';
+        const sensIcon = row.sens==='Entrée' ? '↑' : '↓';
+        return `<tr style="font-size:12px">
+          <td style="padding-left:28px;color:var(--text3)">${esc(type)}</td>
+          <td><span style="color:${sensColor};font-weight:600">${sensIcon} ${row.sens}</span></td>
+          <td style="text-align:right;font-family:monospace">${tot>0||row.Charguia>0?fmtMoney(row.Charguia):'—'}</td>
+          <td style="text-align:right;font-family:monospace">${tot>0||row.Kairouan>0?fmtMoney(row.Kairouan):'—'}</td>
+          <td style="text-align:right;font-family:monospace">${tot>0||row.Sousse>0?fmtMoney(row.Sousse):'—'}</td>
+          <td style="text-align:right;font-weight:600;color:${tot>0?'var(--text)':'var(--text2)'}">${fmtMoney(tot)}</td>
+          <td style="text-align:right;color:var(--text2)">${grandTotal>0&&tot>0?(tot/grandTotal*100).toFixed(1)+'%':'—'}</td>
+        </tr>`;
+      }).join('');
+
+      const catTot = catTotC + catTotK + catTotS;
+      const catPct = grandTotal > 0 ? (catTot/grandTotal*100).toFixed(1) : '0';
+
+      // En-tête catégorie
+      html += `<tr style="background:rgba(255,255,255,.04);border-top:1px solid var(--border)">
+        <td style="font-weight:700;font-size:13px;color:var(--accent-light);padding:10px 14px">▸ ${esc(cat)}</td>
+        <td></td>
+        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotC)}</td>
+        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotK)}</td>
+        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotS)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--warning-light);font-family:monospace">${fmtMoney(catTot)}</td>
+        <td style="text-align:right;color:var(--warning-light);font-weight:600">${catPct}%</td>
+      </tr>`;
+      html += typeRows;
+
+      // Sous-total
+      html += `<tr style="background:rgba(255,255,255,.02);border-bottom:2px solid var(--border)">
+        <td style="padding-left:28px;font-size:11px;color:var(--text2);font-style:italic" colspan="2">Sous-total — ${esc(cat)}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotC)}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotK)}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotS)}</td>
+        <td style="text-align:right;font-weight:700;font-family:monospace">${fmtMoney(catTot)}</td>
+        <td style="text-align:right;color:var(--text2)">${catPct}%</td>
+      </tr>`;
+    });
+
+    // Ligne totale finale
+    const totC = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Charguia,0):0),0);
+    const totK = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Kairouan,0):0),0);
+    const totS = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Sousse,0):0),0);
+    html += `<tr style="background:rgba(37,99,235,.1);border-top:2px solid var(--accent)">
+      <td colspan="2" style="font-weight:700;font-size:13px;color:var(--accent-light)">SOLDE NET GLOBAL (Entrées − Sorties)</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totC)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totK)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totS)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totC+totK+totS)}</td>
+      <td style="text-align:right;color:var(--accent-light);font-weight:700">100%</td>
+    </tr>`;
+
+    tbody.innerHTML = html;
+  }).catch(e => {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger-light);padding:20px">Erreur: ${esc(e.message)}</td></tr>`;
+  });
+}
+
+// ── BLOC 3 : Récapitulatif Mensuel ──────────────────────────────────────────
+const MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function renderMensuel() {
+  const tbody = document.getElementById('caisse-mensuel-tbody');
+  tbody.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div> Calcul...</div></td></tr>';
+  const agenceFilter = document.getElementById('mensuel-agence-filter')?.value || '';
+
+  sb('caisse_operations').then(allData => {
+    // Construire : mois → agence → {in, out, count}
+    const struct = {};
+    for (let m=1; m<=12; m++) {
+      struct[m] = { Charguia:{in:0,out:0,count:0}, Kairouan:{in:0,out:0,count:0}, Sousse:{in:0,out:0,count:0} };
+    }
+
+    allData.forEach(op => {
+      if (!op.date_op) return;
+      const mois = parseInt(op.date_op.split('-')[1]);
+      if (!struct[mois] || !struct[mois][op.agence]) return;
+      struct[mois][op.agence].count++;
+      if (op.sens==='Entrée') struct[mois][op.agence].in += Number(op.montant);
+      else struct[mois][op.agence].out += Number(op.montant);
+    });
+
+    const agences = agenceFilter ? [agenceFilter] : ['Charguia','Kairouan','Sousse'];
+    let html = '';
+    let hasData = false;
+
+    for (let m=1; m<=12; m++) {
+      agences.forEach((ag, idx) => {
+        const d = struct[m][ag];
+        const solde = d.in - d.out;
+        const pctIn = (d.in+d.out)>0 ? (d.in/(d.in+d.out)*100).toFixed(1)+'%' : '—';
+        const hasOps = d.count > 0;
+        if (hasOps) hasData = true;
+        const soldeColor = solde>0?'var(--success-light)':solde<0?'var(--danger-light)':'var(--text2)';
+        const showMois = idx===0;
+        html += `<tr style="${!hasOps?'opacity:.4':''}">
+          <td style="font-weight:${showMois?'600':'400'};color:${showMois?'var(--text)':'var(--text2)'}">${showMois?MOIS_NOMS[m-1]:''}</td>
+          <td><span class="badge badge-${ag==='Charguia'?'cyan':ag==='Kairouan'?'purple':'amber'}">${ag}</span></td>
+          <td style="text-align:right;color:var(--success-light);font-family:monospace">${hasOps?fmtMoney(d.in):'—'}</td>
+          <td style="text-align:right;color:var(--danger-light);font-family:monospace">${hasOps?fmtMoney(d.out):'—'}</td>
+          <td style="text-align:right;font-weight:600;font-family:monospace;color:${soldeColor}">${hasOps?fmtMoney(solde):'—'}</td>
+          <td style="text-align:right">${hasOps?d.count:'—'}</td>
+          <td style="text-align:right;color:var(--text2)">${hasOps?pctIn:'—'}</td>
+        </tr>`;
+      });
+      // Ligne séparatrice entre mois si toutes agences
+      if (!agenceFilter && agences.length>1) {
+        html += `<tr style="height:4px;background:transparent"><td colspan="7"></td></tr>`;
+      }
+    }
+
+    if (!hasData) {
+      tbody.innerHTML = emptyRow(7, 'Aucune opération enregistrée');
+      return;
+    }
+    tbody.innerHTML = html;
+  }).catch(e => {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:var(--danger-light);padding:20px">Erreur: ${esc(e.message)}</td></tr>`;
+  });
+}
+
 function switchAdminTab(tab) {
   ['users','roles','matrix','log'].forEach(t => {
     document.getElementById(`atab-content-${t}`).style.display = t===tab?'block':'none';
