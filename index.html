@@ -418,14 +418,14 @@ textarea.form-control{resize:vertical;min-height:80px}
       <!-- CAISSE -->
       <div class="page" id="page-caisse">
         <div class="page-header">
-          <div><div class="page-title">💰 Caisse</div><div class="page-sub">Opérations de caisse par agence</div></div>
+          <div><div class="page-title">💰 Caisse</div><div class="page-sub" id="caisse-sub">Opérations de caisse par agence</div></div>
           <div class="toolbar">
             <select class="form-control" style="width:140px" id="caisse-agence" onchange="loadCaisse()">
               <option value="">Toutes agences</option>
               <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
             </select>
             <select class="form-control" style="width:120px" id="caisse-mois" onchange="loadCaisse()"></select>
-            <button class="btn btn-primary" id="btn-add-caisse" onclick="openCaisseModal()">＋ Opération</button>
+            <button class="btn btn-primary" id="btn-add-caisse" onclick="openCaisseModal()" style="display:none">＋ Opération</button>
           </div>
         </div>
 
@@ -489,7 +489,7 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div id="ctab-content-operations">
           <div class="card">
             <div class="table-wrap"><table>
-              <thead><tr><th>Date</th><th>Agence</th><th>N° Pièce</th><th>Description</th><th>Catégorie</th><th>Type</th><th>Sens</th><th>Montant</th><th>Solde</th></tr></thead>
+              <thead><tr><th>Date</th><th>Agence</th><th>N° Pièce</th><th>Description</th><th>Catégorie</th><th>Type</th><th>Sens</th><th>Montant</th><th>Solde</th><th>Actions</th></tr></thead>
               <tbody id="caisse-tbody"></tbody>
             </table></div>
           </div>
@@ -1379,12 +1379,37 @@ function populateMonthFilter() {
 
 async function loadCaisse() {
   const tbody = document.getElementById('caisse-tbody');
-  tbody.innerHTML = loadingRow(8);
+  tbody.innerHTML = loadingRow(10);
+
+  const isAdmin = SESSION.role === 'Admin';
+  const canAdd  = canWrite('caisse');
+  const canEdit = canWrite('caisse');
+  const canDel  = SESSION.role === 'Admin';
+
+  // Bouton ＋ Opération : visible si droit écriture
+  const btnAdd = document.getElementById('btn-add-caisse');
+  if (btnAdd) btnAdd.style.display = canAdd ? 'inline-flex' : 'none';
+
+  // Filtre agence : Admin → libre, sinon → bloqué sur son agence
+  const agenceSel = document.getElementById('caisse-agence');
+  if (!isAdmin) {
+    // Forcer l'agence de l'utilisateur
+    const userAgence = SESSION.agences[0] || '';
+    agenceSel.value = userAgence;
+    agenceSel.disabled = true;
+    agenceSel.style.opacity = '0.6';
+    document.getElementById('caisse-sub').textContent = `Agence ${userAgence} — accès restreint`;
+  } else {
+    agenceSel.disabled = false;
+    agenceSel.style.opacity = '1';
+    document.getElementById('caisse-sub').textContent = 'Opérations de caisse par agence';
+  }
+
   try {
-    // Charger TOUTES les opérations pour les cartes dashboard
+    // Charger TOUTES les opérations pour les cartes dashboard (Admin voit tout)
     const allData = await sb('caisse_operations', { order:'date_op.asc,created_at.asc' });
 
-    // Calculer soldes par agence (cumulatif sur toutes les opérations)
+    // Cartes soldes — Admin voit les 3, sinon seulement son agence
     const agenceStats = { Charguia:{in:0,out:0,count:0}, Kairouan:{in:0,out:0,count:0}, Sousse:{in:0,out:0,count:0} };
     allData.forEach(op => {
       const ag = op.agence;
@@ -1394,39 +1419,48 @@ async function loadCaisse() {
       else agenceStats[ag].out += Number(op.montant);
     });
 
-    // Mettre à jour les cartes dashboard
     ['Charguia','Kairouan','Sousse'].forEach(ag => {
       const key = ag.toLowerCase();
+      const card = document.getElementById(`dash-${key}`);
+      // Masquer les cartes des autres agences pour les non-admins
+      if (!isAdmin && !SESSION.agences.includes(ag)) {
+        if (card) card.style.display = 'none';
+        return;
+      }
+      if (card) card.style.display = 'block';
       const s = agenceStats[ag];
       const solde = s.in - s.out;
       const soldeEl = document.getElementById(`dash-${key}-solde`);
-      const opsEl = document.getElementById(`dash-${key}-ops`);
-      const inEl = document.getElementById(`dash-${key}-in`);
-      const outEl = document.getElementById(`dash-${key}-out`);
-      if (soldeEl) {
-        soldeEl.textContent = fmtMoney(solde) + ' TND';
-        soldeEl.style.color = solde >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
-      }
-      if (opsEl) opsEl.textContent = s.count + ' op' + (s.count>1?'s':'');
-      if (inEl) inEl.textContent = fmtMoney(s.in);
-      if (outEl) outEl.textContent = fmtMoney(s.out);
+      const opsEl   = document.getElementById(`dash-${key}-ops`);
+      const inEl    = document.getElementById(`dash-${key}-in`);
+      const outEl   = document.getElementById(`dash-${key}-out`);
+      if (soldeEl) { soldeEl.textContent = fmtMoney(solde)+' TND'; soldeEl.style.color = solde>=0?'var(--success-light)':'var(--danger-light)'; }
+      if (opsEl)   opsEl.textContent = s.count+' op'+(s.count>1?'s':'');
+      if (inEl)    inEl.textContent  = fmtMoney(s.in);
+      if (outEl)   outEl.textContent = fmtMoney(s.out);
     });
 
-    // Appliquer les filtres pour le tableau
-    const agence = document.getElementById('caisse-agence').value;
-    const mois = document.getElementById('caisse-mois').value;
-    let data = allData.slice().reverse(); // desc pour affichage
-    if (agence) data = data.filter(op => op.agence === agence);
+    // Filtrer les données selon l'agence et le mois
+    const agence = agenceSel.value;
+    const mois   = document.getElementById('caisse-mois').value;
+    let data = allData.slice().reverse();
+
+    // Non-admin : restreindre à son agence uniquement
+    if (!isAdmin) {
+      data = data.filter(op => SESSION.agences.includes(op.agence));
+    } else if (agence) {
+      data = data.filter(op => op.agence === agence);
+    }
     if (mois) data = data.filter(op => op.date_op && op.date_op.startsWith(mois));
 
     // Highlight carte active
     ['Charguia','Kairouan','Sousse'].forEach(ag => {
       const card = document.getElementById(`dash-${ag.toLowerCase()}`);
-      if (card) card.style.borderColor = (agence===ag) ? 'var(--accent-light)' : 'var(--border)';
+      if (card) card.style.borderColor = (agence===ag)?'var(--accent-light)':'var(--border)';
     });
 
     if (!data.length) {
-      tbody.innerHTML = emptyRow(8,'Aucune opération pour cette sélection');
+      tbody.innerHTML = emptyRow(10,'Aucune opération pour cette sélection');
       document.getElementById('caisse-stats').innerHTML = '';
       return;
     }
@@ -1435,8 +1469,8 @@ async function loadCaisse() {
     data.forEach(op => { if(op.sens==='Entrée') entrees+=Number(op.montant); else sorties+=Number(op.montant); });
 
     document.getElementById('caisse-stats').innerHTML = `
-      <div class="stat-card green"><div class="stat-label">Entrées (filtre)</div><div class="stat-val" style="color:var(--success-light);font-size:18px">${fmtMoney(entrees)}</div><div class="stat-sub">TND</div></div>
-      <div class="stat-card red"><div class="stat-label">Sorties (filtre)</div><div class="stat-val" style="color:var(--danger-light);font-size:18px">${fmtMoney(sorties)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card green"><div class="stat-label">Entrées</div><div class="stat-val" style="color:var(--success-light);font-size:18px">${fmtMoney(entrees)}</div><div class="stat-sub">TND</div></div>
+      <div class="stat-card red"><div class="stat-label">Sorties</div><div class="stat-val" style="color:var(--danger-light);font-size:18px">${fmtMoney(sorties)}</div><div class="stat-sub">TND</div></div>
       <div class="stat-card ${entrees-sorties>=0?'blue':'amber'}"><div class="stat-label">Solde net</div><div class="stat-val" style="font-size:18px">${fmtMoney(entrees-sorties)}</div><div class="stat-sub">TND</div></div>
       <div class="stat-card amber"><div class="stat-label">Opérations</div><div class="stat-val">${data.length}</div></div>`;
 
@@ -1449,9 +1483,16 @@ async function loadCaisse() {
       <td style="font-size:11px;color:var(--text3)">${esc(op.type_operation||'—')}</td>
       <td><span class="badge ${op.sens==='Entrée'?'badge-green':'badge-red'}">${esc(op.sens||'—')}</span></td>
       <td><strong style="color:${op.sens==='Entrée'?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(op.montant)}</strong></td>
-      <td>${fmtMoney(op.solde_cumule)}</td>
+      <td style="font-family:monospace;font-size:12px">${fmtMoney(op.solde_cumule)}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          ${canEdit ? `<button class="btn btn-ghost btn-xs" onclick="openEditCaisseModal('${op.id}')" title="Modifier">✏️</button>` : ''}
+          ${canDel  ? `<button class="btn btn-danger-ghost btn-xs" onclick="deleteCaisseOp('${op.id}')" title="Supprimer">🗑</button>` : ''}
+          ${!canEdit && !canDel ? '<span style="color:var(--text2);font-size:11px">—</span>' : ''}
+        </div>
+      </td>
     </tr>`).join('');
-  } catch(e) { tbody.innerHTML = errorRow(8, e.message); document.getElementById('caisse-stats').innerHTML=''; }
+  } catch(e) { tbody.innerHTML = errorRow(10, e.message); document.getElementById('caisse-stats').innerHTML=''; }
 }
 
 function filterByAgence(ag) {
@@ -1460,13 +1501,56 @@ function filterByAgence(ag) {
   loadCaisse();
 }
 
+let EDIT_CAISSE_ID = null;
+
+async function openEditCaisseModal(id) {
+  EDIT_CAISSE_ID = id;
+  try {
+    const [op] = await sb('caisse_operations', { filter:`id=eq.${id}` });
+    initCaisseTypeSelect();
+    document.getElementById('cop-agence').value = op.agence||'Charguia';
+    document.getElementById('cop-date').value = op.date_op||'';
+    document.getElementById('cop-piece').value = op.n_piece||'';
+    document.getElementById('cop-type').value = op.type_operation||'';
+    onCaisseTypeChange();
+    // Override auto-fill si données existantes
+    document.getElementById('cop-cat').value = op.categorie||'';
+    document.getElementById('cop-sens').value = op.sens||'';
+    document.getElementById('cop-desc').value = op.description||'';
+    document.getElementById('cop-montant').value = op.montant||'';
+    document.getElementById('cop-notes').value = op.notes||'';
+    // Changer titre modal
+    document.querySelector('#caisse-modal-overlay .modal-title').textContent = '✏️ Modifier l\'opération';
+    openModal('caisse-modal-overlay');
+  } catch(e) { toast('Erreur chargement: '+e.message,'error'); }
+}
+
+async function deleteCaisseOp(id) {
+  if (!confirm('Supprimer cette opération ? Cette action est irréversible.')) return;
+  try {
+    await sbDelete('caisse_operations', id);
+    toast('Opération supprimée'); loadCaisse();
+  } catch(e) { toast('Erreur: '+e.message,'error'); }
+}
+
+
 async function openCaisseModal() {
+  EDIT_CAISSE_ID = null;
   document.getElementById('cop-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('cop-montant').value = '';
   document.getElementById('cop-desc').value = '';
   document.getElementById('cop-notes').value = '';
   document.getElementById('cop-piece').value = '';
-  initCaisseTypeSelect(); // charge types → catégorie + sens auto
+  // Forcer l'agence pour les non-admins
+  const agenceSel = document.getElementById('cop-agence');
+  if (SESSION.role !== 'Admin') {
+    agenceSel.value = SESSION.agences[0] || 'Charguia';
+    agenceSel.disabled = true;
+  } else {
+    agenceSel.disabled = false;
+  }
+  initCaisseTypeSelect();
+  document.querySelector('#caisse-modal-overlay .modal-title').textContent = 'Nouvelle opération de caisse';
   openModal('caisse-modal-overlay');
 }
 
@@ -1486,8 +1570,16 @@ async function saveCaisse() {
   if (!body.description) { toast('La description est requise','error'); return; }
   if (!body.montant || body.montant <= 0) { toast('Le montant doit être supérieur à 0','error'); return; }
   try {
-    await sbPost('caisse_operations', body);
-    closeModal('caisse-modal-overlay'); loadCaisse(); toast('Opération enregistrée ✓');
+    if (EDIT_CAISSE_ID) {
+      await sbPatch('caisse_operations', EDIT_CAISSE_ID, body);
+      toast('Opération modifiée ✓');
+    } else {
+      await sbPost('caisse_operations', body);
+      toast('Opération enregistrée ✓');
+    }
+    closeModal('caisse-modal-overlay');
+    EDIT_CAISSE_ID = null;
+    loadCaisse();
   } catch(e) { toast(e.message,'error'); }
 }
 
