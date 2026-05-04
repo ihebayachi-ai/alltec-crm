@@ -1907,7 +1907,7 @@ function renderCategories() {
 
   // Utiliser les données déjà chargées
   sb('caisse_operations').then(allData => {
-    // Construire structure : cat → type → agence → montant
+    // Construire structure : cat → type → agence → montant (signé)
     const struct = {};
     CAISSE_TYPES.forEach(t => {
       if (!struct[t.categorie]) struct[t.categorie] = {};
@@ -1916,22 +1916,23 @@ function renderCategories() {
       }
     });
 
-    // Remplir avec les données réelles
+    // Remplir avec les données réelles — montant positif pour Entrée, négatif pour Sortie
     allData.forEach(op => {
       const cat = op.categorie;
       const type = op.type_operation;
       if (struct[cat] && struct[cat][type]) {
-        struct[cat][type][op.agence] = (struct[cat][type][op.agence]||0) + Number(op.montant);
+        const montant = Number(op.montant);
+        const signe = op.sens === 'Entrée' ? 1 : -1;
+        struct[cat][type][op.agence] = (struct[cat][type][op.agence]||0) + (montant * signe);
       }
     });
 
-    // Calculer total global pour %
-    let grandTotal = 0;
+    // Calculer total global pour % (sur valeur absolue des mouvements)
+    let grandTotalAbs = 0;
     CATEGORIES_ORDER.forEach(cat => {
       if (!struct[cat]) return;
       Object.values(struct[cat]).forEach(row => {
-        const tot = row.Charguia + row.Kairouan + row.Sousse;
-        grandTotal += tot;
+        grandTotalAbs += Math.abs(row.Charguia) + Math.abs(row.Kairouan) + Math.abs(row.Sousse);
       });
     });
 
@@ -1945,29 +1946,33 @@ function renderCategories() {
         const tot = row.Charguia + row.Kairouan + row.Sousse;
         catTotC += row.Charguia; catTotK += row.Kairouan; catTotS += row.Sousse;
         const sensColor = row.sens==='Entrée' ? 'var(--success-light)' : 'var(--danger-light)';
-        const sensIcon = row.sens==='Entrée' ? '↑' : '↓';
+        const sensIcon  = row.sens==='Entrée' ? '↑' : '↓';
+        const hasData   = row.Charguia!==0 || row.Kairouan!==0 || row.Sousse!==0;
+        const totColor  = tot>0?'var(--success-light)':tot<0?'var(--danger-light)':'var(--text2)';
+        const pct = grandTotalAbs>0 && hasData ? (Math.abs(tot)/grandTotalAbs*100).toFixed(1)+'%' : '—';
         return `<tr style="font-size:12px">
           <td style="padding-left:28px;color:var(--text3)">${esc(type)}</td>
           <td><span style="color:${sensColor};font-weight:600">${sensIcon} ${row.sens}</span></td>
-          <td style="text-align:right;font-family:monospace">${tot>0||row.Charguia>0?fmtMoney(row.Charguia):'—'}</td>
-          <td style="text-align:right;font-family:monospace">${tot>0||row.Kairouan>0?fmtMoney(row.Kairouan):'—'}</td>
-          <td style="text-align:right;font-family:monospace">${tot>0||row.Sousse>0?fmtMoney(row.Sousse):'—'}</td>
-          <td style="text-align:right;font-weight:600;color:${tot>0?'var(--text)':'var(--text2)'}">${fmtMoney(tot)}</td>
-          <td style="text-align:right;color:var(--text2)">${grandTotal>0&&tot>0?(tot/grandTotal*100).toFixed(1)+'%':'—'}</td>
+          <td style="text-align:right;font-family:monospace;color:${row.Charguia>0?'var(--success-light)':row.Charguia<0?'var(--danger-light)':'var(--text2)'}">${row.Charguia!==0?fmtMoney(Math.abs(row.Charguia)):'—'}</td>
+          <td style="text-align:right;font-family:monospace;color:${row.Kairouan>0?'var(--success-light)':row.Kairouan<0?'var(--danger-light)':'var(--text2)'}">${row.Kairouan!==0?fmtMoney(Math.abs(row.Kairouan)):'—'}</td>
+          <td style="text-align:right;font-family:monospace;color:${row.Sousse>0?'var(--success-light)':row.Sousse<0?'var(--danger-light)':'var(--text2)'}">${row.Sousse!==0?fmtMoney(Math.abs(row.Sousse)):'—'}</td>
+          <td style="text-align:right;font-weight:600;color:${totColor}">${hasData?fmtMoney(Math.abs(tot)):'—'}</td>
+          <td style="text-align:right;color:var(--text2)">${pct}</td>
         </tr>`;
       }).join('');
 
       const catTot = catTotC + catTotK + catTotS;
-      const catPct = grandTotal > 0 ? (catTot/grandTotal*100).toFixed(1) : '0';
+      const catPct = grandTotalAbs>0 ? (Math.abs(catTot)/grandTotalAbs*100).toFixed(1) : '0';
+      const catColor = catTot>0?'var(--success-light)':catTot<0?'var(--danger-light)':'var(--warning-light)';
 
       // En-tête catégorie
       html += `<tr style="background:rgba(255,255,255,.04);border-top:1px solid var(--border)">
         <td style="font-weight:700;font-size:13px;color:var(--accent-light);padding:10px 14px">▸ ${esc(cat)}</td>
         <td></td>
-        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotC)}</td>
-        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotK)}</td>
-        <td style="text-align:right;font-weight:600;font-family:monospace">${fmtMoney(catTotS)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--warning-light);font-family:monospace">${fmtMoney(catTot)}</td>
+        <td style="text-align:right;font-weight:600;font-family:monospace;color:${catTotC>0?'var(--success-light)':catTotC<0?'var(--danger-light)':'var(--text2)'}">${catTotC!==0?fmtMoney(Math.abs(catTotC)):'0,000'}</td>
+        <td style="text-align:right;font-weight:600;font-family:monospace;color:${catTotK>0?'var(--success-light)':catTotK<0?'var(--danger-light)':'var(--text2)'}">${catTotK!==0?fmtMoney(Math.abs(catTotK)):'0,000'}</td>
+        <td style="text-align:right;font-weight:600;font-family:monospace;color:${catTotS>0?'var(--success-light)':catTotS<0?'var(--danger-light)':'var(--text2)'}">${catTotS!==0?fmtMoney(Math.abs(catTotS)):'0,000'}</td>
+        <td style="text-align:right;font-weight:700;color:${catColor};font-family:monospace">${fmtMoney(Math.abs(catTot))}</td>
         <td style="text-align:right;color:var(--warning-light);font-weight:600">${catPct}%</td>
       </tr>`;
       html += typeRows;
@@ -1975,25 +1980,27 @@ function renderCategories() {
       // Sous-total
       html += `<tr style="background:rgba(255,255,255,.02);border-bottom:2px solid var(--border)">
         <td style="padding-left:28px;font-size:11px;color:var(--text2);font-style:italic" colspan="2">Sous-total — ${esc(cat)}</td>
-        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotC)}</td>
-        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotK)}</td>
-        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--text3)">${fmtMoney(catTotS)}</td>
-        <td style="text-align:right;font-weight:700;font-family:monospace">${fmtMoney(catTot)}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px">${fmtMoney(Math.abs(catTotC))}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px">${fmtMoney(Math.abs(catTotK))}</td>
+        <td style="text-align:right;font-family:monospace;font-size:11px">${fmtMoney(Math.abs(catTotS))}</td>
+        <td style="text-align:right;font-weight:700;font-family:monospace;color:${catColor}">${fmtMoney(Math.abs(catTot))}</td>
         <td style="text-align:right;color:var(--text2)">${catPct}%</td>
       </tr>`;
     });
 
-    // Ligne totale finale
-    const totC = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Charguia,0):0),0);
-    const totK = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Kairouan,0):0),0);
-    const totS = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Sousse,0):0),0);
+    // Ligne solde net global = Entrées − Sorties
+    const netC = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Charguia,0):0),0);
+    const netK = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Kairouan,0):0),0);
+    const netS = CATEGORIES_ORDER.reduce((s,cat)=>s+(struct[cat]?Object.values(struct[cat]).reduce((a,r)=>a+r.Sousse,0):0),0);
+    const netGlobal = netC + netK + netS;
+    const netColor = netGlobal>=0?'var(--success-light)':'var(--danger-light)';
     html += `<tr style="background:rgba(37,99,235,.1);border-top:2px solid var(--accent)">
       <td colspan="2" style="font-weight:700;font-size:13px;color:var(--accent-light)">SOLDE NET GLOBAL (Entrées − Sorties)</td>
-      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totC)}</td>
-      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totK)}</td>
-      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totS)}</td>
-      <td style="text-align:right;font-weight:700;font-family:monospace;color:var(--accent-light)">${fmtMoney(totC+totK+totS)}</td>
-      <td style="text-align:right;color:var(--accent-light);font-weight:700">100%</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:${netC>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(netC)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:${netK>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(netK)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:${netS>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(netS)}</td>
+      <td style="text-align:right;font-weight:700;font-family:monospace;color:${netColor}">${fmtMoney(netGlobal)}</td>
+      <td style="text-align:right;color:var(--accent-light);font-weight:700">—</td>
     </tr>`;
 
     tbody.innerHTML = html;
