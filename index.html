@@ -7090,6 +7090,8 @@ async function confirmCSVImport() {
   toast(`${ok} pointage(s) importé(s) depuis Hikvision ✓`);
   loadPointageRecap();
 }
+
+async function loadPointage() {
   const date = document.getElementById('ptg-date').value;
   const agence = document.getElementById('ptg-agence').value;
   const tbody = document.getElementById('rh-ptg-tbody');
@@ -7429,7 +7431,7 @@ async function initPaieTab() {
   populateMonthFilter('paie-mois-sel');
 }
 
-function openPaieFromEmp(empId) {
+async function openPaieFromEmp(empId) {
   switchRHTab('paie');
   setTimeout(async()=>{
     await initPaieTab();
@@ -8169,7 +8171,7 @@ async function initChatTeam() {
   }
 }
 
-function subscribeChat() {
+async function subscribeChat() {
   // Supabase Realtime via client JS
   const SUPABASE_URL = document.querySelector('script[data-sb-url]')?.dataset.sbUrl ||
     (() => { try { return JSON.parse(localStorage.getItem('zentiq_sb_url')||'""'); } catch{return '';} })();
