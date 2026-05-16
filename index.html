@@ -2870,7 +2870,13 @@ async function doLogin() {
       login:  user.login,
       role:   user.role,
       agences: typeof user.agences === 'string' ? JSON.parse(user.agences) : (user.agences || ['Charguia','Kairouan','Sousse']),
-      perms:  typeof user.permissions === 'string' ? JSON.parse(user.permissions||'{}') : (user.permissions || ROLE_PRESETS[user.role] || {}),
+      perms:  typeof user.permissions === 'string' ? 
+        (JSON.parse(user.permissions||'{}') && Object.keys(JSON.parse(user.permissions||'{}')).length > 0 
+          ? JSON.parse(user.permissions||'{}') 
+          : ROLE_PRESETS[user.role] || {})
+        : (user.permissions && Object.keys(user.permissions).length > 0 
+          ? user.permissions 
+          : ROLE_PRESETS[user.role] || {}),
     };
 
     logActivity(SESSION.name, 'Connexion', `Rôle: ${SESSION.role}`);
@@ -2953,7 +2959,7 @@ function buildSidebar() {
   ];
 
   sections.forEach(sec => {
-    const visibleItems = sec.items.filter(item => !item.perm || (SESSION.perms[item.perm]));
+    const visibleItems = sec.items.filter(item => !item.perm || SESSION.role==='Admin' || (SESSION.perms[item.perm]));
     if (visibleItems.length === 0) return;
     const secEl = document.createElement('div');
     secEl.innerHTML = `<div class="sidebar-section">${sec.title}</div>`;
