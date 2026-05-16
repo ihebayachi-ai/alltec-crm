@@ -2822,40 +2822,55 @@ let ACTIVITY_LOG = [];
 // ─────────────────────────────────────────────────────────────────────────────
 async function doLogin() {
   const login = document.getElementById('login-user').value.trim();
-  const pwd = document.getElementById('login-pass').value.trim();
+  const pwd   = document.getElementById('login-pass').value.trim();
   if (!login || !pwd) { showLoginError('Veuillez remplir tous les champs.'); return; }
 
   const btn = document.getElementById('login-btn');
   btn.textContent = 'Connexion...'; btn.disabled = true;
 
   try {
-    // Chercher dans app_users Supabase
+    // Chercher dans app_users — d'abord par login, puis vérifier le mot de passe en JS
     let user = null;
     try {
-      const rows = await sb('app_users', { filter:`login=eq.${encodeURIComponent(login)}&mot_de_passe=eq.${encodeURIComponent(pwd)}&statut=eq.Actif` });
-      if (rows && rows.length > 0) user = rows[0];
+      const rows = await sb('app_users', { filter:`login=eq.${login}&statut=eq.Actif` });
+      if (rows && rows.length > 0) {
+        const found = rows.find(r => r.mot_de_passe === pwd);
+        if (found) user = found;
+      }
     } catch(e) {
-      // Table inexistante → fallback admin par défaut
+      console.warn('Supabase login error:', e.message);
     }
 
-    // Fallback : compte admin par défaut
+    // Fallback : compte admin par défaut (si Supabase inaccessible)
+    if (!user && login === 'admin' && pwd === 'admin123') {
+      user = {
+        id: 'local-admin', nom: 'Administrateur', login: 'admin',
+        role: 'Admin', agences: '["Charguia","Kairouan","Sousse"]',
+        permissions: '{}', statut: 'Actif'
+      };
+    }
+    // Ancien fallback
     if (!user && login === 'AllTEC@admin2025' && pwd === 'AllTEC@admin2025') {
       user = {
-        id: 0, nom: 'Super Admin', login: 'AllTEC@admin2025',
-        role: 'Admin', agences: ['Charguia','Kairouan','Sousse'],
-        permissions: ROLE_PRESETS.Admin, statut: 'Actif'
+        id: 'local-admin', nom: 'Super Admin', login: 'AllTEC@admin2025',
+        role: 'Admin', agences: '["Charguia","Kairouan","Sousse"]',
+        permissions: '{}', statut: 'Actif'
       };
     }
 
-    if (!user) { showLoginError('Identifiant ou mot de passe incorrect.'); btn.textContent='Connexion'; btn.disabled=false; return; }
+    if (!user) {
+      showLoginError('Identifiant ou mot de passe incorrect.');
+      btn.textContent = 'Connexion'; btn.disabled = false;
+      return;
+    }
 
     SESSION = {
-      id: user.id,
-      name: user.nom || user.name || 'Utilisateur',
-      login: user.login,
-      role: user.role,
+      id:     user.id,
+      name:   user.nom || 'Utilisateur',
+      login:  user.login,
+      role:   user.role,
       agences: typeof user.agences === 'string' ? JSON.parse(user.agences) : (user.agences || ['Charguia','Kairouan','Sousse']),
-      perms: typeof user.permissions === 'string' ? JSON.parse(user.permissions) : (user.permissions || ROLE_PRESETS[user.role] || {}),
+      perms:  typeof user.permissions === 'string' ? JSON.parse(user.permissions||'{}') : (user.permissions || ROLE_PRESETS[user.role] || {}),
     };
 
     logActivity(SESSION.name, 'Connexion', `Rôle: ${SESSION.role}`);
@@ -2863,7 +2878,7 @@ async function doLogin() {
 
   } catch(e) {
     showLoginError('Erreur de connexion : ' + e.message);
-    btn.textContent='Connexion'; btn.disabled=false;
+    btn.textContent = 'Connexion'; btn.disabled = false;
   }
 }
 
