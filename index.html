@@ -705,6 +705,144 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+
+      <!-- LOGISTIQUE & STOCK (Chapitre 3) -->
+      <div class="page" id="page-logistique">
+        <div class="page-header">
+          <div><div class="page-title">📦 Logistique & Stock</div><div class="page-sub">Gestion des stocks, réceptions, livraisons et inventaires — Chapitre 3</div></div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+          <div class="stat-card blue"><div class="stat-label">Zone A — Réception</div><div class="stat-val" id="log-stat-a">—</div></div>
+          <div class="stat-card green"><div class="stat-label">Zone B — Stock</div><div class="stat-val" id="log-stat-b">—</div></div>
+          <div class="stat-card amber"><div class="stat-label">Zone E — Quarantaine</div><div class="stat-val" id="log-stat-e">—</div></div>
+          <div class="stat-card purple"><div class="stat-label">Zone F — Expédition</div><div class="stat-val" id="log-stat-f">—</div></div>
+          <div class="stat-card red"><div class="stat-label">Écarts inventaire</div><div class="stat-val" id="log-stat-ecart">—</div></div>
+        </div>
+        <div style="display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:10px;margin-bottom:16px;width:fit-content">
+          <button class="sav-tab active" id="logtab-zones" onclick="switchLogTab('zones')">🗺 Zones</button>
+          <button class="sav-tab" id="logtab-receptions" onclick="switchLogTab('receptions')">📥 Réceptions</button>
+          <button class="sav-tab" id="logtab-livraisons" onclick="switchLogTab('livraisons')">🚚 Livraisons</button>
+          <button class="sav-tab" id="logtab-inventaire" onclick="switchLogTab('inventaire')">📋 Inventaire</button>
+        </div>
+        <div id="logtab-content-zones">
+          <div class="card card-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">🅰 Zone A — Réception</div>
+                <div style="font-size:12px;color:var(--text2)">Articles entrants non encore contrôlés.<br>Accès : Tous les employés.<br>Règle : Vider avant fermeture.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">🅱 Zone B — Stock principal</div>
+                <div style="font-size:12px;color:var(--text2)">Références courantes en stock actif.<br>Organisation par famille → marque → référence.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">© Zone C — Exposition / Vente</div>
+                <div style="font-size:12px;color:var(--text2)">Produits exposés et disponibles à la vente immédiate.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid rgba(220,38,38,.3);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">🔧 Zone D — SAV</div>
+                <div style="font-size:12px;color:var(--text2)">Appareils en réparation, pièces détachées.<br>Accès : Technicien SAV uniquement.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid rgba(217,119,6,.3);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--warning-light)">⚠️ Zone E — Quarantaine</div>
+                <div style="font-size:12px;color:var(--text2)">Défectueux, retours, litiges.<br>Max 15 jours. Rapport 24h obligatoire.</div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">📦 Zone F — Expédition</div>
+                <div style="font-size:12px;color:var(--text2)">Commandes préparées en attente de livraison.</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:8px;padding:12px;font-size:12px;color:var(--warning-light)">
+              📋 <strong>KPIs obligatoires :</strong> Taux de rupture &lt; 3% · Délai rangement après réception &lt; 4h · Écart inventaire &lt; 0,5% · Zone E &lt; 10 jours · Rotation stock &lt; 60 jours
+            </div>
+          </div>
+        </div>
+        <div id="logtab-content-receptions" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Procédure de réception (§3.4) — Vérifier BL fournisseur · Compter physiquement · Contrôler état · Scanner N° série · Saisir logiciel · Zone A → Zone B avant fermeture · Signaler anomalie sous 24h</div>
+            <div class="empty-state"><div class="icon">📥</div><p>Module réceptions en cours de développement<br><span style="font-size:11px">Table Supabase : <code>receptions_stock</code></span></p></div>
+          </div>
+        </div>
+        <div id="logtab-content-livraisons" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Délais engagement : J+1 Grand Tunis (avant 14h) · J+2/J+3 régions · Bordereau signé des deux parties obligatoire</div>
+            <div class="empty-state"><div class="icon">🚚</div><p>Module livraisons en cours de développement<br><span style="font-size:11px">Table Supabase : <code>livraisons</code></span></p></div>
+          </div>
+        </div>
+        <div id="logtab-content-inventaire" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Inventaire physique trimestriel (fin mars, juin, septembre, décembre) · Binôme obligatoire · Écart &gt; 1 unité → recomptage · Rapport signé par tous</div>
+            <div class="empty-state"><div class="icon">📋</div><p>Module inventaire en cours de développement<br><span style="font-size:11px">Table Supabase : <code>inventaires</code></span></p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RH & DISCIPLINE (Chapitre 8) -->
+      <div class="page" id="page-rh">
+        <div class="page-header">
+          <div><div class="page-title">👤 RH & Discipline</div><div class="page-sub">Ressources humaines, congés, absences et gestion disciplinaire — Chapitre 8</div></div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="stat-card blue"><div class="stat-label">Employés actifs</div><div class="stat-val" id="rh-stat-actifs">—</div></div>
+          <div class="stat-card amber"><div class="stat-label">Avertissements (mois)</div><div class="stat-val" id="rh-stat-avert">—</div></div>
+          <div class="stat-card red"><div class="stat-label">Absences (mois)</div><div class="stat-val" id="rh-stat-abs">—</div></div>
+          <div class="stat-card green"><div class="stat-label">Congés en cours</div><div class="stat-val" id="rh-stat-conges">—</div></div>
+        </div>
+        <div style="display:flex;gap:4px;background:var(--surface);padding:4px;border-radius:10px;margin-bottom:16px;width:fit-content">
+          <button class="sav-tab active" id="rhtab-discipline" onclick="switchRHTab('discipline')">⚖️ Discipline</button>
+          <button class="sav-tab" id="rhtab-absences" onclick="switchRHTab('absences')">📅 Absences & Retards</button>
+          <button class="sav-tab" id="rhtab-conges" onclick="switchRHTab('conges')">🏖 Congés</button>
+          <button class="sav-tab" id="rhtab-evaluation" onclick="switchRHTab('evaluation')">⭐ Évaluation</button>
+        </div>
+        <div id="rhtab-content-discipline">
+          <div class="card card-body">
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+              <div style="background:var(--bg);border-left:3px solid var(--accent);border-radius:8px;padding:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--accent-light);margin-bottom:6px">NIVEAU 1 — Avertissement oral</div>
+                <div style="font-size:11px;color:var(--text2)">Infraction légère, première fois · Convocation responsable · Rappel oral · Note dossier RH · Répétition même mois → Niveau 2</div>
+              </div>
+              <div style="background:var(--bg);border-left:3px solid var(--warning);border-radius:8px;padding:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--warning-light);margin-bottom:6px">NIVEAU 2 — Avertissement écrit + déduction</div>
+                <div style="font-size:11px;color:var(--text2)">Infraction répétée · Avertissement écrit signé · Déduction salariale · Note permanente dossier RH</div>
+              </div>
+              <div style="background:var(--bg);border-left:3px solid var(--danger);border-radius:8px;padding:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--danger-light);margin-bottom:6px">NIVEAU 3 — Mise à pied</div>
+                <div style="font-size:11px;color:var(--text2)">Faute grave · 1 à 3 jours sans solde · Déduction préjudice · Convocation DG · Plan redressement signé</div>
+              </div>
+              <div style="background:var(--bg);border-left:3px solid #7c3aed;border-radius:8px;padding:14px">
+                <div style="font-size:12px;font-weight:700;color:#c084fc;margin-bottom:6px">NIVEAU 4 — Licenciement</div>
+                <div style="font-size:11px;color:var(--text2)">Faute lourde · Fraude · Récidive N3 · Atteinte grave intérêts ALLTEC</div>
+              </div>
+            </div>
+            <div style="margin-top:14px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px;font-size:12px;color:var(--danger-light)">
+              ⚠️ Déduction max cumulée : 15% du salaire brut/mois sauf faute grave · 3 avertissements écrits en 12 mois glissants → entretien préalable licenciement
+            </div>
+            <div class="empty-state" style="margin-top:16px"><div class="icon">⚖️</div><p>Registre disciplinaire en cours de développement<br><span style="font-size:11px">Table Supabase : <code>sanctions_rh</code></span></p></div>
+          </div>
+        </div>
+        <div id="rhtab-content-absences" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">
+              <strong>Retards :</strong> Tolérance 5 min · 1re occurrence/mois jusqu'à 15min = avertissement oral, sans déduction · Barème croissant jusqu'à 50 DT/occurrence<br>
+              <strong>Maladie :</strong> Prévenir avant 08h30 · Certificat médical 48h · Maintien salaire selon ancienneté (0→50%, 1-3 ans→75%, &gt;3 ans→100%)
+            </div>
+            <div class="empty-state"><div class="icon">📅</div><p>Registre absences & retards en cours de développement<br><span style="font-size:11px">Table Supabase : <code>absences_rh</code></span></p></div>
+          </div>
+        </div>
+        <div id="rhtab-content-conges" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Demande 7 jours avant · Validation sous 5 jours ouvrables · Max 1 employé absent/agence · Planning été établi en Avril · Premier arrivé, premier servi</div>
+            <div class="empty-state"><div class="icon">🏖</div><p>Gestion congés en cours de développement<br><span style="font-size:11px">Table Supabase : <code>conges_rh</code></span></p></div>
+          </div>
+        </div>
+        <div id="rhtab-content-evaluation" style="display:none">
+          <div class="card card-body">
+            <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Entretien individuel semestriel (juin & décembre) · Objectifs, compétences, comportement, plan développement · Révision salariale annuelle conditionnée aux résultats décembre</div>
+            <div class="empty-state"><div class="icon">⭐</div><p>Fiches d'évaluation en cours de développement<br><span style="font-size:11px">Table Supabase : <code>evaluations_rh</code></span></p></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══════════ ADMIN PANEL ═══════════ -->
       <div class="page" id="page-admin">
         <div class="page-header">
@@ -1103,13 +1241,15 @@ const MODULES = [
   { id:'rapports',   name:'Rapports',   icon:'📊', desc:'Rapports périodiques' },
   { id:'analyse',    name:'Analyse',    icon:'📈', desc:'KPIs & dashboard' },
   { id:'commercial', name:'Commercial', icon:'💼', desc:'Pipeline commercial' },
+  { id:'logistique', name:'Logistique', icon:'📦', desc:'Stock & livraisons' },
+  { id:'rh', name:'RH', icon:'👤', desc:'Ressources humaines' },
 ];
 
 const ROLE_PRESETS = {
-  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw' },
-  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'' },
-  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw' },
-  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'' },
+  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', logistique:'rw', rh:'rw' },
+  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'',  logistique:'r',  rh:'' },
+  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', logistique:'r',  rh:'' },
+  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'',  logistique:'r',  rh:'r' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1229,6 +1369,10 @@ function buildSidebar() {
       { id:'rapports', icon:'📊', name:'Rapports', perm:'rapports' },
       { id:'analyse', icon:'📈', name:'Analyse', perm:'analyse' },
     ]},
+    { title: 'Opérations', items: [
+      { id:'logistique', icon:'📦', name:'Logistique & Stock', perm:'logistique' },
+      { id:'rh', icon:'👤', name:'RH & Discipline', perm:'rh' },
+    ]},
   ];
 
   sections.forEach(sec => {
@@ -1269,6 +1413,7 @@ function showPage(id) {
     dashboard: loadDashboard, clients: loadClients, devis: loadDevis,
     commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
     rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
+    logistique: loadLogistique, rh: loadRH,
     admin: () => { switchAdminTab('users'); renderUsersTable(); renderMatrix(); }
   };
   if (loaders[id]) loaders[id]();
@@ -2093,6 +2238,48 @@ function doPrint() {
   setTimeout(()=>{ printDiv.remove(); }, 1000);
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGISTIQUE & STOCK
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadLogistique() {
+  // Stats placeholder — à connecter aux tables Supabase futures
+  ['a','b','e','f'].forEach(z => {
+    const el = document.getElementById(`log-stat-${z}`);
+    if (el) el.textContent = '—';
+  });
+  document.getElementById('log-stat-ecart') && (document.getElementById('log-stat-ecart').textContent = '0');
+}
+
+function switchLogTab(tab) {
+  ['zones','receptions','livraisons','inventaire'].forEach(t => {
+    document.getElementById(`logtab-content-${t}`).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById(`logtab-${t}`);
+    if (btn) { btn.classList.toggle('active', t===tab); }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RH & DISCIPLINE
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadRH() {
+  try {
+    const users = await sb('app_users', { filter:'statut=eq.Actif' });
+    document.getElementById('rh-stat-actifs') && (document.getElementById('rh-stat-actifs').textContent = users.length + 1);
+  } catch { document.getElementById('rh-stat-actifs') && (document.getElementById('rh-stat-actifs').textContent = '—'); }
+  ['avert','abs','conges'].forEach(s => {
+    const el = document.getElementById(`rh-stat-${s}`);
+    if (el) el.textContent = '0';
+  });
+}
+
+function switchRHTab(tab) {
+  ['discipline','absences','conges','evaluation'].forEach(t => {
+    document.getElementById(`rhtab-content-${t}`).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById(`rhtab-${t}`);
+    if (btn) { btn.classList.toggle('active', t===tab); }
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CAISSE
