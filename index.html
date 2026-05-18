@@ -1232,7 +1232,12 @@ function buildSidebar() {
   ];
 
   sections.forEach(sec => {
-    const visibleItems = sec.items.filter(item => !item.perm || (SESSION.perms[item.perm]));
+    const visibleItems = sec.items.filter(item => {
+      if (!item.perm) return true; // dashboard, toujours visible
+      if (SESSION.role === 'Admin') return true; // Admin voit tout
+      const p = SESSION.perms[item.perm];
+      return p && p.length > 0; // 'r', 'w', 'rw' → visible
+    });
     if (visibleItems.length === 0) return;
     const secEl = document.createElement('div');
     secEl.innerHTML = `<div class="sidebar-section">${sec.title}</div>`;
