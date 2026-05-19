@@ -3519,10 +3519,31 @@ async function saveCommande() {
 // ─────────────────────────────────────────────────────────────────────────────
 let SAV_CURRENT = null;
 let SAV_DEC_SEL = null;
-const SAV_STAT_COL = {'Réception':'gray','Diagnostic':'blue','Sous garantie':'teal','Hors garantie':'amber','Sous-traitance':'red','En réparation':'purple','Test':'cyan','Clôturé':'green'};
+const SAV_STAT_COL = {
+  'ouvert':'gray','en_cours':'blue','en_attente':'amber','resolu':'green','ferme':'gray',
+  'Réception':'gray','Diagnostic':'blue','Sous garantie':'teal','Hors garantie':'amber',
+  'Sous-traitance':'red','En réparation':'purple','Test':'cyan','Clôturé':'green'
+};
+const SAV_STATUT_LABEL = {
+  'ouvert':'Réception','en_cours':'En cours','en_attente':'En attente',
+  'resolu':'Clôturé','ferme':'Fermé'
+};
 const SAV_DEC_COL  = {'Sous garantie':'green','Hors garantie':'amber','Sous-traitance':'red'};
 
 function genTK() { return `TK-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9000)+1000)}`; }
+
+// Mapping statuts SAV UI → DB
+const SAV_STATUT_DB = {
+  'Réception':    'ouvert',
+  'Diagnostic':   'en_cours',
+  'Sous garantie':'en_cours',
+  'Hors garantie':'en_cours',
+  'Sous-traitance':'en_attente',
+  'En réparation':'en_cours',
+  'Test':         'en_attente',
+  'Clôturé':      'resolu'
+};
+function savStatutDB(s){ return SAV_STATUT_DB[s] || 'ouvert'; }
 
 async function loadSAV() {
   const tbody = document.getElementById('sav-tbody');
@@ -3532,7 +3553,12 @@ async function loadSAV() {
     const sf = document.getElementById('sav-filter-statut')?.value||'';
     let filters = [];
     if (q)  filters.push(`or=(numero.ilike.*${encodeURIComponent(q)}*,appareil.ilike.*${encodeURIComponent(q)}*,tel_client.ilike.*${encodeURIComponent(q)}*,titre.ilike.*${encodeURIComponent(q)}*)`);
-    if (sf) filters.push(`statut=eq.${encodeURIComponent(sf)}`);
+    if (sf) {
+      const sfDB = {'Réception':'ouvert','Diagnostic':'en_cours','Sous garantie':'en_cours',
+        'Hors garantie':'en_cours','Sous-traitance':'en_attente','En réparation':'en_cours',
+        'Test':'en_attente','Clôturé':'resolu'}[sf] || sf.toLowerCase();
+      filters.push(`statut=eq.${encodeURIComponent(sfDB)}`);
+    }
     const data = await sb('tickets_sav', { filter: filters.join('&'), order:'created_at.desc' });
     // stats
     const now=new Date(), m=now.getMonth(), yr=now.getFullYear();
@@ -3544,6 +3570,7 @@ async function loadSAV() {
     if (!data.length) { tbody.innerHTML = emptyRow(10,'Aucun ticket SAV'); return; }
     tbody.innerHTML = data.map(t => {
       const sc=SAV_STAT_COL[t.statut]||'gray', dc=SAV_DEC_COL[t.decision]||'gray';
+      const slabel=SAV_STATUT_LABEL[t.statut]||t.statut||'—';
       return `<tr>
         <td><span class="ticket-row-num">${esc(t.numero||t.titre||'—')}</span></td>
         <td style="font-size:12px">${t.date_reception||'—'}</td>
@@ -3552,7 +3579,7 @@ async function loadSAV() {
         <td>${esc(t.appareil||'—')}</td>
         <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.panne_declaree||'')}">${esc(t.panne_declaree||'—')}</td>
         <td>${t.decision?`<span class="badge badge-${dc}">${esc(t.decision)}</span>`:'<span style="color:var(--text2);font-size:11px">—</span>'}</td>
-        <td><span class="badge badge-${sc}">${esc(t.statut||'—')}</span></td>
+        <td><span class="badge badge-${sc}">${esc(slabel)}</span></td>
         <td style="font-size:12px">${esc(t.technicien||'—')}</td>
         <td style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-xs" onclick="openSAVDossier('${t.id}')">📂 Dossier</button>
@@ -3590,7 +3617,7 @@ async function saveSAVReception() {
     titre:`SAV - ${app}`, description:panne,
     etat_visuel:v('srec-etat'), technicien:v('srec-tech'),
     assigne_a:v('srec-tech'),
-    facture_ref:v('srec-factureref'), statut:'Réception', priorite:'Normale' };
+    facture_ref:v('srec-factureref'), statut:'ouvert', priorite:'normale' };
   try {
     await sbPost('tickets_sav', body);
     closeModal('sav-reception-overlay');
@@ -3734,13 +3761,13 @@ async function saveAccordClient(v){ try{ await sbPatch('tickets_sav',SAV_CURRENT
 
 async function savSAVDiag(){
   const diag=v('sd-diag'); if(!diag){toast('Diagnostic requis','error');return;}
-  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{diagnostic:diag,rapport_diagnostic:v('sd-rapport'),statut:'Diagnostic'});
+  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{diagnostic:diag,rapport_diagnostic:v('sd-rapport'),statut:'en_cours'});
     toast('Diagnostic enregistré'); logActivity(SESSION.name,'Diagnostic SAV',SAV_CURRENT.numero);
     await openSAVDossier(SAV_CURRENT.id); loadSAV(); }catch(e){toast('Erreur: '+e.message,'error');}
 }
 async function savSAVDec(){
   if(!SAV_DEC_SEL){toast('Choisir une décision','error');return;}
-  const body={decision:SAV_DEC_SEL,statut:SAV_DEC_SEL};
+  const body={decision:SAV_DEC_SEL,statut:'en_cours'};
   if(SAV_DEC_SEL==='Hors garantie') body.montant_devis=parseFloat(v('sd-montant'))||0;
   try{ await sbPatch('tickets_sav',SAV_CURRENT.id,body);
     toast(`Décision : ${SAV_DEC_SEL}`); logActivity(SESSION.name,'Décision SAV',`${SAV_CURRENT.numero} → ${SAV_DEC_SEL}`);
@@ -3749,21 +3776,21 @@ async function savSAVDec(){
 }
 async function savSAVIntv(){
   const detail=v('sd-intervention'); if(!detail){toast('Détail intervention requis','error');return;}
-  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{detail_reparation:detail,statut:'En réparation'});
+  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{detail_reparation:detail,statut:'en_cours'});
     toast('Intervention enregistrée'); logActivity(SESSION.name,'Réparation SAV',SAV_CURRENT.numero);
     await openSAVDossier(SAV_CURRENT.id); loadSAV(); }catch(e){toast('Erreur: '+e.message,'error');}
 }
 async function savSAVTest(){
   const rapport=v('sd-test'); if(!rapport){toast('Rapport de test requis','error');return;}
   const ok=document.getElementById('sd-test-ok')?.checked||false;
-  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{rapport_test:rapport,test_ok:ok,statut:'Test'});
+  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{rapport_test:rapport,test_ok:ok,statut:'en_attente'});
     toast('Test enregistré'); logActivity(SESSION.name,'Test SAV',SAV_CURRENT.numero);
     await openSAVDossier(SAV_CURRENT.id); loadSAV(); }catch(e){toast('Erreur: '+e.message,'error');}
 }
 async function savSAVClos(){
   const sms=document.getElementById('sd-sms')?.checked||false;
   const fac=v('sd-facture-num');
-  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{sms_envoye:sms,facture_sav_num:fac||null,date_cloture:new Date().toISOString().split('T')[0],statut:'Clôturé'});
+  try{ await sbPatch('tickets_sav',SAV_CURRENT.id,{sms_envoye:sms,facture_sav_num:fac||null,date_cloture:new Date().toISOString().split('T')[0],statut:'resolu'});
     toast(`Ticket ${SAV_CURRENT.numero} clôturé ✅`); logActivity(SESSION.name,'Clôture SAV',SAV_CURRENT.numero);
     if(sms) sendSAVSMS(SAV_CURRENT);
     closeModal('sav-dossier-overlay'); loadSAV(); }catch(e){toast('Erreur: '+e.message,'error');}
