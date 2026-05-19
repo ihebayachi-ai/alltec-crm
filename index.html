@@ -3641,10 +3641,18 @@ async function saveSAVReception() {
 // ── DOSSIER ──────────────────────────────────────────────────────────────────
 async function openSAVDossier(id) {
   try {
+    // Recharger le cache clients si vide
+    if(!CLIENTS_CACHE.length) {
+      CLIENTS_CACHE = await sb('clients', { order:'nom.asc' }).catch(()=>[]);
+    }
     const [t] = await sb('tickets_sav',{ filter:`id=eq.${id}` });
     SAV_CURRENT=t;
+    // Afficher nom client : cache → client_nom stocké → tel → uuid court
+    const nomClient = clientName(t.client_id) !== '—'
+      ? clientName(t.client_id)
+      : (t.client_nom || t.tel_client || '—');
     document.getElementById('sdoss-title').textContent=`Dossier SAV — ${t.numero||t.titre||'—'}`;
-    document.getElementById('sdoss-subtitle').textContent=`${clientName(t.client_id)||t.tel_client||'—'} · ${t.appareil||t.titre||'—'} · ${t.agence||'—'} · Tech: ${t.technicien||'—'}`;
+    document.getElementById('sdoss-subtitle').textContent=`${nomClient} · ${t.appareil||t.titre||'—'} · ${t.agence||'—'} · Tech: ${t.technicien||'—'}`;
     renderSAVSteps(t); renderSAVContent(t);
     openModal('sav-dossier-overlay');
   } catch(e){ toast('Erreur: '+e.message,'error'); }
@@ -3679,7 +3687,7 @@ function renderSAVContent(t){
   h+=`<div class="doc-section"><div class="doc-section-title">📋 Ticket</div><div class="form-grid">
     <div class="form-group"><label class="form-label">N° Ticket</label><div style="font-family:monospace;color:var(--accent-light);font-weight:700;font-size:15px">${esc(t.numero)}</div></div>
     <div class="form-group"><label class="form-label">Appareil</label><div style="font-weight:600">${esc(t.appareil||'—')}</div></div>
-    <div class="form-group"><label class="form-label">Client / Tél</label><div>${clientName(t.client_id)||'—'} · ${esc(t.tel_client||'—')}</div></div>
+    <div class="form-group"><label class="form-label">Client / Tél</label><div>${clientName(t.client_id)!=='—'?clientName(t.client_id):(t.client_nom||t.tel_client||'—')} · ${esc(t.tel_client||'—')}</div></div>
     <div class="form-group"><label class="form-label">N° Série</label><div style="font-family:monospace">${esc(t.numero_serie||'—')}</div></div>
     <div class="form-group"><label class="form-label">Panne déclarée</label><div style="font-size:12px">${esc(t.panne_declaree||'—')}</div></div>
     <div class="form-group"><label class="form-label">État réception</label><div style="font-size:12px">${esc(t.etat_visuel||'—')}</div></div>
@@ -8950,7 +8958,11 @@ Tes réponses sont courtes (max 150 mots), directes et utiles. Tu peux utiliser 
 function v(id) { return document.getElementById(id)?.value?.trim()||''; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtMoney(n) { return Number(n||0).toLocaleString('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}); }
-function clientName(id) { const c = CLIENTS_CACHE.find(x=>x.id==id); return c?esc(c.nom):`<span style="color:var(--text2)">${id?'#'+id:'—'}</span>`; }
+function clientName(id) {
+  if(!id) return '—';
+  const c = CLIENTS_CACHE.find(x=>x.id==id);
+  return c ? esc(c.nom) : '—';
+}
 function canWrite(mod) { return (SESSION?.perms[mod]||'').includes('w'); }
 function loadingRow(cols) { return `<tr><td colspan="${cols}"><div class="loading"><div class="spinner"></div> Chargement...</div></td></tr>`; }
 function emptyRow(cols, msg) { return `<tr><td colspan="${cols}"><div class="empty-state"><div class="icon">📭</div><p>${msg}</p></div></td></tr>`; }
