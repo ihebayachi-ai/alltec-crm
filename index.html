@@ -3742,16 +3742,20 @@ function renderSAVContent(t){
     h+=`</div>`;
   }
   // Test
-  if(cur>=5||t.detail_reparation){
+  if(t.detail_reparation){
     h+=`<div class="doc-section"><div class="doc-section-title">✅ Test</div>`;
-    if(t.statut==='En réparation'||t.statut==='en_attente'&&!t.rapport_test){
-      h+=`<div class="form-group"><label class="form-label">Résultat tests *</label><textarea class="form-control" id="sd-test" rows="2" placeholder="Tests effectués...">${esc(t.rapport_test||'')}</textarea></div>
+    if(!t.rapport_test){
+      // Champs éditables — pas encore de test enregistré
+      h+=`<div class="form-group"><label class="form-label">Résultat tests *</label>
+        <textarea class="form-control" id="sd-test" rows="2" placeholder="Tests effectués, comportement de l'appareil..."></textarea></div>
         <div class="valid-row" style="margin-top:10px">
-          <label class="toggle-sw"><input type="checkbox" id="sd-test-ok" ${t.test_ok?'checked':''}><span class="toggle-sl"></span></label>
+          <label class="toggle-sw"><input type="checkbox" id="sd-test-ok"><span class="toggle-sl"></span></label>
           <label for="sd-test-ok">Appareil fonctionnel — Tests validés</label>
         </div>`;
     } else {
-      h+=`<div style="font-size:13px">${esc(t.rapport_test||'—')}</div><span class="badge badge-${t.test_ok?'green':'amber'}">${t.test_ok?'✅ Validé':'⏳ Non validé'}</span>`;
+      // Lecture seule — test déjà enregistré
+      h+=`<div style="font-size:13px">${esc(t.rapport_test)}</div>
+        <span class="badge badge-${t.test_ok?'green':'amber'}" style="margin-top:6px;display:inline-block">${t.test_ok?'✅ Validé':'⏳ Non validé'}</span>`;
     }
     h+=`</div>`;
   }
