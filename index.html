@@ -3581,10 +3581,16 @@ async function saveSAVReception() {
   const tel=v('srec-tel'), app=v('srec-appareil'), panne=v('srec-panne');
   if(!tel||!app||!panne){ toast('Téléphone, appareil et panne requis','error'); return; }
   const num=genTK();
+  const clientNom = clientName(v('srec-client'))||'';
   const body={ numero:num, date_reception:v('srec-date'), client_id:v('srec-client')||null,
-    tel_client:tel, agence:v('srec-agence'), appareil:app, numero_serie:v('srec-serie'),
-    panne_declaree:panne, etat_visuel:v('srec-etat'), technicien:v('srec-tech'),
-    facture_ref:v('srec-factureref'), statut:'Réception' };
+    tel_client:tel, client_tel:tel, client_nom:clientNom,
+    agence:v('srec-agence'), appareil:app, type_appareil:app,
+    numero_serie:v('srec-serie'), num_serie:v('srec-serie'),
+    panne_declaree:panne, description_panne:panne,
+    titre:`SAV - ${app}`, description:panne,
+    etat_visuel:v('srec-etat'), technicien:v('srec-tech'),
+    assigne_a:v('srec-tech'),
+    facture_ref:v('srec-factureref'), statut:'Réception', priorite:'Normale' };
   try {
     await sbPost('tickets_sav', body);
     closeModal('sav-reception-overlay');
