@@ -3773,19 +3773,30 @@ function renderSAVContent(t){
   // ET valeurs UI françaises pour compatibilité
   const st = t.statut||'';
   let btns=`<button class="btn btn-ghost" onclick="closeModal('sav-dossier-overlay')">Fermer</button>`;
-  if(st==='ouvert' || st==='Réception'){
+
+  if(st==='ouvert' || st==='Réception') {
+    // Étape 1 → 2 : Diagnostic
     btns+=`<button class="btn btn-primary" onclick="savSAVDiag()">🔍 Enregistrer diagnostic</button>`;
-  } else if(st==='en_cours' && !t.decision){
+
+  } else if((st==='en_cours'||st==='Diagnostic') && !t.decision) {
+    // Étape 2 → 3 : Décision
     btns+=`<button class="btn btn-primary" onclick="savSAVDec()">📄 Valider décision</button>`;
-  } else if(st==='en_cours' && t.decision){
+
+  } else if((st==='en_cours'||st==='en_attente') && t.decision && !t.detail_reparation) {
+    // Étape 3 → 4 : Intervention
     btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('${t.decision}')">🖨 Imprimer</button>`;
     btns+=`<button class="btn btn-primary" onclick="savSAVIntv()">🔧 Valider intervention</button>`;
-  } else if(st==='en_attente' && !t.rapport_test){
-    btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('${t.decision||''}')">🖨 Imprimer</button>`;
-    btns+=`<button class="btn btn-primary" onclick="savSAVIntv()">🔧 Valider intervention</button>`;
-  } else if(st==='en_attente' && t.rapport_test){
+
+  } else if((st==='en_cours'||st==='en_attente') && t.detail_reparation && !t.rapport_test) {
+    // Étape 4 → 5 : Test
+    btns+=`<button class="btn btn-primary" onclick="savSAVTest()">✅ Enregistrer test</button>`;
+
+  } else if((st==='en_cours'||st==='en_attente') && t.rapport_test && !t.date_cloture) {
+    // Étape 5 → 6 : Clôture
     btns+=`<button class="btn btn-success" onclick="savSAVClos()">🏁 Clôturer</button>`;
-  } else if(st==='resolu' || st==='Clôturé'){
+
+  } else if(st==='resolu' || st==='ferme' || t.date_cloture) {
+    // Clôturé : impression facture
     btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('facture')">🖨 Facture SAV</button>`;
   }
   document.getElementById('sdoss-footer').innerHTML=btns;
