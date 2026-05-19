@@ -336,8 +336,18 @@ textarea.form-control{resize:vertical;min-height:80px}
 .toggle-sw input:checked+.toggle-sl{background:var(--success)}
 .toggle-sw input:checked+.toggle-sl::before{transform:translateX(18px)}
 .valid-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
-@media print{body>*:not(#print-target){display:none!important}#print-target{display:block!important}.pdoc{width:210mm;min-height:297mm;padding:15mm 18mm;font-family:'Segoe UI',Arial,sans-serif;font-size:10pt;color:#111;box-sizing:border-box}.pdoc *{color:#111!important;background:transparent!important;border-color:#ccc!important}@page{size:A4;margin:0}}
+@media print{
+  body>*:not(#print-target){display:none!important}
+  #print-target{display:block!important}
+  .pdoc{width:210mm;min-height:297mm;padding:15mm 18mm;font-family:'Segoe UI',Arial,sans-serif;font-size:10pt;color:#111;box-sizing:border-box}
+  .pdoc *{color:#111!important;background:transparent!important;border-color:#ccc!important}
+  .print-etiq{width:50mm;height:50mm;padding:0;margin:0;overflow:hidden}
+  .print-etiq *{color:#111!important;background:#fff!important}
+  @page etiq{size:50mm 50mm;margin:0}
+  @page{size:A4;margin:0}
+}
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
@@ -3639,7 +3649,21 @@ async function openSAVDossier(id) {
     openModal('sav-dossier-overlay');
   } catch(e){ toast('Erreur: '+e.message,'error'); }
 }
-function savStep(s){ return {'Réception':1,'Diagnostic':2,'Sous garantie':3,'Hors garantie':3,'Sous-traitance':3,'En réparation':4,'Test':5,'Clôturé':6}[s]||1; }
+function savStep(s){ 
+  // Labels FR (anciens) + valeurs DB (nouveaux)
+  const map = {
+    'Réception':1,'ouvert':1,
+    'Diagnostic':2,
+    'Sous garantie':3,'Hors garantie':3,'Sous-traitance':3,
+    'En réparation':4,
+    'Test':5,
+    'Clôturé':6,'resolu':6,'ferme':6
+  };
+  // en_cours et en_attente : dépend de si decision et rapport_test existent
+  if(s==='en_cours') return 2; // au moins diagnostic
+  if(s==='en_attente') return 4; // au moins réparation
+  return map[s]||1;
+}
 function renderSAVSteps(t){
   const cur=savStep(t.statut);
   for(let i=1;i<=6;i++){
@@ -3663,7 +3687,7 @@ function renderSAVContent(t){
   // Diagnostic
   if(cur>=2){
     h+=`<div class="doc-section"><div class="doc-section-title">🔍 Diagnostic</div>`;
-    if(t.statut==='Réception'){
+    if(t.statut==='Réception'||t.statut==='ouvert'){
       h+=`<div class="form-grid full">
         <div class="form-group"><label class="form-label">Résultat diagnostic *</label><textarea class="form-control" id="sd-diag" rows="3" placeholder="Cause de la panne...">${esc(t.diagnostic||'')}</textarea></div>
         <div class="form-group"><label class="form-label">Rapport technique</label><textarea class="form-control" id="sd-rapport" rows="2" placeholder="Observations...">${esc(t.rapport_diagnostic||'')}</textarea></div>
@@ -3674,7 +3698,7 @@ function renderSAVContent(t){
     h+=`</div>`;
   }
   // Décision
-  if(cur>=2&&['Réception','Diagnostic'].includes(t.statut)){
+  if(cur>=2&&['Réception','Diagnostic','ouvert','en_cours'].includes(t.statut)&&!t.decision){
     h+=`<div class="doc-section"><div class="doc-section-title">⚖️ Décision</div>
       <div class="decision-group">
         <div class="decision-opt ${t.decision==='Sous garantie'?'sel-garantie':''}" id="dec-garantie" onclick="selDec('Sous garantie')"><div class="dec-icon">✅</div><div class="dec-label">Sous garantie</div><div class="dec-sub">Facture/BL requis</div></div>
@@ -3683,7 +3707,7 @@ function renderSAVContent(t){
       </div><div id="dec-extra"></div></div>`;
   }
   // Doc décision (lecture)
-  if(cur>=3&&t.decision&&!['Réception','Diagnostic'].includes(t.statut)){
+  if(t.decision&&!['Réception','Diagnostic','ouvert'].includes(t.statut)){
     const dc=SAV_DEC_COL[t.decision]||'gray';
     h+=`<div class="doc-section"><div class="doc-section-title">📄 ${t.decision}</div>
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -3701,7 +3725,7 @@ function renderSAVContent(t){
   // Intervention
   if(cur>=4){
     h+=`<div class="doc-section"><div class="doc-section-title">🔧 Intervention</div>`;
-    if(['Sous garantie','Hors garantie','Sous-traitance','En réparation'].includes(t.statut)){
+    if(['Sous garantie','Hors garantie','Sous-traitance','En réparation','en_cours','en_attente'].includes(t.statut)&&!t.rapport_test){
       h+=`<div class="form-group"><label class="form-label">Détail des manipulations *</label><textarea class="form-control" id="sd-intervention" rows="3" placeholder="Pièces remplacées, opérations...">${esc(t.detail_reparation||'')}</textarea></div>`;
     } else {
       h+=`<div style="font-size:13px">${esc(t.detail_reparation||'—')}</div>`;
@@ -3711,7 +3735,7 @@ function renderSAVContent(t){
   // Test
   if(cur>=5){
     h+=`<div class="doc-section"><div class="doc-section-title">✅ Test</div>`;
-    if(t.statut==='En réparation'){
+    if(t.statut==='En réparation'||t.statut==='en_attente'&&!t.rapport_test){
       h+=`<div class="form-group"><label class="form-label">Résultat tests *</label><textarea class="form-control" id="sd-test" rows="2" placeholder="Tests effectués...">${esc(t.rapport_test||'')}</textarea></div>
         <div class="valid-row" style="margin-top:10px">
           <label class="toggle-sw"><input type="checkbox" id="sd-test-ok" ${t.test_ok?'checked':''}><span class="toggle-sl"></span></label>
@@ -3723,29 +3747,38 @@ function renderSAVContent(t){
     h+=`</div>`;
   }
   // Clôture
-  if(cur>=6||t.statut==='Test'){
+  if(t.statut==='Test'||(t.statut==='en_attente'&&t.rapport_test)||t.statut==='resolu'||t.statut==='Clôturé'){
     h+=`<div class="doc-section"><div class="doc-section-title">🏁 Clôture</div>
       <div class="valid-row" style="margin-bottom:10px">
         <label class="toggle-sw"><input type="checkbox" id="sd-sms" ${t.sms_envoye?'checked':''}><span class="toggle-sl"></span></label>
         <label for="sd-sms">SMS client envoyé</label>
       </div>
-      ${t.statut!=='Clôturé'
+      ${(t.statut!=='Clôturé'&&t.statut!=='resolu'&&t.statut!=='ferme')
         ?`<div class="form-group"><label class="form-label">N° Facture SAV</label><input class="form-control" id="sd-facture-num" value="${esc(t.facture_sav_num||'')}" placeholder="FSAV-2026-001"></div>`
         :`<div style="font-size:13px">Clôturé le <strong>${t.date_cloture||'—'}</strong>${t.facture_sav_num?` · Facture : <strong>${esc(t.facture_sav_num)}</strong>`:''}</div>
          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="printDoc('facture')">🖨 Facture SAV</button>`}
     </div>`;
   }
   document.getElementById('sdoss-content').innerHTML=h;
-  // Footer
+  // Footer — comparaison sur valeurs DB (ouvert/en_cours/en_attente/resolu)
+  // ET valeurs UI françaises pour compatibilité
+  const st = t.statut||'';
   let btns=`<button class="btn btn-ghost" onclick="closeModal('sav-dossier-overlay')">Fermer</button>`;
-  if(t.statut==='Réception')    btns+=`<button class="btn btn-primary" onclick="savSAVDiag()">🔍 Enregistrer diagnostic</button>`;
-  else if(t.statut==='Diagnostic') btns+=`<button class="btn btn-primary" onclick="savSAVDec()">📄 Valider décision</button>`;
-  else if(['Sous garantie','Hors garantie','Sous-traitance'].includes(t.statut)){
+  if(st==='ouvert' || st==='Réception'){
+    btns+=`<button class="btn btn-primary" onclick="savSAVDiag()">🔍 Enregistrer diagnostic</button>`;
+  } else if(st==='en_cours' && !t.decision){
+    btns+=`<button class="btn btn-primary" onclick="savSAVDec()">📄 Valider décision</button>`;
+  } else if(st==='en_cours' && t.decision){
     btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('${t.decision}')">🖨 Imprimer</button>`;
     btns+=`<button class="btn btn-primary" onclick="savSAVIntv()">🔧 Valider intervention</button>`;
+  } else if(st==='en_attente' && !t.rapport_test){
+    btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('${t.decision||''}')">🖨 Imprimer</button>`;
+    btns+=`<button class="btn btn-primary" onclick="savSAVIntv()">🔧 Valider intervention</button>`;
+  } else if(st==='en_attente' && t.rapport_test){
+    btns+=`<button class="btn btn-success" onclick="savSAVClos()">🏁 Clôturer</button>`;
+  } else if(st==='resolu' || st==='Clôturé'){
+    btns+=`<button class="btn btn-ghost btn-sm" onclick="printDoc('facture')">🖨 Facture SAV</button>`;
   }
-  else if(t.statut==='En réparation') btns+=`<button class="btn btn-primary" onclick="savSAVTest()">✅ Enregistrer test</button>`;
-  else if(t.statut==='Test')          btns+=`<button class="btn btn-success" onclick="savSAVClos()">🏁 Clôturer</button>`;
   document.getElementById('sdoss-footer').innerHTML=btns;
   if(t.decision) setTimeout(()=>selDec(t.decision,true),50);
 }
@@ -3804,17 +3837,36 @@ async function deleteSAVTicket(id){
 let SAV_PRINT_TYPE=null;
 function printEtiquette(){ if(SAV_CURRENT) printEtiquetteData({numero:SAV_CURRENT.numero,nom:clientName(SAV_CURRENT.client_id)||SAV_CURRENT.tel_client,tel:SAV_CURRENT.tel_client,date:SAV_CURRENT.date_reception,agence:SAV_CURRENT.agence}); }
 function printEtiquetteData(d){
+  const isST = d.type === 'soustraitance';
+  const nom = isST ? 'ALLTEC DISTRIBUTION' : (d.nom||'Client');
+  const barcodeVal = (d.numero||'TK000000').replace(/-/g,'');
   const prev=document.getElementById('sprint-preview');
-  prev.innerHTML=`<div style="width:188px;height:188px;border:1px solid #000;font-family:'Courier New',monospace;padding:8px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between">
-    <div style="font-size:9px;font-weight:700;text-align:center;border-bottom:1px solid #000;padding-bottom:4px">RÉCEPTION SAV — AllTEC</div>
-    <div style="font-size:11px;font-weight:700">${d.nom||'Client'}</div>
-    <div style="font-size:10px">${d.tel||'—'}</div>
-    <div style="font-size:8px;color:#444">${d.numero}</div>
-    <div style="font-size:28px;letter-spacing:3px;text-align:center">|||||||||||||||</div>
-    <div style="font-size:8px;text-align:right;color:#444">${d.date||''} · ${d.agence||''}</div>
-  </div>`;
-  document.getElementById('sprint-title').textContent='Étiquette 50×50mm';
+  prev.innerHTML=`
+    <div id="etiq-wrap" style="width:189px;height:189px;border:1px solid #000;font-family:'Courier New',monospace;padding:6px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:#fff">
+      <div style="font-size:8px;font-weight:700;text-align:center;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:3px;letter-spacing:.5px">
+        ${isST?'SOUS-TRAITANCE — ALLTEC DISTRIBUTION':'RÉCEPTION SAV — AllTEC Distribution'}
+      </div>
+      <div style="font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(nom)}</div>
+      <div style="font-size:9px">${isST?`Départ: ${d.date||''}`:esc(d.tel||'—')}</div>
+      <div style="text-align:center;margin:2px 0">
+        <svg id="barcode-svg"></svg>
+      </div>
+      <div style="font-size:7px;display:flex;justify-content:space-between;color:#444">
+        <span>${d.date||''}</span><span>${d.agence||''}</span>
+      </div>
+    </div>`;
+  document.getElementById('sprint-title').textContent = isST?'Étiquette Sous-traitance 50×50mm':'Étiquette Réception 50×50mm';
   SAV_PRINT_TYPE='etiquette';
+  // Générer le vrai barcode après rendu DOM
+  setTimeout(()=>{
+    try {
+      JsBarcode('#barcode-svg', barcodeVal, {
+        format:'CODE128', width:1.4, height:38,
+        displayValue:true, fontSize:8, margin:0,
+        background:'#ffffff', lineColor:'#000000'
+      });
+    } catch(e){ console.warn('Barcode error:',e); }
+  }, 80);
   openModal('sav-print-overlay');
 }
 function printDoc(type){
@@ -3868,11 +3920,18 @@ function doPrint(){
   const prev=document.getElementById('sprint-preview');
   const d=document.createElement('div');
   d.id='print-target';
-  d.className='pdoc';
+  d.className= SAV_PRINT_TYPE==='etiquette' ? 'print-etiq' : 'pdoc';
   d.innerHTML=prev.innerHTML;
   document.body.appendChild(d);
-  window.print();
-  setTimeout(()=>d.remove(),1000);
+  // Régénérer barcode dans la cible d'impression
+  if(SAV_PRINT_TYPE==='etiquette'){
+    const sv=d.querySelector('#barcode-svg');
+    if(sv){
+      const bval=(SAV_CURRENT?.numero||'TK000000').replace(/-/g,'');
+      try{ JsBarcode(sv, bval,{format:'CODE128',width:1.4,height:38,displayValue:true,fontSize:8,margin:0,background:'#ffffff',lineColor:'#000000'}); }catch(e){}
+    }
+  }
+  setTimeout(()=>{ window.print(); setTimeout(()=>d.remove(),1000); },150);
 }
 
 // SMS (Tunisie Telecom)
