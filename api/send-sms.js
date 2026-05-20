@@ -1,0 +1,48 @@
+// api/send-sms.js — Vercel Serverless Function
+// Place ce fichier dans /api/send-sms.js dans ton repo GitHub
+
+export default async function handler(req, res) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { mobile, message } = req.body;
+  if (!mobile || !message) return res.status(400).json({ error: 'mobile et message requis' });
+
+  // Nettoyer le numéro
+  let tel = mobile.replace(/\D/g, '');
+  if (!tel.startsWith('216')) tel = '216' + tel;
+
+  // Date et heure
+  const now = new Date();
+  const dd   = String(now.getDate()).padStart(2,'0');
+  const mm   = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const hh   = String(now.getHours()).padStart(2,'0');
+  const mn   = String(now.getMinutes()).padStart(2,'0');
+  const myDate = `${dd}/${mm}/${yyyy}`;
+  const myTime = `${hh}:${mn}:00`;
+
+  const KEY    = process.env.SMS_API_KEY;
+  const SENDER = process.env.SMS_SENDER || 'ALLTEC';
+
+  const url = `https://app.tunisiesms.tn/Api/Api.aspx?fct=sms&key=${encodeURIComponent(KEY)}&mobile=${tel}&sms=${encodeURIComponent(message)}&sender=${SENDER}&date=${myDate}&heure=${myTime}`;
+
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    console.log('TunisieSMS response:', text);
+
+    if (response.ok) {
+      return res.status(200).json({ success: true, response: text });
+    } else {
+      return res.status(500).json({ error: text });
+    }
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
