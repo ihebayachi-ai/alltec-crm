@@ -2676,15 +2676,13 @@ supabase functions deploy send-sms
         <div class="doc-section-title">📋 Informations générales</div>
         <div class="form-grid">
           <div class="form-group"><label class="form-label">Nom / Raison sociale *</label><input class="form-control" id="cm-nom" placeholder="Société XYZ"></div>
-          <div class="form-group"><label class="form-label">Statut</label>
-            <select class="form-control" id="cm-statut">
-              <option value="Prospect">Prospect</option>
-              <option value="Client actif">Client actif</option>
-              <option value="Client inactif">Client inactif</option>
-              <option value="Partenaire">Partenaire</option>
-            </select></div>
+
           <div class="form-group"><label class="form-label">Type</label>
-            <select class="form-control" id="cm-type"><option>Entreprise</option><option>Particulier</option><option>Administration</option></select></div>
+            <select class="form-control" id="cm-type">
+              <option value="prospect">Prospect</option>
+              <option value="client">Client</option>
+              <option value="inactif">Inactif</option>
+            </select></div>
           <div class="form-group"><label class="form-label">Secteur</label><input class="form-control" id="cm-secteur" placeholder="Informatique"></div>
         </div>
       </div>
@@ -3422,14 +3420,14 @@ async function openClientModal(id = null) {
   document.getElementById('client-modal-title').textContent = id ? 'Modifier client' : 'Nouveau client';
   const fields = ['cm-nom','cm-secteur','cm-site','cm-telephone','cm-email','cm-adresse','cm-remise','cm-plafond','cm-delai','cm-matricule','cm-notes'];
   fields.forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
-  document.getElementById('cm-type').value = 'Entreprise';
-  document.getElementById('cm-statut').value = 'Prospect';
+  document.getElementById('cm-type').value = 'prospect';
+
   if (id) {
     try {
       const [cl] = await sb('clients', { filter:`id=eq.${id}` });
       document.getElementById('cm-nom').value        = cl.nom||'';
-      document.getElementById('cm-type').value       = cl.type||'Entreprise';
-      document.getElementById('cm-statut').value     = cl.statut||'Prospect';
+      document.getElementById('cm-type').value       = cl.type||'prospect';
+
       document.getElementById('cm-secteur').value    = cl.secteur||'';
       document.getElementById('cm-site').value       = cl.site_web||'';
       document.getElementById('cm-telephone').value  = cl.telephone||'';
@@ -3449,7 +3447,6 @@ async function saveClient() {
   const body = {
     nom:           v('cm-nom'),
     type:          v('cm-type'),
-    statut:        v('cm-statut'),
     secteur:       v('cm-secteur'),
     site_web:      v('cm-site'),
     telephone:     v('cm-telephone'),
