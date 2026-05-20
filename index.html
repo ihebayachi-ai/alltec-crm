@@ -2669,15 +2669,44 @@ supabase functions deploy send-sms
 
 <!-- Client Modal -->
 <div class="overlay" id="client-modal-overlay">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header"><div class="modal-title" id="client-modal-title">Nouveau client</div><button class="modal-close" onclick="closeModal('client-modal-overlay')">✕</button></div>
     <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">Nom *</label><input class="form-control" id="cm-nom" placeholder="Société XYZ"></div>
-        <div class="form-group"><label class="form-label">Type</label>
-          <select class="form-control" id="cm-type"><option>Entreprise</option><option>Particulier</option><option>Administration</option></select></div>
-        <div class="form-group"><label class="form-label">Secteur</label><input class="form-control" id="cm-secteur" placeholder="Informatique"></div>
-        <div class="form-group"><label class="form-label">Site web</label><input class="form-control" id="cm-site" placeholder="https://"></div>
+      <div class="doc-section">
+        <div class="doc-section-title">📋 Informations générales</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Nom / Raison sociale *</label><input class="form-control" id="cm-nom" placeholder="Société XYZ"></div>
+          <div class="form-group"><label class="form-label">Statut</label>
+            <select class="form-control" id="cm-statut">
+              <option value="Prospect">Prospect</option>
+              <option value="Client actif">Client actif</option>
+              <option value="Client inactif">Client inactif</option>
+              <option value="Partenaire">Partenaire</option>
+            </select></div>
+          <div class="form-group"><label class="form-label">Type</label>
+            <select class="form-control" id="cm-type"><option>Entreprise</option><option>Particulier</option><option>Administration</option></select></div>
+          <div class="form-group"><label class="form-label">Secteur</label><input class="form-control" id="cm-secteur" placeholder="Informatique"></div>
+        </div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-section-title">📞 Contact</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Téléphone</label><input class="form-control" id="cm-telephone" placeholder="99 123 456"></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="cm-email" type="email" placeholder="contact@societe.tn"></div>
+          <div class="form-group"><label class="form-label">Adresse</label><input class="form-control" id="cm-adresse" placeholder="Rue, Ville"></div>
+          <div class="form-group"><label class="form-label">Site web</label><input class="form-control" id="cm-site" placeholder="https://"></div>
+        </div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-section-title">💰 Conditions commerciales</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Remise habituelle (%)</label><input class="form-control" id="cm-remise" type="number" placeholder="0" min="0" max="100" step="0.5"></div>
+          <div class="form-group"><label class="form-label">Plafond crédit (TND)</label><input class="form-control" id="cm-plafond" type="number" placeholder="0" step="0.001"></div>
+          <div class="form-group"><label class="form-label">Délai paiement (jours)</label><input class="form-control" id="cm-delai" type="number" placeholder="30" min="0"></div>
+          <div class="form-group"><label class="form-label">Matricule fiscal</label><input class="form-control" id="cm-matricule" placeholder="12345678A"></div>
+        </div>
+        <div class="form-group" style="margin-top:10px"><label class="form-label">Notes</label>
+          <textarea class="form-control" id="cm-notes" rows="2" placeholder="Informations complémentaires..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3391,23 +3420,47 @@ let EDIT_CLIENT_ID = null;
 async function openClientModal(id = null) {
   EDIT_CLIENT_ID = id;
   document.getElementById('client-modal-title').textContent = id ? 'Modifier client' : 'Nouveau client';
+  const fields = ['cm-nom','cm-secteur','cm-site','cm-telephone','cm-email','cm-adresse','cm-remise','cm-plafond','cm-delai','cm-matricule','cm-notes'];
+  fields.forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
+  document.getElementById('cm-type').value = 'Entreprise';
+  document.getElementById('cm-statut').value = 'Prospect';
   if (id) {
     try {
-      const [c] = await sb('clients', { filter:`id=eq.${id}` });
-      document.getElementById('cm-nom').value = c.nom||'';
-      document.getElementById('cm-type').value = c.type||'Entreprise';
-      document.getElementById('cm-secteur').value = c.secteur||'';
-      document.getElementById('cm-site').value = c.site_web||'';
+      const [cl] = await sb('clients', { filter:`id=eq.${id}` });
+      document.getElementById('cm-nom').value        = cl.nom||'';
+      document.getElementById('cm-type').value       = cl.type||'Entreprise';
+      document.getElementById('cm-statut').value     = cl.statut||'Prospect';
+      document.getElementById('cm-secteur').value    = cl.secteur||'';
+      document.getElementById('cm-site').value       = cl.site_web||'';
+      document.getElementById('cm-telephone').value  = cl.telephone||'';
+      document.getElementById('cm-email').value      = cl.email||'';
+      document.getElementById('cm-adresse').value    = cl.adresse||'';
+      document.getElementById('cm-remise').value     = cl.remise||'';
+      document.getElementById('cm-plafond').value    = cl.plafond_credit||'';
+      document.getElementById('cm-delai').value      = cl.delai_paiement||'';
+      document.getElementById('cm-matricule').value  = cl.matricule_fiscal||'';
+      document.getElementById('cm-notes').value      = cl.notes||'';
     } catch{}
-  } else {
-    ['cm-nom','cm-secteur','cm-site'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('cm-type').value = 'Entreprise';
   }
   openModal('client-modal-overlay');
-}
+
 
 async function saveClient() {
-  const body = { nom:v('cm-nom'), type:v('cm-type'), secteur:v('cm-secteur'), site_web:v('cm-site') };
+  const body = {
+    nom:           v('cm-nom'),
+    type:          v('cm-type'),
+    statut:        v('cm-statut'),
+    secteur:       v('cm-secteur'),
+    site_web:      v('cm-site'),
+    telephone:     v('cm-telephone'),
+    email:         v('cm-email'),
+    adresse:       v('cm-adresse'),
+    remise:        parseFloat(v('cm-remise'))||0,
+    plafond_credit:parseFloat(v('cm-plafond'))||0,
+    delai_paiement:parseInt(v('cm-delai'))||30,
+    matricule_fiscal: v('cm-matricule'),
+    notes:         v('cm-notes'),
+  };
   if (!body.nom) { toast('Le nom est requis','error'); return; }
   try {
     if (EDIT_CLIENT_ID) await sbPatch('clients', EDIT_CLIENT_ID, body);
