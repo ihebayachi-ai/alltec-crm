@@ -4032,19 +4032,23 @@ async function sendSAVSMS(ticket, customMsg) {
 
   // Encoder le message pour URL
   const smsEncoded = encodeURIComponent(msg);
-  const KEY = 'R9RlGnP/mR/64YtCWfA5IBSqHR1aSGyBaQUzHM4tELRuZy1rkVMiu/4mtm8GULwHvhXFy/AZ/pCzCAlvDUb6kNXub5Detypa';
-  const SENDER = 'ALLTEC';
-
-  const url = `https://app.tunisiesms.tn/Api/Api.aspx?fct=sms&key=${encodeURIComponent(KEY)}&mobile=${mobile}&sms=${smsEncoded}&sender=${SENDER}&date=${myDate}&heure=${myTime}`;
-
   try {
-    const resp = await fetch(url, { method:'GET', mode:'no-cors' });
-    toast('SMS envoyé au client ✅');
-    logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
+    // Appel via proxy Vercel (évite CORS)
+    const resp = await fetch('/api/send-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile, message: msg })
+    });
+    const data = await resp.json();
+    if (resp.ok && data.success) {
+      toast('SMS envoyé au client ✅');
+      logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
+    } else {
+      toast('Erreur SMS : ' + (data.error||'Inconnue'), 'error');
+      console.error('SMS error:', data);
+    }
   } catch(e) {
-    // no-cors ne retourne pas d'erreur réseau sauf si unreachable
-    toast('SMS envoyé ✅');
-    logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
+    toast('Erreur SMS : ' + e.message, 'error');
   }
 }
 
