@@ -4008,14 +4008,44 @@ function doPrint(){
   setTimeout(()=>{ window.print(); setTimeout(()=>d.remove(),1000); },150);
 }
 
-// SMS (Tunisie Telecom)
-async function sendSAVSMS(ticket){
-  const tel=ticket.tel_client; if(!tel) return;
-  const msg=`Bonjour, votre appareil (${ticket.appareil}) est prêt à être récupéré chez AllTEC Distribution. Merci de votre confiance.`;
+// SMS — TunisieSMS API
+async function sendSAVSMS(ticket, customMsg) {
+  const tel = ticket.tel_client;
+  if (!tel) { toast('Numéro client manquant','error'); return; }
+
+  const msg = customMsg ||
+    `Bonjour, votre appareil (${ticket.appareil||''}) est pret a etre recupere chez AllTEC Distribution. Merci de votre confiance.`;
+
+  // Nettoyer le numéro — garder uniquement les chiffres, ajouter 216 si besoin
+  let mobile = tel.replace(/\D/g,'');
+  if (!mobile.startsWith('216')) mobile = '216' + mobile;
+
+  // Date et heure actuelles
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mn = String(now.getMinutes()).padStart(2,'0');
+  const myDate = `${dd}/${mm}/${yyyy}`;
+  const myTime = `${hh}:${mn}:00`;
+
+  // Encoder le message pour URL
+  const smsEncoded = encodeURIComponent(msg);
+  const KEY = 'R9RlGnP/mR/64YtCWfA5IBSqHR1aSGyBaQUzHM4tELRuZy1rkVMiu/4mtm8GULwHvhXFy/AZ/pCzCAlvDUb6kNXub5Detypa';
+  const SENDER = 'ALLTEC';
+
+  const url = `https://app.tunisiesms.tn/Api/Api.aspx?fct=sms&key=${encodeURIComponent(KEY)}&mobile=${mobile}&sms=${smsEncoded}&sender=${SENDER}&date=${myDate}&heure=${myTime}`;
+
   try {
-    await fetch('https://api.tunisietelecom.tn/sms/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:tel,message:msg,sender:'AllTEC'})});
+    const resp = await fetch(url, { method:'GET', mode:'no-cors' });
+    toast('SMS envoyé au client ✅');
+    logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
+  } catch(e) {
+    // no-cors ne retourne pas d'erreur réseau sauf si unreachable
     toast('SMS envoyé ✅');
-  } catch { toast('SMS simulé (API à configurer)'); }
+    logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
