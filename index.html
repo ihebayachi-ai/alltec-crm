@@ -4032,23 +4032,25 @@ async function sendSAVSMS(ticket, customMsg) {
 
   // Encoder le message pour URL
   const smsEncoded = encodeURIComponent(msg);
+  console.log('SMS → mobile:', mobile, 'msg:', msg);
   try {
-    // Appel via proxy Vercel (évite CORS)
     const resp = await fetch('/api/send-sms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobile, message: msg })
     });
     const data = await resp.json();
+    console.log('SMS response:', resp.status, data);
     if (resp.ok && data.success) {
       toast('SMS envoyé au client ✅');
       logActivity(SESSION.name, 'SMS SAV', `Envoyé à ${tel}`);
     } else {
-      toast('Erreur SMS : ' + (data.error||'Inconnue'), 'error');
+      toast('Erreur SMS : ' + (data.error||data.response||'Inconnue'), 'error');
       console.error('SMS error:', data);
     }
   } catch(e) {
     toast('Erreur SMS : ' + e.message, 'error');
+    console.error('SMS fetch error:', e);
   }
 }
 
