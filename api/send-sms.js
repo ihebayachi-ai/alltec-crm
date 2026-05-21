@@ -1,5 +1,3 @@
-// api/send-sms.js — Vercel Serverless Function
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -22,25 +20,16 @@ export default async function handler(req, res) {
   const myDate = `${dd}/${mm}/${yyyy}`;
   const myTime = `${hh}:${mn}:00`;
 
-  // Clé sans encodeURIComponent — l'API attend la clé brute
-  const KEY    = 'R9RlGnP/mR/64YtCWfA5IBSqHR1aSGyBaQUzHM4tELRuZy1rkVMiu/4mtm8GULwHvhXFy/AZ/pCzCAlvDUb6kNXub5Detypa';
+  const KEY    = 'R9RlGnP/-/mR/-/64YtCWfA5IBSqHR1aSGyBaQUzHM4tELRuZy1rkVMiu/-/4mtm8GULwHvhXFy/AZ/pCzCAlvDUb6kNXub5Detypa';
   const SENDER = 'ALLTEC';
 
-  // Construire l'URL sans encoder la clé
   const url = `https://app.tunisiesms.tn/Api/Api.aspx?fct=sms&key=${KEY}&mobile=${tel}&sms=${encodeURIComponent(message)}&sender=${SENDER}&date=${myDate}&heure=${myTime}`;
-
-  console.log('Calling URL:', url);
 
   try {
     const response = await fetch(url);
     const text = await response.text();
-    console.log('TunisieSMS response:', text);
-
-    // Vérifier si succès dans le XML
-    const success = text.includes('<status_code>200</status_code>') || 
-                    text.includes('success') ||
-                    !text.includes('erreur');
-
+    console.log('TunisieSMS:', text);
+    const success = text.includes('<status_msg>ok</status_msg>');
     return res.status(200).json({ success, response: text });
   } catch (e) {
     return res.status(500).json({ error: e.message });
