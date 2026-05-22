@@ -5995,6 +5995,7 @@ async function saveUser() {
   };
   if (pwd) body.mot_de_passe = pwd;
 
+  console.log('saveUser body:', JSON.stringify(body));
   try {
     if (EDIT_USER_ID) {
       await sbPatch('app_users', EDIT_USER_ID, body);
