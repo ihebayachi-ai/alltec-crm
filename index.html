@@ -4163,7 +4163,7 @@ async function loadCaisse() {
   const tbody = document.getElementById('caisse-tbody');
   tbody.innerHTML = loadingRow(10);
 
-  const isAdmin = SESSION.role === 'Admin';
+  const isAdmin = SESSION.role?.includes('Admin');
   const canAdd  = canWrite('caisse');
   const canEdit = canWrite('caisse');
   const canDel  = SESSION.role === 'Admin';
@@ -5455,7 +5455,7 @@ async function loadCommercial() {
 
   const agenceF = document.getElementById('com-filter-agence')?.value || '';
   const moisF   = document.getElementById('com-filter-mois')?.value   || '';
-  const isAdmin = SESSION.role === 'Admin';
+  const isAdmin = SESSION.role?.includes('Admin');
 
   try {
     let [devis, commandes, emps] = await Promise.all([
@@ -5634,7 +5634,7 @@ async function loadRelances() {
     const devisEnvoyes = await sb('devis', { filter:"statut=eq.Envoyé", order:'date_emission.asc' }).catch(()=>[]);
     const filtre = document.getElementById('relance-filter')?.value || '';
     const agenceF = document.getElementById('com-filter-agence')?.value || '';
-    const isAdmin = SESSION.role === 'Admin';
+    const isAdmin = SESSION.role?.includes('Admin');
 
     let data = devisEnvoyes;
     if (!isAdmin) data = data.filter(d => d.commercial===SESSION.name||d.commercial_id===SESSION.id);
@@ -5682,7 +5682,7 @@ async function loadRelances() {
 async function loadKPICommerciaux() {
   const moisF   = document.getElementById('com-filter-mois')?.value || new Date().toISOString().slice(0,7);
   const agenceF = document.getElementById('com-filter-agence')?.value || '';
-  const isAdmin = SESSION.role === 'Admin';
+  const isAdmin = SESSION.role?.includes('Admin');
 
   try {
     const [emps, devis, commandes, sanctions] = await Promise.all([
@@ -8511,7 +8511,7 @@ function switchMaintTab(tab) {
 }
 
 async function loadMaintenance() {
-  const isAdmin = SESSION.role === 'Admin';
+  const isAdmin = SESSION.role?.includes('Admin');
   if (!isAdmin) {
     document.getElementById('maint-filter-agence').style.display = 'none';
   }
@@ -8722,19 +8722,19 @@ async function saveMaintenance() {
   if (!panne) { toast('Nature de la panne requise','error'); return; }
 
   const body = {
-    agence: v('mi-agence'),
-    date_detection: v('mi-date'),
-    heure_detection: v('mi-heure'),
+    agence:           v('mi-agence'),
+    date_detection:   v('mi-date'),
+    heure_detection:  v('mi-heure'),
     systeme,
-    nature_controle: v('mi-nature-controle'),
-    frequence: v('mi-frequence'),
-    anomalie: panne,
-    action_corrective: v('mi-action'),
+    type_incident:    v('mi-nature-controle'),
+    description:      panne,
+    actions:          v('mi-action'),
     heure_resolution: v('mi-heure-resolution'),
-    statut: document.getElementById('mi-statut').value,
-    force_majeure: document.getElementById('mi-force-majeure').value,
-    notes: v('mi-notes'),
-    technicien: SESSION.name,
+    statut:           document.getElementById('mi-statut').value || 'Ouvert',
+    priorite:         document.getElementById('mi-priorite')?.value || 'Normale',
+    force_majeure:    document.getElementById('mi-force-majeure').value,
+    notes:            v('mi-notes'),
+    technicien:       SESSION.name,
   };
 
   try {
