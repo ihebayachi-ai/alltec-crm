@@ -3622,11 +3622,12 @@ async function loadSAV() {
     const data = await sb('tickets_sav', { filter: filters.join('&'), order:'created_at.desc' });
     // stats
     const now=new Date(), m=now.getMonth(), yr=now.getFullYear();
-    document.getElementById('sav-stat-encours').textContent = data.filter(t=>t.statut&&t.statut!=='Clôturé').length;
-    document.getElementById('sav-stat-diag').textContent    = data.filter(t=>t.statut==='Diagnostic').length;
-    document.getElementById('sav-stat-rep').textContent     = data.filter(t=>t.statut==='En réparation').length;
-    document.getElementById('sav-stat-clos').textContent    = data.filter(t=>{ if(t.statut!=='Clôturé'||!t.date_cloture) return false; const d=new Date(t.date_cloture); return d.getMonth()===m&&d.getFullYear()===yr; }).length;
-    document.getElementById('sav-stat-st').textContent      = data.filter(t=>t.statut==='Sous-traitance').length;
+    // Statuts DB : ouvert, en_cours, en_attente, resolu, ferme
+    document.getElementById('sav-stat-encours').textContent = data.filter(t=>t.statut&&!['resolu','ferme'].includes(t.statut)).length;
+    document.getElementById('sav-stat-diag').textContent    = data.filter(t=>t.statut==='en_cours'&&!t.decision).length;
+    document.getElementById('sav-stat-rep').textContent     = data.filter(t=>['en_cours','en_attente'].includes(t.statut)&&t.detail_reparation).length;
+    document.getElementById('sav-stat-clos').textContent    = data.filter(t=>{ if(t.statut!=='resolu'||!t.date_cloture) return false; const d=new Date(t.date_cloture); return d.getMonth()===m&&d.getFullYear()===yr; }).length;
+    document.getElementById('sav-stat-st').textContent      = data.filter(t=>t.decision==='Sous-traitance').length;
     if (!data.length) { tbody.innerHTML = emptyRow(10,'Aucun ticket SAV'); return; }
     tbody.innerHTML = data.map(t => {
       const sc=SAV_STAT_COL[t.statut]||'gray', dc=SAV_DEC_COL[t.decision]||'gray';
