@@ -2638,11 +2638,19 @@ supabase functions deploy send-sms
         <div class="form-group"><label class="form-label">Prénom & Nom *</label><input class="form-control" id="um-name" placeholder="Ahmed Ben Salem"></div>
         <div class="form-group"><label class="form-label">Login *</label><input class="form-control" id="um-login" placeholder="ahmed.bensalem"></div>
         <div class="form-group"><label class="form-label">Mot de passe *</label><input class="form-control" type="password" id="um-pwd" placeholder="••••••••"></div>
-        <div class="form-group">
-          <label class="form-label">Rôle *</label>
-          <select class="form-control" id="um-role" onchange="applyRolePreset()">
-            <option>Admin</option><option>Technicien</option><option>Commercial</option><option>Caisse</option>
-          </select>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Rôles * <span style="font-size:10px;color:var(--text2)">(plusieurs possibles)</span></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+              <input type="checkbox" id="ur-admin" value="Admin" onchange="applyRolePresetMulti()"> 👑 Admin</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+              <input type="checkbox" id="ur-tech" value="Technicien" onchange="applyRolePresetMulti()"> 🔧 Technicien</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+              <input type="checkbox" id="ur-commercial" value="Commercial" onchange="applyRolePresetMulti()"> 💼 Commercial</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+              <input type="checkbox" id="ur-caisse" value="Caisse" onchange="applyRolePresetMulti()"> 💰 Caisse</label>
+          </div>
+          <input type="hidden" id="um-role" value="">
         </div>
       </div>
       <div class="perm-section">Agences accessibles</div>
@@ -2953,6 +2961,18 @@ const MODULES = [
   { id:'sms', name:'SMS', icon:'📱', desc:'Notifications SMS automatiques' },
 ];
 
+function mergeRolePerms(roleStr) {
+  const roles = (roleStr||'Commercial').split(',');
+  const merged = {};
+  roles.forEach(role => {
+    const preset = ROLE_PRESETS[role.trim()] || {};
+    Object.keys(preset).forEach(mod => {
+      if (!merged[mod] || preset[mod]==='rw') merged[mod] = preset[mod];
+    });
+  });
+  return merged;
+}
+
 const ROLE_PRESETS = {
   Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw' },
   Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r' },
@@ -3026,10 +3046,10 @@ async function doLogin() {
       perms:  typeof user.permissions === 'string' ? 
         (JSON.parse(user.permissions||'{}') && Object.keys(JSON.parse(user.permissions||'{}')).length > 0 
           ? JSON.parse(user.permissions||'{}') 
-          : ROLE_PRESETS[user.role] || {})
+          : mergeRolePerms(user.role))
         : (user.permissions && Object.keys(user.permissions).length > 0 
           ? user.permissions 
-          : ROLE_PRESETS[user.role] || {}),
+          : mergeRolePerms(user.role)),
     };
 
     logActivity(SESSION.name, 'Connexion', `Rôle: ${SESSION.role}`);
@@ -3066,7 +3086,7 @@ function initApp() {
   document.getElementById('top-avatar').style.background = colors[SESSION.role] || '#64748b';
   document.getElementById('top-avatar').textContent = SESSION.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('top-name').textContent = SESSION.name;
-  document.getElementById('top-role').textContent = SESSION.role;
+  document.getElementById('top-role').textContent = (SESSION.role||'').split(',')[0];
 
   buildSidebar();
   showPage('dashboard');
@@ -3075,10 +3095,10 @@ function initApp() {
   initBranding();
 
   // Show admin sidebar btn only for Admin
-  document.getElementById('sidebar-admin-btn').style.display = SESSION.role === 'Admin' ? 'block' : 'none';
+  document.getElementById('sidebar-admin-btn').style.display = SESSION.role?.includes('Admin') ? 'block' : 'none';
 
   // Pre-load users list if admin
-  if (SESSION.role === 'Admin') loadUsers();
+  if (SESSION.role?.includes('Admin')) loadUsers();
 }
 
 function buildSidebar() {
@@ -3112,7 +3132,7 @@ function buildSidebar() {
   ];
 
   sections.forEach(sec => {
-    const visibleItems = sec.items.filter(item => !item.perm || SESSION.role==='Admin' || (SESSION.perms[item.perm]));
+    const visibleItems = sec.items.filter(item => !item.perm || SESSION.role?.includes('Admin') || (SESSION.perms[item.perm]));
     if (visibleItems.length === 0) return;
     const secEl = document.createElement('div');
     secEl.innerHTML = `<div class="sidebar-section">${sec.title}</div>`;
@@ -5853,7 +5873,12 @@ async function openUserModal(id = null) {
       document.getElementById('um-name').value = u.nom||'';
       document.getElementById('um-login').value = u.login||'';
       document.getElementById('um-pwd').value = '';
-      document.getElementById('um-role').value = u.role||'Commercial';
+      const userRoles = (u.role||'Commercial').split(',').map(r=>r.trim());
+      ['ur-admin','ur-tech','ur-commercial','ur-caisse'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = userRoles.includes(el.value);
+      });
+      document.getElementById('um-role').value = userRoles.join(',');
       document.getElementById('um-status').value = u.statut||'Actif';
       const agences = typeof u.agences==='string' ? JSON.parse(u.agences||'[]') : (u.agences||[]);
       document.querySelectorAll('.agence-toggle').forEach(t => t.classList.toggle('on', agences.includes(t.dataset.ag)));
@@ -5901,7 +5926,43 @@ function togglePermMode(btn) {
   btn.classList.toggle('on');
 }
 
+function getSelectedRoles() {
+  const roles = [];
+  ['ur-admin','ur-tech','ur-commercial','ur-caisse'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.checked) roles.push(el.value);
+  });
+  return roles;
+}
+
+function applyRolePresetMulti() {
+  const roles = getSelectedRoles();
+  // Mettre à jour le champ caché
+  document.getElementById('um-role').value = roles.join(',');
+  // Fusionner les permissions de tous les rôles sélectionnés
+  const merged = {};
+  roles.forEach(role => {
+    const preset = ROLE_PRESETS[role] || {};
+    Object.keys(preset).forEach(mod => {
+      if (!merged[mod] || (preset[mod]==='rw')) {
+        merged[mod] = preset[mod];
+      }
+    });
+  });
+  // Appliquer au perm-grid
+  document.querySelectorAll('#um-perms .perm-row').forEach(row => {
+    const mod = row.dataset.mod;
+    if (!mod) return;
+    const val = merged[mod] || '';
+    row.querySelector('.perm-r') && (row.querySelector('.perm-r').classList.toggle('on', val.includes('r')));
+    row.querySelector('.perm-w') && (row.querySelector('.perm-w').classList.toggle('on', val.includes('w')));
+  });
+}
+
 function applyRolePreset() {
+  applyRolePresetMulti();
+}
+function applyRolePreset_old() {
   const role = document.getElementById('um-role').value;
   buildPermGrid(ROLE_PRESETS[role]||{});
 }
@@ -5919,8 +5980,10 @@ function getPermsFromGrid() {
 }
 
 async function saveUser() {
-  const nom = v('um-name'), login = v('um-login'), pwd = v('um-pwd'),
-        role = v('um-role'), statut = v('um-status');
+  const nom = v('um-name'), login = v('um-login'), pwd = v('um-pwd'), statut = v('um-status');
+  const selectedRoles = getSelectedRoles();
+  if (!selectedRoles.length) { toast('Choisir au moins un rôle','error'); return; }
+  const role = selectedRoles.join(',');
   if (!nom || !login) { toast('Nom et login sont requis','error'); return; }
   const agences = [...document.querySelectorAll('.agence-toggle.on')].map(t=>t.dataset.ag);
   const permissions = getPermsFromGrid();
