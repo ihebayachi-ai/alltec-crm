@@ -8532,7 +8532,7 @@ async function loadMaintenance() {
     if (!isAdmin) data = data.filter(r => SESSION.agences.includes(r.agence));
     if (agenceF) data = data.filter(r => r.agence === agenceF);
     if (statutF) data = data.filter(r => r.statut === statutF);
-    if (searchQ) data = data.filter(r => (r.systeme||'').toLowerCase().includes(searchQ) || (r.anomalie||'').toLowerCase().includes(searchQ));
+    if (searchQ) data = data.filter(r => (r.systeme||'').toLowerCase().includes(searchQ) || (r.description||'').toLowerCase().includes(searchQ));
 
     // KPI cards
     renderMaintStats(MAINT_CACHE, isAdmin);
@@ -8547,10 +8547,10 @@ async function loadMaintenance() {
         <td style="font-size:11px">${r.heure_detection||'—'}</td>
         <td><span class="badge badge-cyan">${esc(r.agence||'—')}</span></td>
         <td>${esc(r.systeme||'—')}</td>
-        <td style="font-size:12px;color:var(--text3)">${esc(r.nature_controle||'—')}</td>
-        <td><span class="badge badge-gray">${esc(r.frequence||'—')}</span></td>
-        <td style="max-width:200px;font-size:12px">${esc(r.anomalie||'—')}</td>
-        <td style="max-width:180px;font-size:12px;color:var(--success-light)">${esc(r.action_corrective||'—')}</td>
+        <td style="font-size:12px;color:var(--text3)">${esc(r.type_incident||'—')}</td>
+        <td><span class="badge badge-gray">${esc(r.type_incident||'—')}</span></td>
+        <td style="max-width:200px;font-size:12px">${esc(r.description||'—')}</td>
+        <td style="max-width:180px;font-size:12px;color:var(--success-light)">${esc(r.actions||'—')}</td>
         <td style="font-size:11px">${r.heure_resolution||'—'}</td>
         <td style="font-size:12px">${esc(r.technicien||'—')}</td>
         <td><span class="badge ${statClass}">${esc(r.statut||'—')}</span>${depasse?'<span class="badge badge-red" style="margin-left:4px">⏰</span>':''}</td>
@@ -8617,7 +8617,7 @@ function renderAlertes() {
       <td>${r.date_detection||'—'}</td>
       <td><span class="badge badge-cyan">${esc(r.agence||'—')}</span></td>
       <td>${esc(r.systeme||'—')}</td>
-      <td style="font-size:12px">${esc(r.anomalie||'—')}</td>
+      <td style="font-size:12px">${esc(r.description||'—')}</td>
       <td>${info.label}</td>
       <td>${heuresEcoulees}h</td>
       <td style="color:var(--danger-light);font-weight:700">+${depassement}h</td>
