@@ -1208,9 +1208,8 @@ textarea.form-control{resize:vertical;min-height:80px}
             </select>
             <select class="form-control" style="width:160px" id="quar-filter-statut" onchange="loadQuarantaine()">
               <option value="">Tous statuts</option>
-              <option>En quarantaine</option>
-              <option>En inspection</option>
-              <option>Décision en attente</option>
+              <option>En attente</option>
+              <option>En diagnostic</option>
               <option>Réintégré en stock</option>
               <option>Retourné fournisseur</option>
               <option>Détruit</option>
@@ -1400,11 +1399,11 @@ textarea.form-control{resize:vertical;min-height:80px}
                 <div class="form-group">
                   <label class="form-label">Statut actuel *</label>
                   <select class="form-control" id="qf-statut">
-                    <option>En quarantaine</option>
-                    <option>En inspection</option>
-                    <option>Décision en attente</option>
+                    <option>En attente</option>
+                    <option>En diagnostic</option>
                     <option>Réintégré en stock</option>
                     <option>Retourné fournisseur</option>
+                    <option>Détruit</option>
                     <option>Détruit</option>
                   </select>
                 </div>
@@ -7119,25 +7118,25 @@ async function saveQuarantaine() {
   });
 
   const body = {
-    numero:           document.getElementById('qf-numero').value,
-    agence:           document.getElementById('qf-agence').value,
-    date_mise_en_quar:document.getElementById('qf-date').value,
-    ref_produit:      ref,
-    designation:      des,
-    quantite:         parseInt(document.getElementById('qf-quantite').value)||1,
-    emplacement:      document.getElementById('qf-emplacement').value.trim(),
+    agence:            document.getElementById('qf-agence').value,
+    date_mise_en_quar: document.getElementById('qf-date').value,
+    ref_produit:       ref,
+    designation:       des,
+    quantite:          parseInt(document.getElementById('qf-quantite').value)||1,
     motif,
-    responsable:      document.getElementById('qf-responsable').value.trim(),
-    fournisseur:      document.getElementById('qf-fournisseur').value.trim(),
-    remarques:        document.getElementById('qf-remarques').value.trim(),
-    etat_produit:     JSON.stringify(getEtatData()),
-    actions:          JSON.stringify(actions),
-    statut:           document.getElementById('qf-statut').value,
-    decision:         document.getElementById('qf-decision').value,
-    date_sortie_quar: document.getElementById('qf-date-sortie').value||null,
-    signataire:       document.getElementById('qf-signataire').value.trim(),
-    notes_cloture:    document.getElementById('qf-notes-cloture').value.trim(),
-    saisi_par:        SESSION.name,
+    responsable:       document.getElementById('qf-responsable').value.trim(),
+    fournisseur:       document.getElementById('qf-fournisseur').value.trim(),
+    etat_produit:      JSON.stringify(getEtatData()),
+    actions_effectuees:JSON.stringify(actions),
+    statut:            document.getElementById('qf-statut').value,
+    decision_finale:   document.getElementById('qf-decision').value,
+    date_sortie_quar:  document.getElementById('qf-date-sortie').value||null,
+    notes:             [
+      document.getElementById('qf-remarques').value.trim(),
+      document.getElementById('qf-notes-cloture').value.trim(),
+      document.getElementById('qf-signataire').value.trim() ? `Signataire: ${document.getElementById('qf-signataire').value.trim()}` : '',
+      `Saisi par: ${SESSION.name}`,
+    ].filter(Boolean).join(' | '),
   };
 
   try {
