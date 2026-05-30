@@ -3982,7 +3982,10 @@ async function saveDevis() {
     loadDevis();
     toast(EDIT_DEVIS_ID ? 'Devis mis à jour ✓' : 'Devis créé ✓');
     EDIT_DEVIS_ID = null;
-  } catch(e) { toast(e.message,'error'); }
+  } catch(e) {
+    console.error('saveDevis error:', e.message, '| body:', JSON.stringify(body));
+    toast(e.message,'error');
+  }
 }
 
 // ── Impression navigateur ──
