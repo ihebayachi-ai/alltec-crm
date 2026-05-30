@@ -511,7 +511,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div class="card">
             <div class="card-header">
               <span class="card-title">💼 Pipeline commercial — Devis en cours</span>
-              <button class="btn btn-ghost btn-sm" onclick="showPage('commercial')">Voir tout →</button>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('pipeline')">Voir tout →</button>
             </div>
             <div class="table-wrap"><table>
               <thead><tr><th>Devis</th><th>Client</th><th>Montant</th><th>Jours</th><th>Statut</th></tr></thead>
@@ -1099,11 +1099,11 @@ textarea.form-control{resize:vertical;min-height:80px}
       </div>
 
       <!-- COMMERCIAL -->
-      <div class="page" id="page-commercial">
+      <div class="page" id="page-pipeline">
         <div class="page-header">
           <div>
-            <div class="page-title">💼 Pipeline Commercial</div>
-            <div class="page-sub">Kanban · KPIs par commercial · Suivi relances — §2.4 & §2.5</div>
+            <div class="page-title">🎯 Pipeline</div>
+            <div class="page-sub">Kanban · KPIs par commercial · Suivi relances</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select class="form-control" style="width:140px" id="com-filter-agence" onchange="loadCommercial()">
@@ -3355,9 +3355,9 @@ function buildSidebar() {
       { id:'commandes', icon:'📦', name:'Commandes', perm:'commandes' },
       { id:'sav', icon:'🔧', name:'SAV', perm:'sav' },
       { id:'maintenance', icon:'🛡️', name:'Maintenance', perm:'maintenance' },
-      { id:'commercial', icon:'💼', name:'Commercial', perm:'commercial' },
+      { id:'commercial', icon:'🎯', name:'Pipeline', perm:'commercial' },
     ]},
-    { title: 'Logistique', items: [
+    { title: 'Logistique & Sécurité', items: [
       { id:'quarantaine', icon:'🚧', name:'Zone Quarantaine', perm:'quarantaine' },
     ]},
     { title: 'Ressources Humaines', items: [
@@ -9987,7 +9987,7 @@ function handleChatCommand(cmd) {
     sb('devis',{filter:'statut=eq.Envoyé'}).then(d=>{
       const total = d.reduce((s,x)=>s+(x.montant_ttc||0),0);
       addSys(`💼 <strong>Pipeline commercial :</strong> ${d.length} devis en attente · ${fmtMoney(total)} TND<br>
-        <a onclick="showPage('commercial')" style="cursor:pointer;color:var(--accent-light)">Voir le pipeline →</a>`);
+        <a onclick="showPage('pipeline')" style="cursor:pointer;color:var(--accent-light)">Voir le pipeline →</a>`);
     }).catch(()=>addSys('❌ Erreur chargement devis'));
   } else {
     addSys(`❓ Commande inconnue: <code>${esc(cmd)}</code> — tapez /aide pour la liste`);
