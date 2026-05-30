@@ -558,7 +558,7 @@ textarea.form-control{resize:vertical;min-height:80px}
             <button class="btn btn-primary" id="btn-add-devis" onclick="openDevisModal()">＋ Nouveau devis</button>
           </div>
         </div>
-        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="devis-stats"></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="devis-stats"></div>
         <div class="card">
           <div class="table-wrap"><table>
             <thead><tr>
@@ -3754,16 +3754,19 @@ async function loadDevis() {
     // Stats rapides
     const statsDiv = document.getElementById('devis-stats');
     if (statsDiv) {
-      const total   = data.length;
-      const envoyes = data.filter(d=>d.statut==='Envoye').length;
-      const acceptes= data.filter(d=>d.statut==='Accepte').length;
-      const caTotal = data.filter(d=>d.statut==='Accepte').reduce((s,d)=>s+(d.montant_ttc||0),0);
-      const taux    = envoyes+acceptes > 0 ? Math.round(acceptes/(envoyes+acceptes)*100) : 0;
+      const total    = data.length;
+      const envoyes  = data.filter(d=>d.statut==='Envoye').length;
+      const acceptes = data.filter(d=>d.statut==='Accepte').length;
+      const refuses  = data.filter(d=>d.statut==='Refuse').length;
+      const caTotal  = data.filter(d=>d.statut==='Accepte').reduce((s,d)=>s+(d.montant_ttc||0),0);
+      const caPerdus = data.filter(d=>d.statut==='Refuse').reduce((s,d)=>s+(d.montant_ttc||0),0);
+      const taux     = envoyes+acceptes > 0 ? Math.round(acceptes/(envoyes+acceptes)*100) : 0;
       statsDiv.innerHTML = `
         <div class="stat-card blue"><div class="stat-label">📄 Total devis</div><div class="stat-val">${total}</div></div>
         <div class="stat-card amber"><div class="stat-label">📤 Envoyés</div><div class="stat-val">${envoyes}</div></div>
         <div class="stat-card green"><div class="stat-label">✅ Acceptés</div><div class="stat-val">${acceptes}</div></div>
-        <div class="stat-card purple"><div class="stat-label">💰 CA devis acceptés</div><div class="stat-val" style="font-size:16px">${fmtMoney(caTotal)} DT</div></div>`;
+        <div class="stat-card purple"><div class="stat-label">💰 CA devis acceptés</div><div class="stat-val" style="font-size:16px">${fmtMoney(caTotal)} DT</div></div>
+        <div class="stat-card red"><div class="stat-label">❌ CA devis perdus</div><div class="stat-val" style="font-size:16px">${fmtMoney(caPerdus)} DT</div><div class="stat-sub">${refuses} devis refusés</div></div>`;
     }
 
     if (!data.length) { tbody.innerHTML = emptyRow(8,'Aucun devis'); return; }
