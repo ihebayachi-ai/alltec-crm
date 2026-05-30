@@ -1099,7 +1099,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       </div>
 
       <!-- COMMERCIAL -->
-      <div class="page" id="page-pipeline">
+      <div class="page" id="page-commercial">
         <div class="page-header">
           <div>
             <div class="page-title">🎯 Pipeline</div>
@@ -3405,7 +3405,7 @@ function showPage(id) {
   const loaders = {
     dashboard: loadDashboard, clients: loadClients, devis: loadDevis,
     commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
-    rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial, pipeline: loadCommercial,
+    rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
