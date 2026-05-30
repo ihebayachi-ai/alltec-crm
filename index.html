@@ -9258,7 +9258,7 @@ async function saveCA() {
   const notes   = document.getElementById('ca-input-notes').value.trim();
 
   if (!annee || !mois || !agence) {
-    showToast('Veuillez remplir les champs obligatoires', 'error');
+    toast('Veuillez remplir les champs obligatoires', 'error');
     return;
   }
 
@@ -9289,12 +9289,12 @@ async function saveCA() {
       });
     }
 
-    showToast('CA enregistré ✓', 'success');
+    toast('CA enregistré ✓', 'success');
     closeModal('ca-modal-overlay');
     renderCA();
 
   } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
+    toast('Erreur : ' + e.message, 'error');
   }
 }
 
