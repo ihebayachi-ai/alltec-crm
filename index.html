@@ -2720,6 +2720,18 @@ supabase functions deploy send-sms
               <option value="client">Client</option>
               <option value="inactif">Inactif</option>
             </select></div>
+          <div class="form-group"><label class="form-label">Catégorie client</label>
+            <select class="form-control" id="cm-categorie">
+              <option value="B2B">🏢 B2B — Professionnel</option>
+              <option value="B2C">👤 B2C — Particulier</option>
+            </select></div>
+          <div class="form-group"><label class="form-label">Agence associée</label>
+            <select class="form-control" id="cm-agence">
+              <option value="">— Non assignée —</option>
+              <option value="Charguia">Charguia</option>
+              <option value="Kairouan">Kairouan</option>
+              <option value="Sousse">Sousse</option>
+            </select></div>
           <div class="form-group"><label class="form-label">Secteur</label><input class="form-control" id="cm-secteur" placeholder="Informatique"></div>
         </div>
       </div>
@@ -3653,6 +3665,8 @@ async function openClientModal(id = null) {
   EDIT_CLIENT_ID = id;
   document.getElementById('client-modal-title').textContent = id ? 'Modifier client' : 'Nouveau client';
   const fields = ['cm-nom','cm-secteur','cm-site','cm-telephone','cm-email','cm-adresse','cm-remise','cm-plafond','cm-delai','cm-matricule','cm-notes'];
+  document.getElementById('cm-categorie').value = 'B2B';
+  document.getElementById('cm-agence').value = '';
   fields.forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
   document.getElementById('cm-type').value = 'prospect';
 
@@ -3661,6 +3675,8 @@ async function openClientModal(id = null) {
       const [cl] = await sb('clients', { filter:`id=eq.${id}` });
       document.getElementById('cm-nom').value        = cl.nom||'';
       document.getElementById('cm-type').value       = cl.type||'prospect';
+      document.getElementById('cm-categorie').value   = cl.categorie||'B2B';
+      document.getElementById('cm-agence').value       = cl.agence_associee||'';
 
       document.getElementById('cm-secteur').value    = cl.secteur||'';
       document.getElementById('cm-site').value       = cl.site_web||'';
@@ -3681,6 +3697,8 @@ async function saveClient() {
   const body = {
     nom:           v('cm-nom'),
     type:          v('cm-type'),
+    categorie:     v('cm-categorie')||'B2B',
+    agence_associee: v('cm-agence')||null,
     secteur:       v('cm-secteur'),
     site_web:      v('cm-site'),
     telephone:     v('cm-telephone'),
