@@ -553,7 +553,7 @@ textarea.form-control{resize:vertical;min-height:80px}
             <div class="search-bar">🔍 <input type="text" placeholder="N° devis, client..." id="devis-search" oninput="loadDevis()"></div>
             <select class="form-control" style="width:140px" id="devis-filter-statut" onchange="loadDevis()">
               <option value="">Tous les statuts</option>
-              <option>Brouillon</option><option>Envoyé</option><option>Accepté</option><option>Refusé</option>
+              <option>Brouillon</option><option>Envoye</option><option>Accepte</option><option>Refuse</option>
             </select>
             <button class="btn btn-primary" id="btn-add-devis" onclick="openDevisModal()">＋ Nouveau devis</button>
           </div>
@@ -2773,7 +2773,7 @@ supabase functions deploy send-sms
         <div class="form-group"><label class="form-label">Valide jusqu'au</label><input class="form-control" type="date" id="dm-validite"></div>
         <div class="form-group"><label class="form-label">Statut</label>
           <select class="form-control" id="dm-statut" onchange="onDevisStatutChange()">
-            <option>Brouillon</option><option>Envoyé</option><option>Accepté</option><option>Refusé</option>
+            <option>Brouillon</option><option>Envoye</option><option>Accepte</option><option>Refuse</option>
           </select>
         </div>
       </div>
@@ -3456,7 +3456,7 @@ async function loadDashboard() {
     const moisActuel= now.toISOString().slice(0,7);
     const caTotal   = commandes.filter(c=>(c.date_commande||'').startsWith(moisActuel)).reduce((s,c)=>s+(c.montant_ttc||0),0);
     const caEntrees = caisse.filter(o=>o.sens==='Entrée'&&(o.date_op||'').startsWith(moisActuel)).reduce((s,o)=>s+(o.montant||0),0);
-    const gagnes    = devis.filter(d=>d.statut==='Accepté'&&(d.date_emission||'').startsWith(moisActuel)).length;
+    const gagnes    = devis.filter(d=>d.statut==='Accepte'&&(d.date_emission||'').startsWith(moisActuel)).length;
     const tauxConv  = devis.filter(d=>(d.date_emission||'').startsWith(moisActuel)).length > 0
       ? Math.round(gagnes / devis.filter(d=>(d.date_emission||'').startsWith(moisActuel)).length * 100) : 0;
 
@@ -3586,7 +3586,7 @@ async function loadDashboard() {
     // ── Pipeline commercial (devis Envoyé) ──
     const ptbody = document.getElementById('dash-pipeline-tbody');
     if (ptbody) {
-      const pipeline = devis.filter(d=>d.statut==='Envoyé').slice(0,8);
+      const pipeline = devis.filter(d=>d.statut==='Envoye').slice(0,8);
       ptbody.innerHTML = pipeline.length ? pipeline.map(d=>{
         const j = d.date_emission ? Math.floor((now-new Date(d.date_emission))/86400000) : 0;
         const alerte = j>=7;
@@ -3727,9 +3727,9 @@ async function loadDevis() {
     const statsDiv = document.getElementById('devis-stats');
     if (statsDiv) {
       const total   = data.length;
-      const envoyes = data.filter(d=>d.statut==='Envoyé').length;
-      const acceptes= data.filter(d=>d.statut==='Accepté').length;
-      const caTotal = data.filter(d=>d.statut==='Accepté').reduce((s,d)=>s+(d.montant_ttc||0),0);
+      const envoyes = data.filter(d=>d.statut==='Envoye').length;
+      const acceptes= data.filter(d=>d.statut==='Accepte').length;
+      const caTotal = data.filter(d=>d.statut==='Accepte').reduce((s,d)=>s+(d.montant_ttc||0),0);
       const taux    = envoyes+acceptes > 0 ? Math.round(acceptes/(envoyes+acceptes)*100) : 0;
       statsDiv.innerHTML = `
         <div class="stat-card blue"><div class="stat-label">📄 Total devis</div><div class="stat-val">${total}</div></div>
@@ -3742,9 +3742,9 @@ async function loadDevis() {
 
     const STATUT_STYLE = {
       'Brouillon': 'background:var(--surface2);color:var(--text2)',
-      'Envoyé':    'background:rgba(59,130,246,.15);color:#60a5fa',
-      'Accepté':   'background:rgba(34,197,94,.15);color:#4ade80',
-      'Refusé':    'background:rgba(239,68,68,.15);color:#f87171',
+      'Envoye':    'background:rgba(59,130,246,.15);color:#60a5fa',
+      'Accepte':   'background:rgba(34,197,94,.15);color:#4ade80',
+      'Refuse':    'background:rgba(239,68,68,.15);color:#f87171',
     };
     tbody.innerHTML = data.map(d => {
       const st = d.statut||'Brouillon';
@@ -3873,12 +3873,12 @@ function onDevisStatutChange() {
   const motifGroup = document.getElementById('dm-motif-group');
   const STYLES = {
     'Brouillon': 'background:var(--surface2);color:var(--text2)',
-    'Envoyé':    'background:rgba(59,130,246,.2);color:#60a5fa',
-    'Accepté':   'background:rgba(34,197,94,.2);color:#4ade80',
-    'Refusé':    'background:rgba(239,68,68,.2);color:#f87171',
+    'Envoye':    'background:rgba(59,130,246,.2);color:#60a5fa',
+    'Accepte':   'background:rgba(34,197,94,.2);color:#4ade80',
+    'Refuse':    'background:rgba(239,68,68,.2);color:#f87171',
   };
   if (badge) { badge.textContent = st; badge.style.cssText = `font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;${STYLES[st]||STYLES['Brouillon']}`; }
-  if (motifGroup) motifGroup.style.display = st === 'Refusé' ? 'block' : 'none';
+  if (motifGroup) motifGroup.style.display = st === 'Refuse' ? 'block' : 'none';
 }
 
 // ── Ouvrir le modal ──
@@ -3972,7 +3972,7 @@ async function saveDevis() {
     remise_globale: remise,
     montant_ttc:    totalTTC,
     lignes:         JSON.stringify(DM_LIGNES),
-    motif_perte:    statut==='Refusé' ? (document.getElementById('dm-motif-perte').value||null) : null,
+    motif_perte:    statut==='Refuse' ? (document.getElementById('dm-motif-perte').value||null) : null,
   };
 
   try {
@@ -4121,7 +4121,7 @@ function buildDevisHTML(forPrint=false) {
 async function convertirEnCommande() {
   if (!EDIT_DEVIS_ID) return;
   const statut = document.getElementById('dm-statut').value;
-  if (statut !== 'Accepté') {
+  if (statut !== 'Accepte') {
     toast('Le devis doit être en statut "Accepté" pour être converti','error'); return;
   }
   if (!confirm('Convertir ce devis en commande ?')) return;
@@ -5424,7 +5424,7 @@ async function genRapportHebdo() {
     const caTotal = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
     const nbVentes = commandes.length;
     const panier   = nbVentes ? caTotal/nbVentes : 0;
-    const gagnes   = devis.filter(d=>d.statut==='Accepté').length;
+    const gagnes   = devis.filter(d=>d.statut==='Accepte').length;
     const tauxConv = devis.length ? Math.round(gagnes/devis.length*100) : 0;
 
     // CA par agence
@@ -5480,7 +5480,7 @@ async function printRapportHebdo() {
     ]);
     if (agenceF) { commandes=commandes.filter(c=>c.agence===agenceF); }
     const caTotal = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
-    const gagnes  = devis.filter(d=>d.statut==='Accepté').length;
+    const gagnes  = devis.filter(d=>d.statut==='Accepte').length;
     const header  = getDocHeader();
     openPrintWindow(`RAPPORT DE VENTES HEBDOMADAIRE — Semaine du ${debut} au ${fin}`, header,
       `<table style="margin-bottom:16px"><tbody>
@@ -5590,8 +5590,8 @@ async function genBilanCommercial() {
 
     const caTotal  = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
     const nbVentes = commandes.length;
-    const gagnes   = devis.filter(d=>d.statut==='Accepté').length;
-    const perdus   = devis.filter(d=>d.statut==='Refusé').length;
+    const gagnes   = devis.filter(d=>d.statut==='Accepte').length;
+    const perdus   = devis.filter(d=>d.statut==='Refuse').length;
     const expires  = devis.filter(d=>d.statut==='Expiré').length;
     const tauxConv = devis.length ? Math.round(gagnes/devis.length*100) : 0;
     const obj = getObjectifs();
@@ -5620,7 +5620,7 @@ async function genBilanCommercial() {
         </div>`)}
       ${rptCard('📄 Synthèse devis — '+moisLabel2(mois),
         `<div style="display:flex;gap:12px;flex-wrap:wrap">
-          ${[['Émis',devis.length,'badge-blue'],['Acceptés',gagnes,'badge-green'],['Refusés',perdus,'badge-red'],['Expirés',expires,'badge-amber'],['En cours',devis.filter(d=>d.statut==='Envoyé').length,'badge-gray']].map(([l,n,c])=>
+          ${[['Émis',devis.length,'badge-blue'],['Acceptés',gagnes,'badge-green'],['Refusés',perdus,'badge-red'],['Expirés',expires,'badge-amber'],['En cours',devis.filter(d=>d.statut==='Envoye').length,'badge-gray']].map(([l,n,c])=>
             `<div class="stat-card" style="flex:1;min-width:100px"><div class="stat-label">${l}</div><div class="stat-val">${n}</div></div>`).join('')}
         </div>`)}`;
   } catch(e) { container.innerHTML=`<div style="color:var(--danger-light);padding:16px">Erreur: ${esc(e.message)}</div>`; }
@@ -5635,7 +5635,7 @@ async function printBilanCommercial() {
     sb('commandes', { filter:`date_commande=gte.${mois}-01&date_commande=lte.${mois}-31` }).catch(()=>[]),
   ]);
   const caTotal = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
-  const gagnes  = devis.filter(d=>d.statut==='Accepté').length;
+  const gagnes  = devis.filter(d=>d.statut==='Accepte').length;
   openPrintWindow(`BILAN COMMERCIAL MENSUEL — ${moisLabel2(mois)}`, header,
     `<table style="margin-bottom:16px"><tbody>
       <tr><td><strong>Période :</strong> ${moisLabel2(mois)}</td><td><strong>Agence :</strong> ${agenceF||'Toutes'}</td></tr>
@@ -5678,7 +5678,7 @@ async function genPerfCommerciaux() {
       const ca      = empCommandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
       const objCA   = emp.objectif_ca||0;
       const atteinte= objCA>0 ? Math.round(ca/objCA*100) : 0;
-      const gagnes  = empDevis.filter(d=>d.statut==='Accepté').length;
+      const gagnes  = empDevis.filter(d=>d.statut==='Accepte').length;
       const conv    = empDevis.length>0 ? Math.round(gagnes/empDevis.length*100) : 0;
       const dedSanc = empSanctions.reduce((s,x)=>s+(x.deduction||0),0);
       const color   = atteinte>=110?'var(--success-light)':atteinte>=90?'var(--accent-light)':atteinte>=70?'var(--warning-light)':'var(--danger-light)';
@@ -5757,7 +5757,7 @@ async function genBilanTrimestriel() {
     const caTotal     = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
     const entrees     = caisse.filter(o=>o.sens==='Entrée').reduce((s,o)=>s+(o.montant||0),0);
     const sorties     = caisse.filter(o=>o.sens==='Sortie').reduce((s,o)=>s+(o.montant||0),0);
-    const gagnes      = devis.filter(d=>d.statut==='Accepté').length;
+    const gagnes      = devis.filter(d=>d.statut==='Accepte').length;
     const tauxConv    = devis.length ? Math.round(gagnes/devis.length*100) : 0;
     const savResolus  = tickets.filter(t=>['Résolu','Clôturé'].includes(t.statut)).length;
     const tauxResol   = tickets.length ? Math.round(savResolus/tickets.length*100) : 100;
@@ -5779,7 +5779,7 @@ async function genBilanTrimestriel() {
           <div>Devis émis : <strong>${devis.length}</strong></div>
           <div>Taux conversion : <strong>${tauxConv}%</strong></div>
           <div>Devis gagnés : <strong>${gagnes}</strong></div>
-          <div>Devis perdus : <strong>${devis.filter(d=>d.statut==='Refusé').length}</strong></div>
+          <div>Devis perdus : <strong>${devis.filter(d=>d.statut==='Refuse').length}</strong></div>
         </div>`)}
       ${rptCard(`💰 Finances — ${trimLabel} ${annee}`,
         `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
@@ -6028,7 +6028,7 @@ async function loadAnalyse() {
     const caEntrees  = caisseF.filter(o=>o.sens==='Entrée').reduce((s,o)=>s+(o.montant||0),0);
     const caSorties  = caisseF.filter(o=>o.sens==='Sortie').reduce((s,o)=>s+(o.montant||0),0);
     const nbDevis    = devisF.length;
-    const nbGagnes   = devisF.filter(d=>d.statut==='Accepté').length;
+    const nbGagnes   = devisF.filter(d=>d.statut==='Accepte').length;
     const tauxConv   = nbDevis>0?Math.round(nbGagnes/nbDevis*100):0;
     const ticketsClos= ticketsF.filter(t=>['Résolu','Clôturé'].includes(t.statut));
     const tauxResol  = ticketsF.length>0?Math.round(ticketsClos.length/ticketsF.length*100):100;
@@ -6159,7 +6159,7 @@ async function loadAnalyse() {
 
     // ── Courbe taux de conversion mensuel ──
     const convParMois={}; const devisParMois={};
-    devis.forEach(d=>{const m=(d.date_emission||'').slice(0,7);if(m){devisParMois[m]=(devisParMois[m]||0)+1;if(d.statut==='Accepté')convParMois[m]=(convParMois[m]||0)+1;}});
+    devis.forEach(d=>{const m=(d.date_emission||'').slice(0,7);if(m){devisParMois[m]=(devisParMois[m]||0)+1;if(d.statut==='Accepte')convParMois[m]=(convParMois[m]||0)+1;}});
     mkChart('chart-taux-conv',{type:'line',data:{labels:mois12.map(moisLabel),datasets:[
       {label:'Taux conversion (%)',data:mois12.map(m=>devisParMois[m]?Math.round(convParMois[m]||0)/devisParMois[m]*100:0),borderColor:C.green,backgroundColor:C.greenL,fill:true,tension:.4,pointBackgroundColor:C.green,pointRadius:4},
       {label:'Objectif',data:mois12.map(()=>obj.taux_conversion),borderColor:'rgba(251,191,36,.5)',borderDash:[5,4],pointRadius:0,fill:false},
@@ -6170,7 +6170,7 @@ async function loadAnalyse() {
     document.getElementById('kpi-com-tbody').innerHTML=[
       {label:'Taux conversion devis→vente',obj:`≥${obj.taux_conversion}%`,val:tauxConv+'%',ok:tauxConv>=obj.taux_conversion},
       {label:'Devis acceptés / émis',obj:'—',val:`${nbGagnes} / ${nbDevis}`,ok:true},
-      {label:'Devis en cours (Envoyé)',obj:'Suivi requis',val:devisF.filter(d=>d.statut==='Envoyé').length+'',ok:true},
+      {label:'Devis en cours (Envoyé)',obj:'Suivi requis',val:devisF.filter(d=>d.statut==='Envoye').length+'',ok:true},
       {label:'Devis expirés sans réponse',obj:'0',val:devisF.filter(d=>d.statut==='Expiré').length+'',ok:devisF.filter(d=>d.statut==='Expiré').length===0},
     ].map(r=>`<tr><td>${r.label}</td><td style="color:var(--text2)">${r.obj}</td><td><strong>${r.val}</strong></td>
       <td><span class="badge ${r.ok?'badge-green':'badge-red'}">${r.ok?'✅ OK':'⚠️ Attention'}</span></td></tr>`).join('');
@@ -6266,10 +6266,10 @@ async function loadAnalyse() {
 
 const KANBAN_COLS = [
   { id:'Brouillon', label:'📝 Brouillon',  color:'var(--text2)',          bg:'rgba(125,133,144,.08)' },
-  { id:'Envoyé',    label:'📤 Envoyé',     color:'var(--accent-light)',   bg:'rgba(96,165,250,.08)'  },
-  { id:'Accepté',   label:'✅ Gagné',      color:'var(--success-light)',  bg:'rgba(74,222,128,.08)'  },
-  { id:'Refusé',    label:'❌ Perdu',      color:'var(--danger-light)',   bg:'rgba(248,113,113,.08)' },
-  { id:'Expiré',    label:'⏰ Expiré',     color:'var(--warning-light)',  bg:'rgba(251,191,36,.08)'  },
+  { id:'Envoye',    label:'📤 Envoyé',     color:'var(--accent-light)',   bg:'rgba(96,165,250,.08)'  },
+  { id:'Accepte',   label:'✅ Gagné',      color:'var(--success-light)',  bg:'rgba(74,222,128,.08)'  },
+  { id:'Refuse',    label:'❌ Perdu',      color:'var(--danger-light)',   bg:'rgba(248,113,113,.08)' },
+  { id:'Expire',    label:'⏰ Expiré',     color:'var(--warning-light)',  bg:'rgba(251,191,36,.08)'  },
 ];
 
 function switchComTab(tab) {
@@ -6320,10 +6320,10 @@ async function loadCommercial() {
     if (moisF)   { devis=devis.filter(d=>(d.date_emission||'').startsWith(moisF)); }
 
     const caTotal  = commandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
-    const gagnes   = devis.filter(d=>d.statut==='Accepté');
-    const perdus   = devis.filter(d=>d.statut==='Refusé');
+    const gagnes   = devis.filter(d=>d.statut==='Accepte');
+    const perdus   = devis.filter(d=>d.statut==='Refuse');
     const expires  = devis.filter(d=>d.statut==='Expiré');
-    const enCours  = devis.filter(d=>d.statut==='Envoyé');
+    const enCours  = devis.filter(d=>d.statut==='Envoye');
     const tauxConv = devis.length ? Math.round(gagnes.length/devis.length*100) : 0;
 
     // KPI Cards
@@ -6344,12 +6344,12 @@ async function loadCommercial() {
     if (statutF) listeDevis = listeDevis.filter(d=>d.statut===statutF);
     if (searchQ)  listeDevis = listeDevis.filter(d=>(d.numero||'').toLowerCase().includes(searchQ)||(d.client_id||'').toLowerCase().includes(searchQ));
 
-    const statCls = { Brouillon:'badge-gray', Envoyé:'badge-blue', Accepté:'badge-green', Refusé:'badge-red', Expiré:'badge-amber' };
+    const statCls = { Brouillon:'badge-gray', Envoye:'badge-blue', Accepte:'badge-green', Refuse:'badge-red', Expire:'badge-amber' };
     document.getElementById('commercial-tbody').innerHTML = listeDevis.length ?
       listeDevis.map(d => {
         const jours = d.date_emission ? Math.floor((new Date()-new Date(d.date_emission))/86400000) : 0;
         const expDate = d.date_emission ? addDays(d.date_emission, 10) : null;
-        const expired = expDate && new Date(expDate) < new Date() && d.statut==='Envoyé';
+        const expired = expDate && new Date(expDate) < new Date() && d.statut==='Envoye';
         return `<tr ${expired?'style="background:rgba(251,191,36,.06)"':''}>
           <td><strong style="color:var(--accent-light)">${esc(d.numero||'—')}</strong></td>
           <td>${clientName(d.client_id)}</td>
@@ -6363,8 +6363,8 @@ async function loadCommercial() {
           <td>
             <div style="display:flex;gap:4px">
               ${canWrite('devis')?`<button class="btn btn-ghost btn-xs" onclick="openDevisModal('${d.id}')">✏️</button>`:''}
-              ${d.statut==='Envoyé'?`
-                <button class="btn btn-success btn-xs" onclick="changerStatutDevis('${d.id}','Accepté')" title="Marquer GAGNÉ">✅</button>
+              ${d.statut==='Envoye'?`
+                <button class="btn btn-success btn-xs" onclick="changerStatutDevis('${d.id}','Accepte')" title="Marquer GAGNÉ">✅</button>
                 <button class="btn btn-danger-ghost btn-xs" onclick="ouvrirMotifPerte('${d.id}')" title="Marquer PERDU">❌</button>`:''
               }
             </div>
@@ -6388,7 +6388,7 @@ function renderKanban(devis) {
     const total    = colDevis.reduce((s,d)=>s+(d.montant_ttc||0),0);
     const cards    = colDevis.map(d => {
       const jours  = d.date_emission ? Math.floor((new Date()-new Date(d.date_emission))/86400000) : 0;
-      const alerte = col.id==='Envoyé' && jours >= 7;
+      const alerte = col.id==='Envoye' && jours >= 7;
       return `<div style="background:var(--surface);border:1px solid ${alerte?'rgba(251,191,36,.4)':'var(--border)'};border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer"
               onclick="openDevisModal('${d.id}')">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
@@ -6402,8 +6402,8 @@ function renderKanban(devis) {
           <span>${d.date_emission||'—'}</span>
         </div>
         ${d.motif_perte?`<div style="font-size:10px;color:var(--danger-light);margin-top:4px">📌 ${esc(d.motif_perte)}</div>`:''}
-        ${col.id==='Envoyé'?`<div style="display:flex;gap:4px;margin-top:8px">
-          <button class="btn btn-success btn-xs" style="flex:1" onclick="event.stopPropagation();changerStatutDevis('${d.id}','Accepté')">✅ Gagné</button>
+        ${col.id==='Envoye'?`<div style="display:flex;gap:4px;margin-top:8px">
+          <button class="btn btn-success btn-xs" style="flex:1" onclick="event.stopPropagation();changerStatutDevis('${d.id}','Accepte')">✅ Gagné</button>
           <button class="btn btn-danger-ghost btn-xs" style="flex:1" onclick="event.stopPropagation();ouvrirMotifPerte('${d.id}')">❌ Perdu</button>
         </div>`:''}
       </div>`;
@@ -6464,7 +6464,7 @@ async function confirmerPerte(id) {
   const motif  = document.getElementById('motif-perte-sel').value;
   const detail = document.getElementById('motif-perte-detail').value.trim();
   try {
-    await sbPatch('devis', id, { statut:'Refusé', motif_perte: detail ? `${motif} — ${detail}` : motif });
+    await sbPatch('devis', id, { statut:'Refuse', motif_perte: detail ? `${motif} — ${detail}` : motif });
     document.getElementById('motif-perte-modal').remove();
     toast('Devis classé Perdu · Motif enregistré ✓');
     logActivity(SESSION.name, 'Devis perdu', `Motif: ${motif}`);
@@ -6517,7 +6517,7 @@ async function loadRelances() {
       <td style="font-weight:600;color:${urgColor[d.urgence]}">${d.prochaine}</td>
       <td>
         <div style="display:flex;gap:4px">
-          <button class="btn btn-success btn-xs" onclick="changerStatutDevis('${d.id}','Accepté')">✅</button>
+          <button class="btn btn-success btn-xs" onclick="changerStatutDevis('${d.id}','Accepte')">✅</button>
           <button class="btn btn-danger-ghost btn-xs" onclick="ouvrirMotifPerte('${d.id}')">❌</button>
         </div>
       </td>
@@ -6557,10 +6557,10 @@ async function loadKPICommerciaux() {
       const ca       = empCommandes.reduce((s,c)=>s+(c.montant_ttc||0),0);
       const objCA    = emp.objectif_ca || 0;
       const atteinte = objCA>0 ? Math.round(ca/objCA*100) : 0;
-      const gagnes   = empDevis.filter(d=>d.statut==='Accepté').length;
+      const gagnes   = empDevis.filter(d=>d.statut==='Accepte').length;
       const conv     = empDevis.length>0 ? Math.round(gagnes/empDevis.length*100) : 0;
-      const actifs   = empDevis.filter(d=>d.statut==='Envoyé').length;
-      const perdus   = empDevis.filter(d=>d.statut==='Refusé').length;
+      const actifs   = empDevis.filter(d=>d.statut==='Envoye').length;
+      const perdus   = empDevis.filter(d=>d.statut==='Refuse').length;
       const variable = calcVariable(ca, objCA, emp.variable_max||0, emp.statut);
       const dedSanc  = empSanctions.reduce((s,x)=>s+(x.deduction||0),0);
       return { emp, ca, objCA, atteinte, gagnes, conv, actifs, perdus, empDevis, variable, dedSanc };
@@ -7243,7 +7243,7 @@ async function loadSMS() {
 
   // KPIs SMS
   const hist = await sb('sms_historique').catch(()=>[]);
-  const envoyes = hist.filter(s=>s.statut==='Envoyé').length;
+  const envoyes = hist.filter(s=>s.statut==='Envoye').length;
   const erreurs = hist.filter(s=>s.statut==='Erreur').length;
   const tests   = hist.filter(s=>s.statut==='Test').length;
   const repSat  = hist.filter(s=>s.type==='Satisfaction'&&s.reponse).length;
