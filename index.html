@@ -4022,11 +4022,7 @@ async function saveDevis() {
 // ── Impression navigateur ──
 function printDevis() {
   const d = buildDevisHTML(true);
-  const win = window.open('','_blank');
-  win.document.write(d);
-  win.document.close();
-  win.focus();
-  setTimeout(()=>{ win.print(); }, 400);
+  openHtmlWindow(d, 'Devis');
 }
 
 // ── Export PDF (via print dialog → Save as PDF) ──
@@ -4464,11 +4460,7 @@ function printCommande() {
   <div class="footer">Document généré par Zentiq ERP — ${esc(p.nom||'AllTEC Distribution')}</div>
   </body></html>`;
 
-  const win = window.open('','_blank');
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(()=>win.print(), 400);
+  openHtmlWindow(html, 'Bon de commande');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4718,11 +4710,7 @@ function printBonDepot() {
 
 </div></body></html>`;
 
-  const win = window.open('', '_blank', 'width=800,height=1000');
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 500);
+  openHtmlWindow(html, 'Bon de dépôt SAV');
 }
 // ── DOSSIER ──────────────────────────────────────────────────────────────────
 async function openSAVDossier(id) {
@@ -5998,8 +5986,7 @@ async function printBilanTrimestriel() {
 // ── Utilitaire impression commune ──
 function openPrintWindow(titre, header, body) {
   const p = getSocieteProfile();
-  const win = window.open('','_blank','width=900,height=1200');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  const __html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
     @page{size:A4;margin:15mm}body{font-family:'Segoe UI',sans-serif;font-size:11pt;color:#111}
     table{width:100%;border-collapse:collapse;margin-bottom:14px}
     th{background:#1e3a8a;color:#fff;padding:6px 10px;font-size:10pt;text-align:left}
@@ -8186,33 +8173,43 @@ function printEtiquetteQuarantaine() {
     quantite:   document.getElementById('qf-quantite').value,
     motif:      document.getElementById('qf-motif').value,
     responsable:document.getElementById('qf-responsable').value,
+    fournisseur:document.getElementById('qf-fournisseur')?.value || '',
   };
   const p = getSocieteProfile();
-  const win = window.open('','_blank','width=400,height=420');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  const __etiqHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
-    @page { size: 50mm 50mm; margin: 0; }
-    body { margin:0; padding:3mm; font-family:'Segoe UI',sans-serif; font-size:7pt; width:44mm; height:44mm; box-sizing:border-box; border:1px solid #000; }
-    .header { background:#dc2626; color:#fff; text-align:center; font-weight:800; font-size:9pt; padding:2mm; margin:-3mm -3mm 2mm -3mm; letter-spacing:1px; }
-    .row { display:flex; justify-content:space-between; margin-bottom:1mm; }
-    .label { color:#666; font-size:6pt; }
-    .val { font-weight:600; font-size:7pt; }
-    .ref { font-family:monospace; font-size:8pt; font-weight:700; background:#fef3c7; padding:1mm; text-align:center; margin:1mm 0; }
-    .footer { border-top:1px solid #ccc; margin-top:1mm; padding-top:1mm; font-size:5.5pt; color:#888; text-align:center; }
+    @page { size: 55mm 55mm; margin: 0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { margin:0; padding:0; font-family:'Segoe UI',Arial,sans-serif; width:55mm; height:55mm; overflow:hidden; }
+    .header { background:#dc2626; color:#fff; text-align:center; font-weight:800; font-size:8.5pt; padding:1.5mm 2mm; letter-spacing:.5px; }
+    .body { padding:2mm 2.5mm 1mm; display:flex; flex-direction:column; gap:1mm; }
+    .num { text-align:center; font-weight:800; font-size:9pt; color:#1e3a5f; background:#eff6ff; border-radius:2px; padding:1mm; letter-spacing:1px; }
+    .ref { font-family:monospace; font-size:7.5pt; font-weight:700; background:#fef9c3; padding:1mm 2mm; text-align:center; border-radius:2px; }
+    .desig { font-size:6pt; font-weight:600; color:#222; line-height:1.3; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:.5mm 2mm; margin-top:.5mm; }
+    .field { display:flex; flex-direction:column; }
+    .lbl { font-size:5pt; color:#999; text-transform:uppercase; letter-spacing:.03em; }
+    .val { font-size:6pt; font-weight:700; color:#111; line-height:1.3; }
+    .fournisseur { background:#f0fdf4; border:1px solid #86efac; border-radius:2px; padding:.8mm 2mm; font-size:6pt; font-weight:600; color:#166534; }
+    .footer { border-top:1px solid #e5e7eb; padding:.8mm 2.5mm; font-size:5pt; color:#999; text-align:center; margin-top:auto; }
   </style></head><body>
   <div class="header">🚧 QUARANTAINE — ZONE E</div>
-  <div style="text-align:center;font-weight:700;font-size:8pt;margin-bottom:1mm">${esc(r.numero)}</div>
-  <div class="ref">${esc(r.ref)}</div>
-  <div style="font-size:6.5pt;margin-bottom:1mm;font-weight:600">${esc(r.designation.substring(0,35))}${r.designation.length>35?'…':''}</div>
-  <div class="row"><span class="label">Agence:</span><span class="val">${esc(r.agence)}</span></div>
-  <div class="row"><span class="label">Date:</span><span class="val">${esc(r.date)}</span></div>
-  <div class="row"><span class="label">Qté:</span><span class="val">${esc(r.quantite)}</span></div>
-  <div class="row"><span class="label">Motif:</span><span class="val" style="max-width:30mm;text-align:right">${esc(r.motif)}</span></div>
-  <div class="row"><span class="label">Resp.:</span><span class="val">${esc(r.responsable)}</span></div>
+  <div class="body">
+    <div class="num">${esc(r.numero)}</div>
+    <div class="ref">REF : ${esc(r.ref)||'—'}</div>
+    <div class="desig">${esc(r.designation.substring(0,55))}${r.designation.length>55?'…':''}</div>
+    ${r.fournisseur ? `<div class="fournisseur">🏭 ${esc(r.fournisseur)}</div>` : ''}
+    <div class="grid">
+      <div class="field"><div class="lbl">Agence</div><div class="val">${esc(r.agence)}</div></div>
+      <div class="field"><div class="lbl">Date</div><div class="val">${esc(r.date)}</div></div>
+      <div class="field"><div class="lbl">Quantité</div><div class="val">${esc(r.quantite)}</div></div>
+      <div class="field"><div class="lbl">Responsable</div><div class="val">${esc(r.responsable.substring(0,12))}</div></div>
+      <div class="field" style="grid-column:1/-1"><div class="lbl">Motif</div><div class="val">${esc(r.motif.substring(0,40))}</div></div>
+    </div>
+  </div>
   <div class="footer">${p.nom||'AllTEC Distribution'} — NE PAS DÉPLACER SANS AUTORISATION</div>
-  </body></html>`);
-  win.document.close();
-  setTimeout(()=>win.print(),400);
+  </body></html>`;
+  openHtmlWindow(__etiqHtml, 'Étiquette Quarantaine');
 }
 
 // ── IMPRESSION FICHE A4 ──
@@ -8309,9 +8306,23 @@ function printFicheQuarantaine() {
     <span>Document confidentiel — Usage interne</span>
     <span>Imprimé le ${new Date().toLocaleDateString('fr-TN')}</span>
   </div>
-  </body></html>`);
-  win.document.close();
-  setTimeout(()=>win.print(),500);
+  </body></html>`;
+  openHtmlWindow(__html, 'Fiche Quarantaine');
+}
+
+// helper réutilisable : ouvrir un HTML dans une nouvelle fenêtre
+function openHtmlWindow(html, title='Document') {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank', 'width=900,height=1200');
+  if (win) {
+    win.onload = () => { setTimeout(() => { URL.revokeObjectURL(url); }, 2000); };
+  } else {
+    // fallback si popup bloqué
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
