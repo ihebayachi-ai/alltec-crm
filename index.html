@@ -548,15 +548,23 @@ textarea.form-control{resize:vertical;min-height:80px}
       <!-- DEVIS -->
       <div class="page" id="page-devis">
         <div class="page-header">
-          <div><div class="page-title">📄 Devis</div><div class="page-sub">Gestion des devis</div></div>
+          <div><div class="page-title">📄 Devis</div><div class="page-sub">Gestion des devis et propositions commerciales</div></div>
           <div class="toolbar">
-            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="devis-search" oninput="loadDevis()"></div>
+            <div class="search-bar">🔍 <input type="text" placeholder="N° devis, client..." id="devis-search" oninput="loadDevis()"></div>
+            <select class="form-control" style="width:140px" id="devis-filter-statut" onchange="loadDevis()">
+              <option value="">Tous les statuts</option>
+              <option>Brouillon</option><option>Envoyé</option><option>Accepté</option><option>Refusé</option>
+            </select>
             <button class="btn btn-primary" id="btn-add-devis" onclick="openDevisModal()">＋ Nouveau devis</button>
           </div>
         </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="devis-stats"></div>
         <div class="card">
           <div class="table-wrap"><table>
-            <thead><tr><th>Numéro</th><th>Client</th><th>Date</th><th>Montant TTC</th><th>TVA</th><th>Actions</th></tr></thead>
+            <thead><tr>
+              <th>Numéro</th><th>Client</th><th>Date</th><th>Validité</th>
+              <th>Total TTC</th><th>Statut</th><th>Commercial</th><th>Actions</th>
+            </tr></thead>
             <tbody id="devis-tbody"></tbody>
           </table></div>
         </div>
@@ -565,15 +573,23 @@ textarea.form-control{resize:vertical;min-height:80px}
       <!-- COMMANDES -->
       <div class="page" id="page-commandes">
         <div class="page-header">
-          <div><div class="page-title">📦 Commandes</div><div class="page-sub">Suivi des commandes</div></div>
+          <div><div class="page-title">📦 Commandes</div><div class="page-sub">Suivi des bons de commande</div></div>
           <div class="toolbar">
-            <div class="search-bar">🔍 <input type="text" placeholder="Rechercher..." id="commandes-search" oninput="loadCommandes()"></div>
+            <div class="search-bar">🔍 <input type="text" placeholder="N° commande, client..." id="commandes-search" oninput="loadCommandes()"></div>
+            <select class="form-control" style="width:150px" id="commandes-filter-statut" onchange="loadCommandes()">
+              <option value="">Tous les statuts</option>
+              <option>Confirmée</option><option>En préparation</option><option>Livrée</option><option>Annulée</option>
+            </select>
             <button class="btn btn-primary" id="btn-add-commande" onclick="openCommandeModal()">＋ Nouvelle commande</button>
           </div>
         </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="commandes-stats"></div>
         <div class="card">
           <div class="table-wrap"><table>
-            <thead><tr><th>Numéro</th><th>Client</th><th>Montant TTC</th><th>Actions</th></tr></thead>
+            <thead><tr>
+              <th>Numéro</th><th>Client</th><th>Date</th><th>Livraison prévue</th>
+              <th>Total TTC</th><th>Statut</th><th>Agence</th><th>Actions</th>
+            </tr></thead>
             <tbody id="commandes-tbody"></tbody>
           </table></div>
         </div>
@@ -2735,19 +2751,99 @@ supabase functions deploy send-sms
   </div>
 </div>
 
-<!-- Devis Modal -->
+<!-- Devis Modal — Formulaire complet avec lignes -->
 <div class="overlay" id="devis-modal-overlay">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="devis-modal-title">Nouveau devis</div><button class="modal-close" onclick="closeModal('devis-modal-overlay')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">Numéro *</label><input class="form-control" id="dm-num" placeholder="DEV-2026-001"></div>
-        <div class="form-group"><label class="form-label">Client</label>
-          <select class="form-control" id="dm-client"></select></div>
-        <div class="form-group"><label class="form-label">Date émission</label><input class="form-control" type="date" id="dm-date"></div>
-        <div class="form-group"><label class="form-label">Montant TTC</label><input class="form-control" type="number" id="dm-ttc" placeholder="0.000"></div>
-        <div class="form-group"><label class="form-label">TVA (%)</label><input class="form-control" type="number" id="dm-tva" value="19"></div>
+  <div class="modal modal-xl" style="max-width:900px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="devis-modal-title">Nouveau devis</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="dm-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:var(--surface2);color:var(--text2)">Brouillon</span>
+        <button class="btn btn-ghost btn-sm" id="dm-btn-print" onclick="printDevis()" style="display:none">🖨️ Imprimer</button>
+        <button class="btn btn-ghost btn-sm" id="dm-btn-pdf" onclick="exportDevisPDF()" style="display:none">📥 PDF</button>
+        <button class="btn btn-success btn-sm" id="dm-btn-convert" onclick="convertirEnCommande()" style="display:none">📦 → Commande</button>
+        <button class="modal-close" onclick="closeModal('devis-modal-overlay')">✕</button>
       </div>
+    </div>
+    <div class="modal-body" style="max-height:80vh;overflow-y:auto">
+
+      <!-- Infos générales -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group"><label class="form-label">N° devis *</label><input class="form-control" id="dm-num" placeholder="DEV-2026-001"></div>
+        <div class="form-group"><label class="form-label">Date émission *</label><input class="form-control" type="date" id="dm-date"></div>
+        <div class="form-group"><label class="form-label">Valide jusqu'au</label><input class="form-control" type="date" id="dm-validite"></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="dm-statut" onchange="onDevisStatutChange()">
+            <option>Brouillon</option><option>Envoyé</option><option>Accepté</option><option>Refusé</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group"><label class="form-label">Client *</label><select class="form-control" id="dm-client"></select></div>
+        <div class="form-group"><label class="form-label">Agence</label>
+          <select class="form-control" id="dm-agence">
+            <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Commercial</label><input class="form-control" id="dm-commercial" placeholder="Nom du commercial"></div>
+      </div>
+
+      <!-- Tableau des lignes -->
+      <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Lignes du devis</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="dm-lignes-table">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:6px 4px;text-align:left;width:30px;color:var(--text2)">#</th>
+              <th style="padding:6px 4px;text-align:left;color:var(--text2)">Désignation *</th>
+              <th style="padding:6px 4px;text-align:right;width:60px;color:var(--text2)">Qté</th>
+              <th style="padding:6px 4px;text-align:right;width:110px;color:var(--text2)">PU HT (DT)</th>
+              <th style="padding:6px 4px;text-align:right;width:75px;color:var(--text2)">Remise %</th>
+              <th style="padding:6px 4px;text-align:center;width:80px;color:var(--text2)">TVA</th>
+              <th style="padding:6px 4px;text-align:right;width:110px;color:var(--text2)">Total TTC</th>
+              <th style="padding:6px 4px;width:28px"></th>
+            </tr>
+          </thead>
+          <tbody id="dm-lignes-tbody"></tbody>
+        </table>
+      </div>
+      <button onclick="ajouterLigneDevis()" style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:6px;padding:6px 16px;color:var(--text2);cursor:pointer;font-size:12px;width:100%">＋ Ajouter une ligne</button>
+
+      <!-- Totaux -->
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <div style="min-width:280px;background:var(--surface2);border-radius:8px;padding:12px 16px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="color:var(--text2)">Total HT</span>
+            <strong id="dm-total-ht">0.000 DT</strong>
+          </div>
+          <div id="dm-tva-lines"></div>
+          <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+            <span style="color:var(--text2)">Remise globale (DT)</span>
+            <input type="number" id="dm-remise-globale" value="0" min="0" step="0.001"
+              style="width:90px;text-align:right;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);font-size:13px"
+              oninput="recalcDevis()">
+          </div>
+          <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:8px;font-size:15px;font-weight:600">
+            <span>Total TTC</span>
+            <span id="dm-total-ttc" style="color:var(--accent-light)">0.000 DT</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Notes / Conditions</label>
+        <textarea class="form-control" id="dm-notes" rows="2" placeholder="Conditions de paiement, délai de livraison, garantie..."></textarea>
+      </div>
+
+      <!-- Motif de refus (caché par défaut) -->
+      <div class="form-group" id="dm-motif-group" style="display:none;margin-top:10px">
+        <label class="form-label">Motif de refus</label>
+        <select class="form-control" id="dm-motif-perte">
+          <option>Prix</option><option>Concurrent</option><option>Budget insuffisant</option>
+          <option>Projet annulé</option><option>Délai trop long</option><option>Sans réponse</option><option>Autre</option>
+        </select>
+      </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('devis-modal-overlay')">Annuler</button>
@@ -2758,14 +2854,71 @@ supabase functions deploy send-sms
 
 <!-- Commande Modal -->
 <div class="overlay" id="commande-modal-overlay">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="commande-modal-title">Nouvelle commande</div><button class="modal-close" onclick="closeModal('commande-modal-overlay')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">Numéro *</label><input class="form-control" id="cmod-num" placeholder="CMD-2026-001"></div>
-        <div class="form-group"><label class="form-label">Client</label>
-          <select class="form-control" id="cmod-client"></select></div>
-        <div class="form-group"><label class="form-label">Montant TTC</label><input class="form-control" type="number" id="cmod-ttc" placeholder="0.000"></div>
+  <div class="modal modal-xl" style="max-width:860px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="commande-modal-title">Nouvelle commande</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="cmd-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:var(--surface2);color:var(--text2)">Confirmée</span>
+        <button class="btn btn-ghost btn-sm" id="cmd-btn-print" onclick="printCommande()" style="display:none">🖨️ Bon de livraison</button>
+        <button class="modal-close" onclick="closeModal('commande-modal-overlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="max-height:80vh;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group"><label class="form-label">N° commande *</label><input class="form-control" id="cmod-num" placeholder="CMD-2026-001"></div>
+        <div class="form-group"><label class="form-label">Date commande *</label><input class="form-control" type="date" id="cmod-date"></div>
+        <div class="form-group"><label class="form-label">Livraison prévue</label><input class="form-control" type="date" id="cmod-livraison"></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="cmod-statut" onchange="onCmdStatutChange()">
+            <option>Confirmée</option><option>En préparation</option><option>Livrée</option><option>Annulée</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group"><label class="form-label">Client *</label><select class="form-control" id="cmod-client"></select></div>
+        <div class="form-group"><label class="form-label">Agence</label>
+          <select class="form-control" id="cmod-agence"><option>Charguia</option><option>Kairouan</option><option>Sousse</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Commercial</label><input class="form-control" id="cmod-commercial" placeholder="Nom du commercial"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Lignes de la commande</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:6px 4px;text-align:left;width:30px;color:var(--text2)">#</th>
+            <th style="padding:6px 4px;text-align:left;color:var(--text2)">Désignation *</th>
+            <th style="padding:6px 4px;text-align:right;width:60px;color:var(--text2)">Qté</th>
+            <th style="padding:6px 4px;text-align:right;width:110px;color:var(--text2)">PU HT (DT)</th>
+            <th style="padding:6px 4px;text-align:right;width:75px;color:var(--text2)">Remise %</th>
+            <th style="padding:6px 4px;text-align:center;width:80px;color:var(--text2)">TVA</th>
+            <th style="padding:6px 4px;text-align:right;width:110px;color:var(--text2)">Total TTC</th>
+            <th style="padding:6px 4px;width:28px"></th>
+          </tr></thead>
+          <tbody id="cmod-lignes-tbody"></tbody>
+        </table>
+      </div>
+      <button onclick="ajouterLigneCommande()" style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:6px;padding:6px 16px;color:var(--text2);cursor:pointer;font-size:12px;width:100%">＋ Ajouter une ligne</button>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <div style="min-width:280px;background:var(--surface2);border-radius:8px;padding:12px 16px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text2)">Total HT</span><strong id="cmod-total-ht">0.000 DT</strong></div>
+          <div id="cmod-tva-lines"></div>
+          <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+            <span style="color:var(--text2)">Remise globale (DT)</span>
+            <input type="number" id="cmod-remise-globale" value="0" min="0" step="0.001"
+              style="width:90px;text-align:right;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);font-size:13px"
+              oninput="recalcCommande()">
+          </div>
+          <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:8px;font-size:15px;font-weight:600">
+            <span>Total TTC</span><span id="cmod-total-ttc" style="color:var(--accent-light)">0.000 DT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Notes / Instructions de livraison</label>
+        <textarea class="form-control" id="cmod-notes" rows="2" placeholder="Adresse de livraison, instructions spéciales..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -3543,109 +3696,739 @@ async function saveClient() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEVIS
 // ─────────────────────────────────────────────────────────────────────────────
+// DEVIS — MODULE COMPLET (lignes libres, TVA par ligne, impression, PDF)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DEVIS_TVA_TAUX = [0, 7, 19];
+let EDIT_DEVIS_ID = null;
+let DM_LIGNES = []; // lignes en mémoire
+
+// ── Chargement liste devis ──
 async function loadDevis() {
   const tbody = document.getElementById('devis-tbody');
-  tbody.innerHTML = loadingRow(6);
+  tbody.innerHTML = loadingRow(8);
   try {
-    const q = document.getElementById('devis-search').value;
-    let filter = q ? `numero=ilike.*${encodeURIComponent(q)}*` : '';
+    const q  = document.getElementById('devis-search')?.value || '';
+    const sf = document.getElementById('devis-filter-statut')?.value || '';
+    let filters = [];
+    if (q)  filters.push(`or=(numero.ilike.*${encodeURIComponent(q)}*)`);
+    if (sf) filters.push(`statut=eq.${encodeURIComponent(sf)}`);
+    const filter = filters.join('&');
     const data = await sb('devis', { filter, order:'date_emission.desc' });
-    if (!data.length) { tbody.innerHTML = emptyRow(6,'Aucun devis'); return; }
-    tbody.innerHTML = data.map(d => `<tr>
-      <td><strong>${esc(d.numero||'—')}</strong></td>
-      <td>${clientName(d.client_id)}</td>
-      <td>${d.date_emission||'—'}</td>
-      <td><strong>${fmtMoney(d.montant_ttc)}</strong> TND</td>
-      <td>${d.tva||0}%</td>
-      <td>${canWrite('devis')?`<button class="btn btn-ghost btn-xs" onclick="openDevisModal('${d.id}')">✏️</button>
-        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('devis','${d.id}',loadDevis)">🗑</button>`:'—'}</td>
-    </tr>`).join('');
-  } catch(e) { tbody.innerHTML = errorRow(6, e.message); }
+
+    // Stats rapides
+    const statsDiv = document.getElementById('devis-stats');
+    if (statsDiv) {
+      const total   = data.length;
+      const envoyes = data.filter(d=>d.statut==='Envoyé').length;
+      const acceptes= data.filter(d=>d.statut==='Accepté').length;
+      const caTotal = data.filter(d=>d.statut==='Accepté').reduce((s,d)=>s+(d.montant_ttc||0),0);
+      const taux    = envoyes+acceptes > 0 ? Math.round(acceptes/(envoyes+acceptes)*100) : 0;
+      statsDiv.innerHTML = `
+        <div class="stat-card blue"><div class="stat-label">📄 Total devis</div><div class="stat-val">${total}</div></div>
+        <div class="stat-card amber"><div class="stat-label">📤 Envoyés</div><div class="stat-val">${envoyes}</div></div>
+        <div class="stat-card green"><div class="stat-label">✅ Acceptés</div><div class="stat-val">${acceptes}</div></div>
+        <div class="stat-card purple"><div class="stat-label">💰 CA devis acceptés</div><div class="stat-val" style="font-size:16px">${fmtMoney(caTotal)} DT</div></div>`;
+    }
+
+    if (!data.length) { tbody.innerHTML = emptyRow(8,'Aucun devis'); return; }
+
+    const STATUT_STYLE = {
+      'Brouillon': 'background:var(--surface2);color:var(--text2)',
+      'Envoyé':    'background:rgba(59,130,246,.15);color:#60a5fa',
+      'Accepté':   'background:rgba(34,197,94,.15);color:#4ade80',
+      'Refusé':    'background:rgba(239,68,68,.15);color:#f87171',
+    };
+    tbody.innerHTML = data.map(d => {
+      const st = d.statut||'Brouillon';
+      const stStyle = STATUT_STYLE[st] || STATUT_STYLE['Brouillon'];
+      return `<tr>
+        <td><strong style="color:var(--accent-light)">${esc(d.numero||'—')}</strong></td>
+        <td>${clientName(d.client_id)}</td>
+        <td>${d.date_emission||'—'}</td>
+        <td style="color:var(--text2)">${d.date_validite||'—'}</td>
+        <td><strong>${fmtMoney(d.montant_ttc)}</strong> DT</td>
+        <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;${stStyle}">${st}</span></td>
+        <td style="color:var(--text2)">${esc(d.commercial||'—')}</td>
+        <td>${canWrite('devis')?`
+          <button class="btn btn-ghost btn-xs" onclick="openDevisModal('${d.id}')">✏️</button>
+          <button class="btn btn-ghost btn-xs" onclick="openDevisModal('${d.id}',true)">👁</button>
+          <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('devis','${d.id}',loadDevis)">🗑</button>`:'—'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = errorRow(8, e.message); }
 }
 
-let EDIT_DEVIS_ID = null;
-async function openDevisModal(id = null) {
+// ── Ligne vide ──
+function nouvelleLigne() {
+  return { designation:'', qte:1, pu_ht:0, remise:0, tva:19 };
+}
+
+// ── Rendu des lignes dans le modal ──
+function renderLignesDevis() {
+  const tbody = document.getElementById('dm-lignes-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = DM_LIGNES.map((l, i) => `
+    <tr id="dm-ligne-${i}">
+      <td style="padding:4px;color:var(--text2);text-align:center">${i+1}</td>
+      <td style="padding:4px"><input type="text" class="form-control" style="font-size:12px;padding:4px 8px"
+        value="${esc(l.designation)}" placeholder="Désignation du produit/service"
+        oninput="DM_LIGNES[${i}].designation=this.value"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:60px"
+        value="${l.qte}" min="0.001" step="0.001"
+        oninput="DM_LIGNES[${i}].qte=parseFloat(this.value)||0;recalcDevis()"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:100px"
+        value="${l.pu_ht}" min="0" step="0.001"
+        oninput="DM_LIGNES[${i}].pu_ht=parseFloat(this.value)||0;recalcDevis()"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:60px"
+        value="${l.remise}" min="0" max="100" step="0.01"
+        oninput="DM_LIGNES[${i}].remise=parseFloat(this.value)||0;recalcDevis()"></td>
+      <td style="padding:4px;text-align:center">
+        <select class="form-control" style="font-size:12px;padding:4px 6px;width:70px"
+          onchange="DM_LIGNES[${i}].tva=parseInt(this.value);recalcDevis()">
+          ${DEVIS_TVA_TAUX.map(t=>`<option value="${t}"${l.tva===t?' selected':''}>${t}%</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px;text-align:right;font-weight:500;font-size:12px;color:var(--accent-light)" id="dm-ligne-ttc-${i}">
+        ${fmtMoney(calcLigneTTC(l))} DT
+      </td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="supprimerLigneDevis(${i})" style="background:none;border:none;cursor:pointer;color:var(--danger-light);font-size:14px" title="Supprimer">✕</button>
+      </td>
+    </tr>`).join('');
+  recalcDevis();
+}
+
+// ── Calcul TTC d'une ligne ──
+function calcLigneTTC(l) {
+  const ht = (l.pu_ht * l.qte) * (1 - (l.remise||0)/100);
+  return ht * (1 + (l.tva||0)/100);
+}
+
+// ── Recalcul des totaux ──
+function recalcDevis() {
+  let totalHT = 0;
+  const tvaMap = {};
+  DM_LIGNES.forEach((l, i) => {
+    const ht = (l.pu_ht * l.qte) * (1 - (l.remise||0)/100);
+    const tvaAmt = ht * (l.tva||0) / 100;
+    const ttc = ht + tvaAmt;
+    totalHT += ht;
+    if (!tvaMap[l.tva]) tvaMap[l.tva] = { base:0, tva:0 };
+    tvaMap[l.tva].base += ht;
+    tvaMap[l.tva].tva  += tvaAmt;
+    const el = document.getElementById(`dm-ligne-ttc-${i}`);
+    if (el) el.textContent = fmtMoney(ttc) + ' DT';
+  });
+
+  const remise = parseFloat(document.getElementById('dm-remise-globale')?.value)||0;
+  const totalHtApresRemise = totalHT - remise;
+
+  // Ventilation TVA
+  const tvaLines = document.getElementById('dm-tva-lines');
+  if (tvaLines) {
+    tvaLines.innerHTML = Object.entries(tvaMap)
+      .filter(([,v])=>v.tva>0)
+      .sort(([a],[b])=>a-b)
+      .map(([taux,v])=>`
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+          <span style="color:var(--text2)">TVA ${taux}% (base ${fmtMoney(v.base)} DT)</span>
+          <span>+ ${fmtMoney(v.tva)} DT</span>
+        </div>`).join('');
+  }
+
+  const totalTVA = Object.values(tvaMap).reduce((s,v)=>s+v.tva,0);
+  const totalTTC = totalHtApresRemise + totalTVA;
+
+  const elHT  = document.getElementById('dm-total-ht');
+  const elTTC = document.getElementById('dm-total-ttc');
+  if (elHT)  elHT.textContent  = fmtMoney(totalHT) + ' DT';
+  if (elTTC) elTTC.textContent = fmtMoney(totalTTC) + ' DT';
+
+  return { totalHT, totalTTC, remise, tvaMap };
+}
+
+// ── Ajouter / Supprimer ligne ──
+function ajouterLigneDevis() {
+  DM_LIGNES.push(nouvelleLigne());
+  renderLignesDevis();
+}
+function supprimerLigneDevis(i) {
+  DM_LIGNES.splice(i, 1);
+  renderLignesDevis();
+}
+
+// ── Affichage badge statut ──
+function onDevisStatutChange() {
+  const st = document.getElementById('dm-statut')?.value || 'Brouillon';
+  const badge = document.getElementById('dm-statut-badge');
+  const motifGroup = document.getElementById('dm-motif-group');
+  const STYLES = {
+    'Brouillon': 'background:var(--surface2);color:var(--text2)',
+    'Envoyé':    'background:rgba(59,130,246,.2);color:#60a5fa',
+    'Accepté':   'background:rgba(34,197,94,.2);color:#4ade80',
+    'Refusé':    'background:rgba(239,68,68,.2);color:#f87171',
+  };
+  if (badge) { badge.textContent = st; badge.style.cssText = `font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;${STYLES[st]||STYLES['Brouillon']}`; }
+  if (motifGroup) motifGroup.style.display = st === 'Refusé' ? 'block' : 'none';
+}
+
+// ── Ouvrir le modal ──
+async function openDevisModal(id = null, readOnly = false) {
   EDIT_DEVIS_ID = id;
-  document.getElementById('devis-modal-title').textContent = id ? 'Modifier devis' : 'Nouveau devis';
+  DM_LIGNES = [];
+
+  document.getElementById('devis-modal-title').textContent = id ? (readOnly?'Aperçu devis':'Modifier devis') : 'Nouveau devis';
   await fillClientSelect('dm-client');
+
+  // Boutons impression (visibles seulement en mode édition d'un devis existant)
+  const btnPrint   = document.getElementById('dm-btn-print');
+  const btnPDF     = document.getElementById('dm-btn-pdf');
+  const btnConvert = document.getElementById('dm-btn-convert');
+  if (btnPrint)   btnPrint.style.display   = id ? 'inline-flex' : 'none';
+  if (btnPDF)     btnPDF.style.display     = id ? 'inline-flex' : 'none';
+  if (btnConvert) btnConvert.style.display = id ? 'inline-flex' : 'none';
+
   if (id) {
     try {
       const [d] = await sb('devis', { filter:`id=eq.${id}` });
-      document.getElementById('dm-num').value = d.numero||'';
-      document.getElementById('dm-client').value = d.client_id||'';
-      document.getElementById('dm-date').value = d.date_emission||'';
-      document.getElementById('dm-ttc').value = d.montant_ttc||'';
-      document.getElementById('dm-tva').value = d.tva||19;
-    } catch{}
+      document.getElementById('dm-num').value        = d.numero||'';
+      document.getElementById('dm-client').value     = d.client_id||'';
+      document.getElementById('dm-date').value       = d.date_emission||'';
+      document.getElementById('dm-validite').value   = d.date_validite||'';
+      document.getElementById('dm-statut').value     = d.statut||'Brouillon';
+      document.getElementById('dm-agence').value     = d.agence||'Charguia';
+      document.getElementById('dm-commercial').value = d.commercial||'';
+      document.getElementById('dm-notes').value      = d.notes||'';
+      document.getElementById('dm-remise-globale').value = d.remise_globale||0;
+      if (d.motif_perte) document.getElementById('dm-motif-perte').value = d.motif_perte;
+      // Charger les lignes
+      DM_LIGNES = Array.isArray(d.lignes) ? d.lignes : (d.lignes ? JSON.parse(d.lignes) : []);
+      if (!DM_LIGNES.length) DM_LIGNES = [nouvelleLigne()];
+      onDevisStatutChange();
+    } catch(e) { console.error(e); DM_LIGNES = [nouvelleLigne()]; }
   } else {
-    document.getElementById('dm-num').value = '';
-    document.getElementById('dm-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('dm-ttc').value = '';
-    document.getElementById('dm-tva').value = 19;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const validStr = new Date(now.setDate(now.getDate()+30)).toISOString().split('T')[0];
+    document.getElementById('dm-num').value        = await genNumDevis();
+    document.getElementById('dm-date').value       = dateStr;
+    document.getElementById('dm-validite').value   = validStr;
+    document.getElementById('dm-statut').value     = 'Brouillon';
+    document.getElementById('dm-agence').value     = SESSION?.agences?.[0]||'Charguia';
+    document.getElementById('dm-commercial').value = SESSION?.name||'';
+    document.getElementById('dm-notes').value      = '';
+    document.getElementById('dm-remise-globale').value = 0;
+    document.getElementById('dm-client').value     = '';
+    DM_LIGNES = [nouvelleLigne()];
+    onDevisStatutChange();
   }
+
+  renderLignesDevis();
   openModal('devis-modal-overlay');
 }
 
+// ── Générer un numéro de devis automatique ──
+async function genNumDevis() {
+  try {
+    const year = new Date().getFullYear();
+    const data = await sb('devis', { filter:`numero=ilike.DEV-${year}*`, order:'numero.desc' });
+    if (!data.length) return `DEV-${year}-001`;
+    const last = data[0].numero;
+    const num  = parseInt(last.split('-').pop())||0;
+    return `DEV-${year}-${String(num+1).padStart(3,'0')}`;
+  } catch { return `DEV-${new Date().getFullYear()}-001`; }
+}
+
+// ── Enregistrer le devis ──
 async function saveDevis() {
-  const body = { numero:v('dm-num'), client_id:v('dm-client')||null, date_emission:v('dm-date'), montant_ttc:parseFloat(v('dm-ttc'))||0, tva:parseFloat(v('dm-tva'))||19 };
-  if (!body.numero) { toast('Le numéro est requis','error'); return; }
+  const numero = document.getElementById('dm-num').value.trim();
+  if (!numero) { toast('Le numéro est requis','error'); return; }
+
+  const lignesValides = DM_LIGNES.filter(l => l.designation.trim());
+  if (!lignesValides.length) { toast('Au moins une ligne avec désignation est requise','error'); return; }
+
+  const { totalTTC } = recalcDevis();
+  const remise = parseFloat(document.getElementById('dm-remise-globale').value)||0;
+  const statut = document.getElementById('dm-statut').value;
+
+  const body = {
+    numero,
+    client_id:      document.getElementById('dm-client').value||null,
+    date_emission:  document.getElementById('dm-date').value||null,
+    date_validite:  document.getElementById('dm-validite').value||null,
+    statut,
+    agence:         document.getElementById('dm-agence').value,
+    commercial:     document.getElementById('dm-commercial').value.trim(),
+    notes:          document.getElementById('dm-notes').value.trim(),
+    remise_globale: remise,
+    montant_ttc:    totalTTC,
+    lignes:         JSON.stringify(DM_LIGNES),
+    motif_perte:    statut==='Refusé' ? (document.getElementById('dm-motif-perte').value||null) : null,
+  };
+
   try {
     if (EDIT_DEVIS_ID) await sbPatch('devis', EDIT_DEVIS_ID, body);
     else await sbPost('devis', body);
-    closeModal('devis-modal-overlay'); loadDevis(); toast(EDIT_DEVIS_ID?'Devis mis à jour':'Devis créé');
+    closeModal('devis-modal-overlay');
+    loadDevis();
+    toast(EDIT_DEVIS_ID ? 'Devis mis à jour ✓' : 'Devis créé ✓');
     EDIT_DEVIS_ID = null;
   } catch(e) { toast(e.message,'error'); }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMMANDES
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadCommandes() {
-  const tbody = document.getElementById('commandes-tbody');
-  tbody.innerHTML = loadingRow(4);
-  try {
-    const q = document.getElementById('commandes-search').value;
-    let filter = q ? `numero=ilike.*${encodeURIComponent(q)}*` : '';
-    const data = await sb('commandes', { filter });
-    if (!data.length) { tbody.innerHTML = emptyRow(4,'Aucune commande'); return; }
-    tbody.innerHTML = data.map(c => `<tr>
-      <td><strong>${esc(c.numero||'—')}</strong></td>
-      <td>${clientName(c.client_id)}</td>
-      <td><strong>${fmtMoney(c.montant_ttc)}</strong> TND</td>
-      <td>${canWrite('commandes')?`<button class="btn btn-ghost btn-xs" onclick="openCommandeModal('${c.id}')">✏️</button>
-        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('commandes','${c.id}',loadCommandes)">🗑</button>`:'—'}</td>
-    </tr>`).join('');
-  } catch(e) { tbody.innerHTML = errorRow(4, e.message); }
+// ── Impression navigateur ──
+function printDevis() {
+  const d = buildDevisHTML(true);
+  const win = window.open('','_blank');
+  win.document.write(d);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 400);
 }
 
+// ── Export PDF (via print dialog → Save as PDF) ──
+function exportDevisPDF() {
+  printDevis();
+}
+
+// ── Construire le HTML du devis pour impression ──
+function buildDevisHTML(forPrint=false) {
+  const num     = document.getElementById('dm-num').value;
+  const date    = document.getElementById('dm-date').value;
+  const validite= document.getElementById('dm-validite').value;
+  const statut  = document.getElementById('dm-statut').value;
+  const agence  = document.getElementById('dm-agence').value;
+  const comm    = document.getElementById('dm-commercial').value;
+  const notes   = document.getElementById('dm-notes').value;
+  const remise  = parseFloat(document.getElementById('dm-remise-globale').value)||0;
+
+  const clientSel = document.getElementById('dm-client');
+  const clientNom = clientSel ? (clientSel.options[clientSel.selectedIndex]?.text||'—') : '—';
+
+  const { totalHT, totalTTC, tvaMap } = recalcDevis();
+
+  const p = getSocieteProfile ? getSocieteProfile() : {};
+  const societeNom = p.nom || 'AllTEC Distribution';
+  const societeAddr = p.adresse || 'Charguia — Tunisie';
+  const societeTel  = p.tel || '';
+  const societeMF   = p.matricule_fiscal || '';
+
+  const lignesHTML = DM_LIGNES.filter(l=>l.designation.trim()).map((l,i)=>`
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px 8px;text-align:center">${i+1}</td>
+      <td style="padding:6px 8px">${esc(l.designation)}</td>
+      <td style="padding:6px 8px;text-align:right">${l.qte}</td>
+      <td style="padding:6px 8px;text-align:right">${fmtMoney(l.pu_ht)}</td>
+      <td style="padding:6px 8px;text-align:right">${l.remise||0}%</td>
+      <td style="padding:6px 8px;text-align:center">${l.tva}%</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:600">${fmtMoney(calcLigneTTC(l))}</td>
+    </tr>`).join('');
+
+  const tvaLinesHTML = Object.entries(tvaMap)
+    .filter(([,v])=>v.tva>0).sort(([a],[b])=>a-b)
+    .map(([taux,v])=>`<tr><td style="padding:3px 8px">TVA ${taux}% (base ${fmtMoney(v.base)} DT)</td><td style="padding:3px 8px;text-align:right">${fmtMoney(v.tva)} DT</td></tr>`).join('');
+
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  <title>Devis ${num}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#222;padding:20px}
+    @media print{body{padding:0}@page{margin:15mm}}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1e3a5f}
+    .societe{font-size:14px;font-weight:700;color:#1e3a5f}
+    .doc-title{font-size:22px;font-weight:700;color:#1e3a5f;text-align:right}
+    .doc-num{font-size:13px;color:#555;text-align:right}
+    .infos{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .info-block{background:#f8f9fa;border-radius:6px;padding:10px 14px}
+    .info-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+    table{width:100%;border-collapse:collapse}
+    thead{background:#1e3a5f;color:#fff}
+    th{padding:8px;text-align:left;font-size:11px}
+    th:last-child,td:last-child{text-align:right}
+    .totaux{display:flex;justify-content:flex-end;margin-top:16px}
+    .totaux-table{min-width:260px;font-size:12px}
+    .totaux-table td{padding:4px 8px}
+    .total-ttc{font-size:14px;font-weight:700;color:#1e3a5f;border-top:2px solid #1e3a5f}
+    .notes{margin-top:20px;padding:10px 14px;background:#f8f9fa;border-radius:6px;font-size:11px;color:#555}
+    .statut-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:#e8f5e9;color:#2e7d32}
+    .footer{margin-top:30px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="societe">${esc(societeNom)}</div>
+      <div style="font-size:11px;color:#555;margin-top:4px">${esc(societeAddr)}</div>
+      ${societeTel?`<div style="font-size:11px;color:#555">Tél : ${esc(societeTel)}</div>`:''}
+      ${societeMF?`<div style="font-size:11px;color:#555">MF : ${esc(societeMF)}</div>`:''}
+    </div>
+    <div>
+      <div class="doc-title">DEVIS</div>
+      <div class="doc-num">${esc(num)}</div>
+      <div style="margin-top:6px"><span class="statut-badge">${esc(statut)}</span></div>
+    </div>
+  </div>
+  <div class="infos">
+    <div class="info-block">
+      <div class="info-label">Client</div>
+      <div style="font-weight:600;font-size:13px">${esc(clientNom)}</div>
+    </div>
+    <div class="info-block">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><div class="info-label">Date émission</div><div>${date||'—'}</div></div>
+        <div><div class="info-label">Valide jusqu'au</div><div>${validite||'—'}</div></div>
+        <div><div class="info-label">Agence</div><div>${esc(agence)}</div></div>
+        <div><div class="info-label">Commercial</div><div>${esc(comm||'—')}</div></div>
+      </div>
+    </div>
+  </div>
+  <table>
+    <thead><tr>
+      <th style="width:30px">#</th>
+      <th>Désignation</th>
+      <th style="width:50px;text-align:right">Qté</th>
+      <th style="width:90px;text-align:right">PU HT (DT)</th>
+      <th style="width:65px;text-align:right">Remise</th>
+      <th style="width:55px;text-align:center">TVA</th>
+      <th style="width:100px;text-align:right">Total TTC (DT)</th>
+    </tr></thead>
+    <tbody>${lignesHTML}</tbody>
+  </table>
+  <div class="totaux">
+    <table class="totaux-table">
+      <tr><td>Total HT</td><td style="text-align:right">${fmtMoney(totalHT)} DT</td></tr>
+      ${tvaLinesHTML}
+      ${remise>0?`<tr><td style="color:#e53e3e">Remise globale</td><td style="text-align:right;color:#e53e3e">− ${fmtMoney(remise)} DT</td></tr>`:''}
+      <tr class="total-ttc"><td><strong>TOTAL TTC</strong></td><td style="text-align:right"><strong>${fmtMoney(totalTTC)} DT</strong></td></tr>
+    </table>
+  </div>
+  ${notes?`<div class="notes"><strong>Notes & Conditions :</strong><br>${esc(notes)}</div>`:''}
+  <div class="footer">Document généré par Zentiq ERP — ${societeNom}</div>
+  </body></html>`;
+}
+
+// ── Convertir devis accepté en commande ──
+async function convertirEnCommande() {
+  if (!EDIT_DEVIS_ID) return;
+  const statut = document.getElementById('dm-statut').value;
+  if (statut !== 'Accepté') {
+    toast('Le devis doit être en statut "Accepté" pour être converti','error'); return;
+  }
+  if (!confirm('Convertir ce devis en commande ?')) return;
+
+  const numDevis = document.getElementById('dm-num').value;
+  const numCmd   = numDevis.replace('DEV-','CMD-');
+  const { totalTTC } = recalcDevis();
+  const remise = parseFloat(document.getElementById('dm-remise-globale').value)||0;
+
+  const body = {
+    numero:       numCmd,
+    client_id:    document.getElementById('dm-client').value||null,
+    montant_ttc:  totalTTC,
+    statut:       'Confirmée',
+    agence:       document.getElementById('dm-agence').value,
+    commercial:   document.getElementById('dm-commercial').value,
+    date_commande: new Date().toISOString().split('T')[0],
+    devis_id:     EDIT_DEVIS_ID,
+    lignes:       JSON.stringify(DM_LIGNES),
+    remise_globale: remise,
+    notes:        document.getElementById('dm-notes').value,
+  };
+
+  try {
+    await sbPost('commandes', body);
+    toast(`Commande ${numCmd} créée ✓`,'success');
+    closeModal('devis-modal-overlay');
+    loadDevis();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMMANDES — MODULE COMPLET
+// ─────────────────────────────────────────────────────────────────────────────
+
 let EDIT_CMD_ID = null;
+let CMD_LIGNES = [];
+
+async function loadCommandes() {
+  const tbody = document.getElementById('commandes-tbody');
+  tbody.innerHTML = loadingRow(8);
+  try {
+    const q  = document.getElementById('commandes-search')?.value || '';
+    const sf = document.getElementById('commandes-filter-statut')?.value || '';
+    let filters = [];
+    if (q)  filters.push(`numero=ilike.*${encodeURIComponent(q)}*`);
+    if (sf) filters.push(`statut=eq.${encodeURIComponent(sf)}`);
+    const filter = filters.join('&');
+    const data = await sb('commandes', { filter, order:'date_commande.desc' });
+
+    const statsDiv = document.getElementById('commandes-stats');
+    if (statsDiv) {
+      const confirmees  = data.filter(d=>d.statut==='Confirmée').length;
+      const enPrep      = data.filter(d=>d.statut==='En préparation').length;
+      const livrees     = data.filter(d=>d.statut==='Livrée').length;
+      const caTotal     = data.reduce((s,d)=>s+(d.montant_ttc||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat-card blue"><div class="stat-label">📦 Total</div><div class="stat-val">${data.length}</div></div>
+        <div class="stat-card amber"><div class="stat-label">✅ Confirmées</div><div class="stat-val">${confirmees}</div></div>
+        <div class="stat-card purple"><div class="stat-label">🔄 En préparation</div><div class="stat-val">${enPrep}</div></div>
+        <div class="stat-card green"><div class="stat-label">🚚 Livrées</div><div class="stat-val">${livrees}</div></div>`;
+    }
+
+    if (!data.length) { tbody.innerHTML = emptyRow(8,'Aucune commande'); return; }
+
+    const STATUT_STYLE = {
+      'Confirmée':      'background:rgba(59,130,246,.15);color:#60a5fa',
+      'En préparation': 'background:rgba(251,191,36,.15);color:#fbbf24',
+      'Livrée':         'background:rgba(34,197,94,.15);color:#4ade80',
+      'Annulée':        'background:rgba(239,68,68,.15);color:#f87171',
+    };
+    tbody.innerHTML = data.map(c => {
+      const st = c.statut||'Confirmée';
+      const stStyle = STATUT_STYLE[st] || '';
+      return `<tr>
+        <td><strong style="color:var(--accent-light)">${esc(c.numero||'—')}</strong></td>
+        <td>${clientName(c.client_id)}</td>
+        <td>${c.date_commande||'—'}</td>
+        <td style="color:var(--text2)">${c.date_livraison_prevue||'—'}</td>
+        <td><strong>${fmtMoney(c.montant_ttc)}</strong> DT</td>
+        <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;${stStyle}">${st}</span></td>
+        <td style="color:var(--text2)">${esc(c.agence||'—')}</td>
+        <td>${canWrite('commandes')?`
+          <button class="btn btn-ghost btn-xs" onclick="openCommandeModal('${c.id}')">✏️</button>
+          <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('commandes','${c.id}',loadCommandes)">🗑</button>`:'—'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = errorRow(8, e.message); }
+}
+
+function nouvelleLigneCmd() { return { designation:'', qte:1, pu_ht:0, remise:0, tva:19 }; }
+
+function renderLignesCommande() {
+  const tbody = document.getElementById('cmod-lignes-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = CMD_LIGNES.map((l, i) => `
+    <tr>
+      <td style="padding:4px;color:var(--text2);text-align:center">${i+1}</td>
+      <td style="padding:4px"><input type="text" class="form-control" style="font-size:12px;padding:4px 8px"
+        value="${esc(l.designation)}" placeholder="Désignation"
+        oninput="CMD_LIGNES[${i}].designation=this.value"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:60px"
+        value="${l.qte}" min="0.001" step="0.001"
+        oninput="CMD_LIGNES[${i}].qte=parseFloat(this.value)||0;recalcCommande()"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:100px"
+        value="${l.pu_ht}" min="0" step="0.001"
+        oninput="CMD_LIGNES[${i}].pu_ht=parseFloat(this.value)||0;recalcCommande()"></td>
+      <td style="padding:4px"><input type="number" class="form-control" style="font-size:12px;padding:4px 6px;text-align:right;width:60px"
+        value="${l.remise}" min="0" max="100" step="0.01"
+        oninput="CMD_LIGNES[${i}].remise=parseFloat(this.value)||0;recalcCommande()"></td>
+      <td style="padding:4px;text-align:center">
+        <select class="form-control" style="font-size:12px;padding:4px 6px;width:70px"
+          onchange="CMD_LIGNES[${i}].tva=parseInt(this.value);recalcCommande()">
+          ${DEVIS_TVA_TAUX.map(t=>`<option value="${t}"${l.tva===t?' selected':''}>${t}%</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px;text-align:right;font-weight:500;font-size:12px;color:var(--accent-light)" id="cmod-ligne-ttc-${i}">
+        ${fmtMoney(calcLigneTTC(l))} DT
+      </td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="supprimerLigneCommande(${i})" style="background:none;border:none;cursor:pointer;color:var(--danger-light);font-size:14px">✕</button>
+      </td>
+    </tr>`).join('');
+  recalcCommande();
+}
+
+function recalcCommande() {
+  let totalHT = 0;
+  const tvaMap = {};
+  CMD_LIGNES.forEach((l, i) => {
+    const ht = (l.pu_ht * l.qte) * (1 - (l.remise||0)/100);
+    const tvaAmt = ht * (l.tva||0) / 100;
+    totalHT += ht;
+    if (!tvaMap[l.tva]) tvaMap[l.tva] = { base:0, tva:0 };
+    tvaMap[l.tva].base += ht;
+    tvaMap[l.tva].tva  += tvaAmt;
+    const el = document.getElementById(`cmod-ligne-ttc-${i}`);
+    if (el) el.textContent = fmtMoney(ht + tvaAmt) + ' DT';
+  });
+  const remise = parseFloat(document.getElementById('cmod-remise-globale')?.value)||0;
+  const tvaTotal = Object.values(tvaMap).reduce((s,v)=>s+v.tva,0);
+  const totalTTC = totalHT - remise + tvaTotal;
+
+  const tvaLines = document.getElementById('cmod-tva-lines');
+  if (tvaLines) {
+    tvaLines.innerHTML = Object.entries(tvaMap).filter(([,v])=>v.tva>0).sort(([a],[b])=>a-b)
+      .map(([taux,v])=>`<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px"><span style="color:var(--text2)">TVA ${taux}% (base ${fmtMoney(v.base)} DT)</span><span>+ ${fmtMoney(v.tva)} DT</span></div>`).join('');
+  }
+  const elHT = document.getElementById('cmod-total-ht');
+  const elTTC = document.getElementById('cmod-total-ttc');
+  if (elHT) elHT.textContent = fmtMoney(totalHT) + ' DT';
+  if (elTTC) elTTC.textContent = fmtMoney(totalTTC) + ' DT';
+  return { totalHT, totalTTC };
+}
+
+function ajouterLigneCommande() { CMD_LIGNES.push(nouvelleLigneCmd()); renderLignesCommande(); }
+function supprimerLigneCommande(i) { CMD_LIGNES.splice(i,1); renderLignesCommande(); }
+
+function onCmdStatutChange() {
+  const st = document.getElementById('cmod-statut')?.value||'Confirmée';
+  const badge = document.getElementById('cmd-statut-badge');
+  const STYLES = {
+    'Confirmée':'background:rgba(59,130,246,.2);color:#60a5fa',
+    'En préparation':'background:rgba(251,191,36,.2);color:#fbbf24',
+    'Livrée':'background:rgba(34,197,94,.2);color:#4ade80',
+    'Annulée':'background:rgba(239,68,68,.2);color:#f87171',
+  };
+  if (badge) { badge.textContent=st; badge.style.cssText=`font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;${STYLES[st]||''}`; }
+}
+
 async function openCommandeModal(id = null) {
   EDIT_CMD_ID = id;
+  CMD_LIGNES = [];
   document.getElementById('commande-modal-title').textContent = id ? 'Modifier commande' : 'Nouvelle commande';
   await fillClientSelect('cmod-client');
+
+  const btnPrint = document.getElementById('cmd-btn-print');
+  if (btnPrint) btnPrint.style.display = id ? 'inline-flex' : 'none';
+
   if (id) {
-    const [c] = await sb('commandes', { filter:`id=eq.${id}` });
-    document.getElementById('cmod-num').value = c.numero||'';
-    document.getElementById('cmod-client').value = c.client_id||'';
-    document.getElementById('cmod-ttc').value = c.montant_ttc||'';
+    try {
+      const [c] = await sb('commandes', { filter:`id=eq.${id}` });
+      document.getElementById('cmod-num').value       = c.numero||'';
+      document.getElementById('cmod-client').value    = c.client_id||'';
+      document.getElementById('cmod-date').value      = c.date_commande||'';
+      document.getElementById('cmod-livraison').value = c.date_livraison_prevue||'';
+      document.getElementById('cmod-statut').value    = c.statut||'Confirmée';
+      document.getElementById('cmod-agence').value    = c.agence||'Charguia';
+      document.getElementById('cmod-commercial').value= c.commercial||'';
+      document.getElementById('cmod-notes').value     = c.notes||'';
+      document.getElementById('cmod-remise-globale').value = c.remise_globale||0;
+      CMD_LIGNES = Array.isArray(c.lignes) ? c.lignes : (c.lignes ? JSON.parse(c.lignes) : []);
+      if (!CMD_LIGNES.length) CMD_LIGNES = [nouvelleLigneCmd()];
+      onCmdStatutChange();
+    } catch(e) { console.error(e); CMD_LIGNES = [nouvelleLigneCmd()]; }
   } else {
-    document.getElementById('cmod-num').value = '';
-    document.getElementById('cmod-ttc').value = '';
+    const dateStr = new Date().toISOString().split('T')[0];
+    document.getElementById('cmod-num').value       = await genNumCommande();
+    document.getElementById('cmod-date').value      = dateStr;
+    document.getElementById('cmod-livraison').value = '';
+    document.getElementById('cmod-statut').value    = 'Confirmée';
+    document.getElementById('cmod-agence').value    = SESSION?.agences?.[0]||'Charguia';
+    document.getElementById('cmod-commercial').value= SESSION?.name||'';
+    document.getElementById('cmod-notes').value     = '';
+    document.getElementById('cmod-remise-globale').value = 0;
+    CMD_LIGNES = [nouvelleLigneCmd()];
+    onCmdStatutChange();
   }
+  renderLignesCommande();
   openModal('commande-modal-overlay');
 }
 
+async function genNumCommande() {
+  try {
+    const year = new Date().getFullYear();
+    const data = await sb('commandes', { filter:`numero=ilike.CMD-${year}*`, order:'numero.desc' });
+    if (!data.length) return `CMD-${year}-001`;
+    const last = data[0].numero;
+    const num  = parseInt(last.split('-').pop())||0;
+    return `CMD-${year}-${String(num+1).padStart(3,'0')}`;
+  } catch { return `CMD-${new Date().getFullYear()}-001`; }
+}
+
 async function saveCommande() {
-  const body = { numero:v('cmod-num'), client_id:v('cmod-client')||null, montant_ttc:parseFloat(v('cmod-ttc'))||0 };
-  if (!body.numero) { toast('Le numéro est requis','error'); return; }
+  const numero = document.getElementById('cmod-num').value.trim();
+  if (!numero) { toast('Le numéro est requis','error'); return; }
+  const { totalTTC } = recalcCommande();
+  const remise = parseFloat(document.getElementById('cmod-remise-globale').value)||0;
+  const body = {
+    numero,
+    client_id:            document.getElementById('cmod-client').value||null,
+    date_commande:        document.getElementById('cmod-date').value||null,
+    date_livraison_prevue:document.getElementById('cmod-livraison').value||null,
+    statut:               document.getElementById('cmod-statut').value,
+    agence:               document.getElementById('cmod-agence').value,
+    commercial:           document.getElementById('cmod-commercial').value.trim(),
+    notes:                document.getElementById('cmod-notes').value.trim(),
+    remise_globale:       remise,
+    montant_ttc:          totalTTC,
+    lignes:               JSON.stringify(CMD_LIGNES),
+  };
   try {
     if (EDIT_CMD_ID) await sbPatch('commandes', EDIT_CMD_ID, body);
     else await sbPost('commandes', body);
-    closeModal('commande-modal-overlay'); loadCommandes(); toast('Commande enregistrée');
+    closeModal('commande-modal-overlay');
+    loadCommandes();
+    toast(EDIT_CMD_ID ? 'Commande mise à jour ✓' : 'Commande créée ✓');
     EDIT_CMD_ID = null;
   } catch(e) { toast(e.message,'error'); }
+}
+
+function printCommande() {
+  const num   = document.getElementById('cmod-num').value;
+  const date  = document.getElementById('cmod-date').value;
+  const liv   = document.getElementById('cmod-livraison').value;
+  const agence= document.getElementById('cmod-agence').value;
+  const comm  = document.getElementById('cmod-commercial').value;
+  const notes = document.getElementById('cmod-notes').value;
+  const clientSel = document.getElementById('cmod-client');
+  const clientNom = clientSel?.options[clientSel.selectedIndex]?.text||'—';
+  const { totalTTC } = recalcCommande();
+  const remise = parseFloat(document.getElementById('cmod-remise-globale').value)||0;
+  const p = getSocieteProfile ? getSocieteProfile() : {};
+
+  const lignesHTML = CMD_LIGNES.filter(l=>l.designation.trim()).map((l,i)=>`
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px 8px;text-align:center">${i+1}</td>
+      <td style="padding:6px 8px">${esc(l.designation)}</td>
+      <td style="padding:6px 8px;text-align:right">${l.qte}</td>
+      <td style="padding:6px 8px;text-align:right">${fmtMoney(l.pu_ht)}</td>
+      <td style="padding:6px 8px;text-align:right">${l.remise||0}%</td>
+      <td style="padding:6px 8px;text-align:center">${l.tva}%</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:600">${fmtMoney(calcLigneTTC(l))}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Commande ${num}</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;color:#222;padding:20px}
+  @media print{body{padding:0}@page{margin:15mm}}
+  .header{display:flex;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1e3a5f}
+  .societe{font-size:14px;font-weight:700;color:#1e3a5f}.doc-title{font-size:22px;font-weight:700;color:#1e3a5f;text-align:right}
+  table{width:100%;border-collapse:collapse}thead{background:#1e3a5f;color:#fff}th{padding:8px;text-align:left;font-size:11px}
+  th:last-child,td:last-child{text-align:right}.total-ttc{font-size:14px;font-weight:700;color:#1e3a5f;border-top:2px solid #1e3a5f}
+  .footer{margin-top:30px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center}</style></head><body>
+  <div class="header">
+    <div><div class="societe">${esc(p.nom||'AllTEC Distribution')}</div><div style="font-size:11px;color:#555;margin-top:4px">${esc(p.adresse||'')}</div></div>
+    <div><div class="doc-title">BON DE COMMANDE</div><div style="font-size:13px;color:#555;text-align:right">${esc(num)}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div style="background:#f8f9fa;border-radius:6px;padding:10px 14px"><div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:4px">Client</div><div style="font-weight:600">${esc(clientNom)}</div></div>
+    <div style="background:#f8f9fa;border-radius:6px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+      <div><div style="color:#888">Date</div><div>${date}</div></div>
+      <div><div style="color:#888">Livraison prévue</div><div>${liv||'—'}</div></div>
+      <div><div style="color:#888">Agence</div><div>${esc(agence)}</div></div>
+      <div><div style="color:#888">Commercial</div><div>${esc(comm)}</div></div>
+    </div>
+  </div>
+  <table><thead><tr><th style="width:30px">#</th><th>Désignation</th><th style="width:50px;text-align:right">Qté</th>
+    <th style="width:90px;text-align:right">PU HT</th><th style="width:65px;text-align:right">Remise</th>
+    <th style="width:55px;text-align:center">TVA</th><th style="width:100px;text-align:right">Total TTC</th></tr></thead>
+  <tbody>${lignesHTML}</tbody></table>
+  <div style="display:flex;justify-content:flex-end;margin-top:16px">
+    <table style="min-width:240px;font-size:12px">
+      ${remise>0?`<tr><td style="padding:3px 8px;color:#e53e3e">Remise globale</td><td style="text-align:right;color:#e53e3e">− ${fmtMoney(remise)} DT</td></tr>`:''}
+      <tr class="total-ttc"><td style="padding:4px 8px"><strong>TOTAL TTC</strong></td><td style="text-align:right"><strong>${fmtMoney(totalTTC)} DT</strong></td></tr>
+    </table>
+  </div>
+  ${notes?`<div style="margin-top:16px;padding:10px 14px;background:#f8f9fa;border-radius:6px;font-size:11px;color:#555"><strong>Notes :</strong><br>${esc(notes)}</div>`:''}
+  <div class="footer">Document généré par Zentiq ERP — ${esc(p.nom||'AllTEC Distribution')}</div>
+  </body></html>`;
+
+  const win = window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(), 400);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
