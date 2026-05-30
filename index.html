@@ -3150,12 +3150,18 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 async function sb(table, options = {}) {
   const { method = 'GET', filter = '', body, select = '*', order = '' } = options;
-  let url = `${SB_URL}/rest/v1/${table}?select=${select}`;
-  if (filter) url += `&${filter}`;
-  if (order) url += `&order=${order}`;
+  const isWrite = method === 'POST' || method === 'PATCH' || method === 'DELETE';
+  let url = `${SB_URL}/rest/v1/${table}`;
+  if (!isWrite) url += `?select=${select}`;
+  else url += '?';
+  if (filter) url += (url.includes('?') && !url.endsWith('?') ? '&' : '') + filter;
+  if (order)  url += (url.includes('?') && !url.endsWith('?') ? '&' : '') + `order=${order}`;
+  // Nettoyer les ? traînants
+  url = url.replace(/\?$/, '').replace(/\?&/, '?');
   const headers = {
     'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
-    'Content-Type': 'application/json', 'Prefer': 'return=representation'
+    'Content-Type': 'application/json',
+    'Prefer': isWrite ? 'return=minimal' : 'return=representation'
   };
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) { const e = await res.json().catch(()=>({message:res.statusText})); throw new Error(e.message || res.statusText); }
