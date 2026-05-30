@@ -8309,17 +8309,21 @@ function printFicheQuarantaine() {
 }
 
 // helper réutilisable : ouvrir un HTML dans une nouvelle fenêtre
-function openHtmlWindow(html, title='Document') {
+function openHtmlWindow(html, title='Document', autoPrint=true) {
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank', 'width=900,height=1200');
   if (win) {
-    win.onload = () => { setTimeout(() => { URL.revokeObjectURL(url); }, 2000); };
+    win.onload = () => {
+      if (autoPrint) setTimeout(() => { win.print(); }, 600);
+      setTimeout(() => { URL.revokeObjectURL(url); }, 5000);
+    };
   } else {
-    // fallback si popup bloqué
+    // fallback si popup bloqué — ouvrir sans impression auto
     const a = document.createElement('a');
     a.href = url; a.target = '_blank'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
+    toast('Popup bloqué — autorisez les popups pour imprimer', 'error');
   }
 }
 
