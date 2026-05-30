@@ -477,12 +477,26 @@ textarea.form-control{resize:vertical;min-height:80px}
         <!-- Graphiques + Activité -->
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px">
           <div class="card">
-            <div class="card-header">
-              <span class="card-title">📈 CA mensuel — 6 derniers mois</span>
+            <div class="card-header" style="flex-wrap:wrap;gap:8px">
+              <span class="card-title">📈 Chiffre d'Affaires</span>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <select id="ca-vue" onchange="renderCA()" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">
+                  <option value="exercice">Exercice 2026 (Jan→Déc)</option>
+                  <option value="6mois">6 derniers mois</option>
+                </select>
+                <select id="ca-agence-filter" onchange="renderCA()" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">
+                  <option value="toutes">Toutes agences</option>
+                  <option value="Charguia">Charguia</option>
+                  <option value="Kairouan">Kairouan</option>
+                  <option value="Sousse">Sousse</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="openModalCA()" style="font-size:11px;padding:4px 10px">✏️ Saisir CA</button>
+              </div>
             </div>
             <div class="card-body" style="height:220px">
               <canvas id="dash-chart-ca"></canvas>
             </div>
+            <div id="ca-totaux" style="display:flex;gap:16px;flex-wrap:wrap;padding:8px 16px 12px;font-size:12px;border-top:1px solid var(--border);color:var(--text2)"></div>
           </div>
           <div class="card">
             <div class="card-header"><span class="card-title">🔧 Tickets SAV par statut</span></div>
@@ -2914,6 +2928,63 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal CA Mensuel -->
+<div class="overlay" id="ca-modal-overlay">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Saisir / Modifier CA mensuel</div>
+      <button class="modal-close" onclick="closeModal('ca-modal-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Mois *</label>
+          <select class="form-control" id="ca-input-mois">
+            <option value="1">Janvier</option><option value="2">Février</option>
+            <option value="3">Mars</option><option value="4">Avril</option>
+            <option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option>
+            <option value="9">Septembre</option><option value="10">Octobre</option>
+            <option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Année *</label>
+          <input type="number" class="form-control" id="ca-input-annee" value="2026" min="2020" max="2035">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Agence *</label>
+        <select class="form-control" id="ca-input-agence">
+          <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+        </select>
+      </div>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="form-group">
+          <label class="form-label">CA HT (DT)</label>
+          <input type="number" class="form-control" id="ca-input-ht" placeholder="0.000" step="0.001" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CA TTC (DT)</label>
+          <input type="number" class="form-control" id="ca-input-ttc" placeholder="0.000" step="0.001" min="0">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Objectif mensuel (DT)</label>
+        <input type="number" class="form-control" id="ca-input-obj" placeholder="0.000" step="0.001" min="0">
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="ca-input-notes" rows="2" placeholder="Remarques..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ca-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCA()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════ -->
@@ -3339,24 +3410,9 @@ async function loadDashboard() {
         <div class="stat-sub">${sanctMois} sanction(s) ce mois</div>
       </div>`;
 
-    // ── Graphique CA 6 mois ──
-    const mois6 = derniers12Mois().slice(-6);
-    const caParMois = {};
-    commandes.forEach(c => { const m=(c.date_commande||'').slice(0,7); if(m) caParMois[m]=(caParMois[m]||0)+(c.montant_ttc||0); });
-    mkChart('dash-chart-ca', {
-      type:'bar',
-      data:{
-        labels: mois6.map(moisLabel),
-        datasets:[
-          { label:'CA (TND)', data:mois6.map(m=>Math.round(caParMois[m]||0)), backgroundColor:'rgba(96,165,250,.7)', borderRadius:4 },
-          { label:'Objectif', data:mois6.map(()=>obj.ca_mensuel), type:'line', borderColor:'rgba(251,191,36,.6)', borderDash:[5,4], pointRadius:0, fill:false },
-        ]
-      },
-      options:{ ...CHART_DEFAULTS, responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
-        scales:{ x:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}}, y:{ticks:{color:'#8b949e',callback:v=>v>=1000?Math.round(v/1000)+'k':v},grid:{color:'rgba(255,255,255,.05)'}} }
-      }
-    });
+    // ── Graphique CA — géré par renderCA() ──
+    renderCA();
+
 
     // ── Graphique SAV donut ──
     const tStatuts = {}; tickets.forEach(t=>{ const s=t.statut||'Ouvert'; tStatuts[s]=(tStatuts[s]||0)+1; });
@@ -9170,6 +9226,193 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') document.getElementById('login-pass').focus();
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CA MENSUEL — SAISIE MANUELLE & GRAPHIQUE DASHBOARD
+// ═════════════════════════════════════════════════════════════════════════════
+
+const CA_MOIS_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+let _caChartInstance = null;
+
+// Ouvrir la modal de saisie CA
+function openModalCA() {
+  const now = new Date();
+  document.getElementById('ca-input-mois').value = now.getMonth() + 1;
+  document.getElementById('ca-input-annee').value = now.getFullYear();
+  document.getElementById('ca-input-agence').value = 'Charguia';
+  document.getElementById('ca-input-ht').value = '';
+  document.getElementById('ca-input-ttc').value = '';
+  document.getElementById('ca-input-obj').value = '';
+  document.getElementById('ca-input-notes').value = '';
+  openModal('ca-modal-overlay');
+}
+
+// Sauvegarder le CA (upsert manuel via fetch)
+async function saveCA() {
+  const annee   = parseInt(document.getElementById('ca-input-annee').value);
+  const mois    = parseInt(document.getElementById('ca-input-mois').value);
+  const agence  = document.getElementById('ca-input-agence').value;
+  const ca_ht   = parseFloat(document.getElementById('ca-input-ht').value)  || 0;
+  const ca_ttc  = parseFloat(document.getElementById('ca-input-ttc').value) || 0;
+  const objectif= parseFloat(document.getElementById('ca-input-obj').value) || 0;
+  const notes   = document.getElementById('ca-input-notes').value.trim();
+
+  if (!annee || !mois || !agence) {
+    showToast('Veuillez remplir les champs obligatoires', 'error');
+    return;
+  }
+
+  try {
+    // Vérifier si l'entrée existe déjà
+    const chkRes = await fetch(
+      `${SB_URL}/rest/v1/ca_mensuel?annee=eq.${annee}&mois=eq.${mois}&agence=eq.${encodeURIComponent(agence)}`,
+      { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } }
+    );
+    const existing = await chkRes.json();
+
+    if (Array.isArray(existing) && existing.length > 0) {
+      // UPDATE
+      await fetch(
+        `${SB_URL}/rest/v1/ca_mensuel?annee=eq.${annee}&mois=eq.${mois}&agence=eq.${encodeURIComponent(agence)}`,
+        {
+          method: 'PATCH',
+          headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ ca_ht, ca_ttc, objectif, notes })
+        }
+      );
+    } else {
+      // INSERT
+      await fetch(`${SB_URL}/rest/v1/ca_mensuel`, {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ annee, mois, agence, ca_ht, ca_ttc, objectif, notes })
+      });
+    }
+
+    showToast('CA enregistré ✓', 'success');
+    closeModal('ca-modal-overlay');
+    renderCA();
+
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
+
+// Afficher le graphique CA (exercice ou 6 mois glissants)
+async function renderCA() {
+  const vue       = document.getElementById('ca-vue')?.value || 'exercice';
+  const agenceSel = document.getElementById('ca-agence-filter')?.value || 'toutes';
+  const anneeEnCours = new Date().getFullYear();
+
+  try {
+    let url = `${SB_URL}/rest/v1/ca_mensuel?select=*&annee=gte.${anneeEnCours - 1}&order=annee.asc,mois.asc`;
+    if (agenceSel !== 'toutes') url += `&agence=eq.${encodeURIComponent(agenceSel)}`;
+
+    const res = await fetch(url, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } });
+    let rows = await res.json();
+    if (!Array.isArray(rows)) rows = [];
+
+    // Filtrage selon la vue
+    if (vue === 'exercice') {
+      rows = rows.filter(r => r.annee === anneeEnCours);
+    } else {
+      const now2 = new Date();
+      const limite = new Date(now2.getFullYear(), now2.getMonth() - 5, 1);
+      rows = rows.filter(r => new Date(r.annee, r.mois - 1, 1) >= limite);
+    }
+
+    // Agrégation par mois (somme si toutes agences)
+    const map = {};
+    rows.forEach(r => {
+      const key = `${r.annee}-${String(r.mois).padStart(2,'0')}`;
+      if (!map[key]) map[key] = { annee: r.annee, mois: r.mois, ca_ht: 0, ca_ttc: 0, objectif: 0 };
+      map[key].ca_ht    += parseFloat(r.ca_ht)    || 0;
+      map[key].ca_ttc   += parseFloat(r.ca_ttc)   || 0;
+      map[key].objectif += parseFloat(r.objectif) || 0;
+    });
+
+    let labels = [], dataHT = [], dataTTC = [], dataObj = [];
+
+    if (vue === 'exercice') {
+      for (let m = 1; m <= 12; m++) {
+        const key = `${anneeEnCours}-${String(m).padStart(2,'0')}`;
+        const d = map[key];
+        labels.push(CA_MOIS_LABELS[m - 1]);
+        dataHT.push(d ? d.ca_ht    : 0);
+        dataTTC.push(d ? d.ca_ttc  : 0);
+        dataObj.push(d ? d.objectif: 0);
+      }
+    } else {
+      const sorted = Object.values(map).sort((a,b) => a.annee*100+a.mois-(b.annee*100+b.mois));
+      // S'assurer d'avoir 6 entrées
+      const now3 = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d2 = new Date(now3.getFullYear(), now3.getMonth() - i, 1);
+        const key = `${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}`;
+        const entry = map[key];
+        const lbl = CA_MOIS_LABELS[d2.getMonth()] + (d2.getFullYear()!==anneeEnCours?` '${String(d2.getFullYear()).slice(2)}`:'');
+        labels.push(lbl);
+        dataHT.push(entry ? entry.ca_ht    : 0);
+        dataTTC.push(entry ? entry.ca_ttc  : 0);
+        dataObj.push(entry ? entry.objectif: 0);
+      }
+    }
+
+    // Détruire l'ancien chart et recréer
+    const canvas = document.getElementById('dash-chart-ca');
+    if (!canvas) return;
+
+    if (_caChartInstance) { _caChartInstance.destroy(); _caChartInstance = null; }
+
+    const hasObj = dataObj.some(v => v > 0);
+    const datasets = [
+      { label:'CA HT (DT)',  data:dataHT,  backgroundColor:'rgba(37,99,235,0.65)',  borderColor:'rgba(96,165,250,0.9)',  borderWidth:1, borderRadius:4, type:'bar' },
+      { label:'CA TTC (DT)', data:dataTTC, backgroundColor:'rgba(22,163,74,0.55)',  borderColor:'rgba(74,222,128,0.9)',  borderWidth:1, borderRadius:4, type:'bar' },
+    ];
+    if (hasObj) {
+      datasets.push({ label:'Objectif', data:dataObj, type:'line', borderColor:'#f59e0b', pointBackgroundColor:'#f59e0b', pointRadius:4, fill:false, tension:0.3, borderDash:[5,3] });
+    }
+
+    _caChartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color:'#8b949e', font:{ size:10 } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)} DT` } }
+        },
+        scales: {
+          x: { ticks:{ color:'#8b949e', font:{size:10} }, grid:{ color:'rgba(255,255,255,0.04)' } },
+          y: { ticks:{ color:'#8b949e', font:{size:10}, callback: v => v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{ color:'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+
+    // Totaux
+    const totalHT  = dataHT.reduce((a,b)=>a+b,0);
+    const totalTTC = dataTTC.reduce((a,b)=>a+b,0);
+    const totalObj = dataObj.reduce((a,b)=>a+b,0);
+    const taux     = totalObj > 0 ? Math.round(totalHT/totalObj*100) : null;
+    const moisSaisis = Object.keys(map).length;
+    const agLbl    = agenceSel === 'toutes' ? 'Toutes agences' : agenceSel;
+
+    const totDiv = document.getElementById('ca-totaux');
+    if (totDiv) {
+      totDiv.innerHTML = `
+        <span>${vue==='exercice'?`Exercice ${anneeEnCours}`:'6 derniers mois'} — ${agLbl} <span style="color:var(--text2)">(${moisSaisis} mois saisis)</span></span>
+        <span style="margin-left:auto">HT : <strong style="color:var(--accent-light)">${fmtMoney(totalHT)} DT</strong></span>
+        <span>TTC : <strong style="color:var(--success-light)">${fmtMoney(totalTTC)} DT</strong></span>
+        ${taux!==null?`<span>Obj : <strong>${fmtMoney(totalObj)} DT</strong> — <strong style="color:${taux>=100?'var(--success-light)':taux>=75?'var(--warning-light)':'var(--danger-light)'}">${taux}%</strong></span>`:''}
+      `;
+    }
+
+  } catch(e) {
+    console.error('renderCA:', e);
+    const totDiv = document.getElementById('ca-totaux');
+    if (totDiv) totDiv.innerHTML = `<span style="color:var(--danger-light)">Erreur chargement CA</span>`;
+  }
+}
 </script>
 
 <!-- ══════════════════════════════════════
