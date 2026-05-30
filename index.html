@@ -9201,9 +9201,7 @@ async function fillClientSelect(selId) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-document.addEventListener('click', e => {
-  if (e.target.classList.contains('overlay')) e.target.classList.remove('open');
-});
+// Click outside modal = ne ferme PAS (évite perte de données)
 
 function toast(msg, type='success') {
   const container = document.getElementById('toast-container');
