@@ -1311,7 +1311,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div class="modal-header">
             <span class="modal-title" id="quar-modal-title">Nouvelle fiche quarantaine</span>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-ghost btn-sm" id="quar-btn-print-etiq" onclick="printEtiquette()" style="display:none">🏷️ Étiquette 50×50</button>
+              <button class="btn btn-ghost btn-sm" id="quar-btn-print-etiq" onclick="printEtiquetteQuarantaine()" style="display:none">🏷️ Étiquette 50×50</button>
               <button class="btn btn-ghost btn-sm" id="quar-btn-print-fiche" onclick="printFicheQuarantaine()" style="display:none">🖨️ Fiche A4</button>
               <button class="modal-close" onclick="closeModal('quar-modal-overlay')">✕</button>
             </div>
@@ -8034,8 +8034,8 @@ async function deleteQuar(id) {
   catch(e) { toast('Erreur: '+e.message,'error'); }
 }
 
-// ── IMPRESSION ÉTIQUETTE 50×50mm ──
-function printEtiquette() {
+// ── IMPRESSION ÉTIQUETTE 50×50mm — QUARANTAINE ──
+function printEtiquetteQuarantaine() {
   const r = {
     numero:     document.getElementById('qf-numero').value,
     agence:     document.getElementById('qf-agence').value,
