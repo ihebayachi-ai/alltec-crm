@@ -4584,7 +4584,7 @@ async function saveSAVReception() {
   } catch(e){ toast('Erreur: '+e.message,'error'); }
 }
 
-// ── BON DE DÉPÔT CLIENT ─────────────────────────────────────────────────────
+// ── BON DE DÉPÔT CLIENT — A4 une page ───────────────────────────────────────
 function printBonDepot() {
   if (!SAV_CURRENT) return;
   const t = SAV_CURRENT;
@@ -4594,170 +4594,133 @@ function printBonDepot() {
   const societeTel  = p.tel    || '';
   const societeMF   = p.matricule_fiscal || '';
   const clientNom   = clientName(t.client_id) !== '—' ? clientName(t.client_id) : (t.client_nom || '—');
-  const now = new Date();
-  const dateImpression = now.toLocaleDateString('fr-TN');
+  const dateImpression = new Date().toLocaleDateString('fr-TN');
 
   const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8">
 <title>Bon de dépôt — ${esc(t.numero)}</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #222; }
-  @media print { body { padding:0; } @page { size: A5; margin: 10mm; } }
-  .page { padding: 14mm 12mm; max-width: 148mm; margin: 0 auto; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Arial,sans-serif;font-size:11px;color:#1a1a1a}
+  @media print{body{padding:0}@page{size:A4 portrait;margin:10mm}}
+  .page{width:190mm;margin:0 auto;padding:8mm 10mm}
 
   /* Header */
-  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8mm; padding-bottom:4mm; border-bottom: 2px solid #1e3a5f; }
-  .societe-nom { font-size:16px; font-weight:700; color:#1e3a5f; }
-  .societe-info { font-size:10px; color:#555; margin-top:3px; line-height:1.6; }
-  .doc-box { text-align:right; }
-  .doc-title { font-size:18px; font-weight:700; color:#1e3a5f; text-transform:uppercase; letter-spacing:1px; }
-  .doc-num { font-size:13px; font-weight:600; color:#dc2626; margin-top:3px; }
-  .doc-date { font-size:10px; color:#555; margin-top:2px; }
+  .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:4mm;border-bottom:2.5px solid #1e3a5f;margin-bottom:4mm}
+  .soc-nom{font-size:15px;font-weight:700;color:#1e3a5f}
+  .soc-info{font-size:9px;color:#666;margin-top:2px;line-height:1.5}
+  .doc-right{text-align:right}
+  .doc-title{font-size:20px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px}
+  .doc-num{font-size:12px;font-weight:700;color:#dc2626;margin-top:2px}
+  .doc-date{font-size:9px;color:#888;margin-top:1px}
 
-  /* Sections */
-  .section { margin-bottom:5mm; }
-  .section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#1e3a5f; border-bottom:1px solid #dde3ea; padding-bottom:2mm; margin-bottom:3mm; }
-  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:3mm; }
-  .field { margin-bottom:2mm; }
-  .field-label { font-size:9px; color:#888; text-transform:uppercase; letter-spacing:.05em; }
-  .field-value { font-size:11px; font-weight:600; color:#222; margin-top:1px; border-bottom:1px solid #eee; padding-bottom:1mm; min-height:5mm; }
+  /* Ticket badge */
+  .ticket-bar{background:#1e3a5f;color:#fff;text-align:center;padding:2.5mm 0;border-radius:4px;margin-bottom:4mm;font-size:13px;font-weight:700;letter-spacing:2px}
+  .ticket-sub{font-size:8px;color:#888;text-align:center;margin-top:-3mm;margin-bottom:4mm}
+
+  /* Grid sections */
+  .sections{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-bottom:4mm}
+  .section{border:1px solid #dde3ea;border-radius:4px;padding:3mm 4mm}
+  .section-full{border:1px solid #dde3ea;border-radius:4px;padding:3mm 4mm;margin-bottom:4mm}
+  .sec-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1e3a5f;border-bottom:1px solid #eef0f3;padding-bottom:1.5mm;margin-bottom:2.5mm}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:2mm}
+  .field{margin-bottom:2mm}
+  .fl{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.04em}
+  .fv{font-size:10px;font-weight:600;border-bottom:1px solid #eee;padding-bottom:1mm;min-height:4.5mm}
 
   /* Panne */
-  .panne-box { background:#fff8f8; border:1px solid #fca5a5; border-radius:4px; padding:3mm 4mm; font-size:11px; min-height:12mm; }
+  .panne-box{background:#fff8f8;border:1px solid #fca5a5;border-radius:3px;padding:2.5mm 3mm;font-size:10px;min-height:9mm;line-height:1.5}
 
   /* Conditions */
-  .conditions { background:#f8f9fa; border-radius:4px; padding:3mm 4mm; font-size:9px; color:#666; line-height:1.6; margin-bottom:5mm; }
+  .conditions{background:#f5f7fa;border-radius:4px;padding:2.5mm 4mm;font-size:8.5px;color:#555;line-height:1.7;margin-bottom:4mm}
+  .conditions strong{color:#1e3a5f}
 
   /* Signatures */
-  .signatures { display:grid; grid-template-columns:1fr 1fr; gap:8mm; margin-top:4mm; }
-  .sig-block { text-align:center; }
-  .sig-label { font-size:10px; font-weight:600; color:#1e3a5f; margin-bottom:2mm; }
-  .sig-line { border-bottom:1px solid #333; height:12mm; margin-bottom:2mm; }
-  .sig-name { font-size:9px; color:#888; }
+  .signatures{display:grid;grid-template-columns:1fr 1fr;gap:10mm}
+  .sig-block{text-align:center}
+  .sig-label{font-size:9px;font-weight:700;color:#1e3a5f;margin-bottom:1mm}
+  .sig-line{border-bottom:1px solid #333;height:10mm;margin-bottom:1.5mm}
+  .sig-sub{font-size:8px;color:#aaa}
 
   /* Footer */
-  .footer { margin-top:6mm; padding-top:3mm; border-top:1px solid #ddd; font-size:9px; color:#aaa; text-align:center; }
-
-  /* Encadré numéro ticket */
-  .ticket-badge { display:inline-block; background:#1e3a5f; color:#fff; font-size:13px; font-weight:700; padding:2mm 5mm; border-radius:4px; letter-spacing:1px; }
+  .footer{margin-top:3mm;padding-top:2mm;border-top:1px solid #e5e7eb;font-size:8px;color:#bbb;text-align:center}
 </style>
-</head>
-<body>
-<div class="page">
+</head><body><div class="page">
 
-  <!-- En-tête -->
   <div class="header">
     <div>
-      <div class="societe-nom">${esc(societeNom)}</div>
-      <div class="societe-info">
-        ${esc(societeAddr)}<br>
-        ${societeTel ? 'Tél : ' + esc(societeTel) + '<br>' : ''}
-        ${societeMF  ? 'MF : '  + esc(societeMF)  : ''}
-      </div>
+      <div class="soc-nom">${esc(societeNom)}</div>
+      <div class="soc-info">${esc(societeAddr)}${societeTel?'<br>Tél : '+esc(societeTel):''}${societeMF?'<br>MF : '+esc(societeMF):''}</div>
     </div>
-    <div class="doc-box">
-      <div class="doc-title">Bon de dépôt</div>
+    <div class="doc-right">
+      <div class="doc-title">Bon de dépôt SAV</div>
       <div class="doc-num">${esc(t.numero)}</div>
-      <div class="doc-date">Le ${dateImpression}</div>
+      <div class="doc-date">Imprimé le ${dateImpression}</div>
     </div>
   </div>
 
-  <!-- Ticket ref -->
-  <div style="text-align:center;margin-bottom:5mm">
-    <span class="ticket-badge">🔧 TICKET : ${esc(t.numero)}</span>
-    <div style="font-size:9px;color:#888;margin-top:2mm">Conservez ce document — il vous sera demandé lors de la récupération de votre appareil</div>
-  </div>
+  <div class="ticket-bar">🔧 &nbsp; TICKET N° ${esc(t.numero)} &nbsp; 🔧</div>
+  <div class="ticket-sub">Conservez ce document — il vous sera demandé lors de la récupération de votre appareil</div>
 
-  <!-- Infos client -->
-  <div class="section">
-    <div class="section-title">👤 Informations client</div>
-    <div class="grid-2">
-      <div class="field">
-        <div class="field-label">Nom / Raison sociale</div>
-        <div class="field-value">${esc(clientNom)}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Téléphone</div>
-        <div class="field-value">${esc(t.tel_client || '—')}</div>
-      </div>
+  <div class="sections">
+    <div class="section">
+      <div class="sec-title">👤 Client</div>
+      <div class="field"><div class="fl">Nom / Raison sociale</div><div class="fv">${esc(clientNom)}</div></div>
+      <div class="field"><div class="fl">Téléphone</div><div class="fv">${esc(t.tel_client||'—')}</div></div>
+    </div>
+    <div class="section">
+      <div class="sec-title">🏢 Réception</div>
+      <div class="field"><div class="fl">Date de réception</div><div class="fv">${esc(t.date_reception||'—')}</div></div>
+      <div class="field"><div class="fl">Agence</div><div class="fv">${esc(t.agence||'—')}</div></div>
     </div>
   </div>
 
-  <!-- Infos appareil -->
-  <div class="section">
-    <div class="section-title">💻 Appareil déposé</div>
-    <div class="grid-2">
-      <div class="field">
-        <div class="field-label">Appareil</div>
-        <div class="field-value">${esc(t.appareil || '—')}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">N° de série</div>
-        <div class="field-value">${esc(t.numero_serie || '—')}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Date de réception</div>
-        <div class="field-value">${esc(t.date_reception || '—')}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Agence</div>
-        <div class="field-value">${esc(t.agence || '—')}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">État visuel</div>
-        <div class="field-value">${esc(t.etat_visuel || '—')}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Référence facture / BL</div>
-        <div class="field-value">${esc(t.facture_ref || '—')}</div>
-      </div>
+  <div class="section-full">
+    <div class="sec-title">💻 Appareil déposé</div>
+    <div class="row2">
+      <div class="field"><div class="fl">Appareil</div><div class="fv">${esc(t.appareil||'—')}</div></div>
+      <div class="field"><div class="fl">N° de série</div><div class="fv">${esc(t.numero_serie||'—')}</div></div>
+      <div class="field"><div class="fl">État visuel</div><div class="fv">${esc(t.etat_visuel||'—')}</div></div>
+      <div class="field"><div class="fl">Réf. facture / BL</div><div class="fv">${esc(t.facture_ref||'—')}</div></div>
     </div>
   </div>
 
-  <!-- Panne déclarée -->
-  <div class="section">
-    <div class="section-title">⚠️ Panne déclarée par le client</div>
-    <div class="panne-box">${esc(t.panne_declaree || t.description_panne || '—')}</div>
+  <div class="section-full">
+    <div class="sec-title">⚠️ Panne déclarée par le client</div>
+    <div class="panne-box">${esc(t.panne_declaree||t.description_panne||'—')}</div>
   </div>
 
-  <!-- Conditions -->
   <div class="conditions">
-    <strong>Conditions générales :</strong><br>
-    • AllTEC Distribution se réserve le droit d'effectuer un diagnostic avant tout devis de réparation.<br>
-    • Tout appareil non récupéré dans un délai de <strong>30 jours</strong> après notification sera considéré abandonné.<br>
+    <strong>Conditions générales de dépôt :</strong><br>
+    • AllTEC Distribution effectue un diagnostic préalable avant tout devis de réparation. Un devis vous sera soumis pour accord avant toute intervention.<br>
+    • Tout appareil non récupéré dans un délai de <strong>30 jours</strong> après notification sera considéré comme abandonné.<br>
     • AllTEC n'est pas responsable des données personnelles contenues dans l'appareil. Veuillez effectuer une sauvegarde avant le dépôt.<br>
-    • Un devis vous sera soumis avant toute intervention. Votre accord est requis pour procéder à la réparation.
+    • Les accessoires non mentionnés sur ce bon (chargeur, coque, etc.) ne sont pas pris en charge.
   </div>
 
-  <!-- Signatures -->
   <div class="signatures">
     <div class="sig-block">
       <div class="sig-label">Signature du client</div>
       <div class="sig-line"></div>
-      <div class="sig-name">Lu et approuvé</div>
+      <div class="sig-sub">Lu et approuvé — ${esc(clientNom)}</div>
     </div>
     <div class="sig-block">
-      <div class="sig-label">Signature AllTEC</div>
+      <div class="sig-label">Cachet & Signature AllTEC</div>
       <div class="sig-line"></div>
-      <div class="sig-name">Technicien / Réceptionniste</div>
+      <div class="sig-sub">Technicien / Réceptionniste</div>
     </div>
   </div>
 
-  <div class="footer">
-    ${esc(societeNom)} — Document généré par Zentiq ERP le ${dateImpression}
-  </div>
+  <div class="footer">${esc(societeNom)} — Document généré par Zentiq ERP le ${dateImpression}</div>
 
-</div>
-</body></html>`;
+</div></body></html>`;
 
-  const win = window.open('', '_blank', 'width=700,height=900');
+  const win = window.open('', '_blank', 'width=800,height=1000');
   win.document.write(html);
   win.document.close();
   win.focus();
   setTimeout(() => win.print(), 500);
 }
-
 // ── DOSSIER ──────────────────────────────────────────────────────────────────
 async function openSAVDossier(id) {
   try {
