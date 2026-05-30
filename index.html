@@ -6003,9 +6003,8 @@ function openPrintWindow(titre, header, body) {
     <span>Document confidentiel — Usage interne</span>
     <span>Imprimé le ${new Date().toLocaleDateString('fr-TN')}</span>
   </div>
-  </body></html>`);
-  win.document.close();
-  setTimeout(()=>win.print(),500);
+  </body></html>`;
+  openHtmlWindow(__docHtml, titre||'Document');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -8250,8 +8249,7 @@ function printFicheQuarantaine() {
     <td>${actLabels[k]||k}</td><td>${v.resp||'—'}</td><td>${v.prev||'—'}</td><td>${v.real||'—'}</td></tr>`).join('');
 
   const header = getDocHeader(r.agence);
-  const win = window.open('','_blank','width=900,height=1200');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  const __ficheHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>
     @page { size:A4; margin:15mm; }
     body { font-family:'Segoe UI',sans-serif; font-size:11pt; color:#111; }
@@ -9225,8 +9223,7 @@ async function imprimerBulletin(empId, mois) {
   const [annee,moisNum]=mois.split('-');
   const moisNom=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][parseInt(moisNum)-1];
   const header=getDocHeader();
-  const win=window.open('','_blank','width=900,height=1200');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  const __bulletinHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
     @page{size:A4;margin:15mm}body{font-family:'Segoe UI',sans-serif;font-size:11pt;color:#111}
     table{width:100%;border-collapse:collapse}td,th{padding:6px 10px;border:1px solid #ccc}
     th{background:#1e3a8a;color:#fff;font-size:10pt}.total-row{background:#f0fdf4;font-weight:700;font-size:13pt}
@@ -9256,8 +9253,8 @@ async function imprimerBulletin(empId, mois) {
     <div>Signature employeur<div class="sign"></div></div>
     <div style="text-align:center">Signature employé (Lu et approuvé)<div class="sign"></div></div>
     <div style="text-align:right;font-size:9pt">Imprimé le ${new Date().toLocaleDateString('fr-TN')}<br>Document confidentiel C5</div>
-  </div></body></html>`);
-  win.document.close(); setTimeout(()=>win.print(),500);
+  </div></body></html>`;
+  openHtmlWindow(__rhDocHtml, 'Document RH');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
