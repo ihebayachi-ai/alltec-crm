@@ -539,7 +539,7 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
         <div class="card">
           <div class="table-wrap"><table>
-            <thead><tr><th>Nom</th><th>Type</th><th>Secteur</th><th>Site web</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Nom</th><th>Type</th><th>Catégorie</th><th>Agence</th><th>Actions</th></tr></thead>
             <tbody id="clients-tbody"></tbody>
           </table></div>
         </div>
@@ -3649,11 +3649,20 @@ async function loadClients() {
     const data = await sb('clients', { filter, order: 'nom.asc' });
     CLIENTS_CACHE = data;
     if (!data.length) { tbody.innerHTML = emptyRow(5,'Aucun client'); return; }
+    const TYPE_STYLE = {
+      'prospect': 'background:rgba(251,191,36,.15);color:#fbbf24',
+      'client':   'background:rgba(34,197,94,.15);color:#4ade80',
+      'inactif':  'background:rgba(156,163,175,.15);color:#9ca3af',
+    };
+    const CAT_STYLE = {
+      'B2B': 'background:rgba(96,165,250,.15);color:#60a5fa',
+      'B2C': 'background:rgba(167,139,250,.15);color:#c084fc',
+    };
     tbody.innerHTML = data.map(c => `<tr>
-      <td><strong>${esc(c.nom)}</strong></td>
-      <td><span class="badge badge-blue">${esc(c.type||'—')}</span></td>
-      <td>${esc(c.secteur||'—')}</td>
-      <td>${c.site_web ? `<a href="${esc(c.site_web)}" target="_blank" style="color:var(--accent-light)">${esc(c.site_web)}</a>` : '—'}</td>
+      <td><strong>${esc(c.nom)}</strong>${c.secteur?`<div style="font-size:11px;color:var(--text2)">${esc(c.secteur)}</div>`:''}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;${TYPE_STYLE[c.type]||TYPE_STYLE['prospect']}">${esc(c.type||'prospect')}</span></td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;${CAT_STYLE[c.categorie]||CAT_STYLE['B2B']}">${esc(c.categorie||'B2B')}</span></td>
+      <td style="color:var(--text2)">${esc(c.agence_associee||'—')}</td>
       <td>${canWrite('clients') ? `<button class="btn btn-ghost btn-xs" onclick="openClientModal('${c.id}')">✏️</button>
         <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('clients','${c.id}',loadClients)">🗑</button>` : '—'}</td>
     </tr>`).join('');
