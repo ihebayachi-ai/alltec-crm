@@ -3172,6 +3172,7 @@ supabase functions deploy send-sms
       <div class="modal-title" id="mkt-modal-title">Nouveau post</div>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="mkt-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:var(--surface2);color:var(--text2)">Idée</span>
+        <button class="btn btn-ghost btn-sm" onclick="copyForMeta()" title="Copier le contenu formaté pour Meta Business Suite" style="font-size:11px">📋 Copier pour Meta</button>
         <button class="modal-close" onclick="closeModal('mkt-modal-overlay')">✕</button>
       </div>
     </div>
@@ -10716,6 +10717,75 @@ async function saveMktPost() {
     toast(EDIT_MKT_ID ? 'Post mis à jour ✓' : 'Post créé ✓');
     EDIT_MKT_ID = null;
   } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Copier pour Meta Business Suite ──
+function copyForMeta() {
+  const titre    = document.getElementById('mkt-titre')?.value.trim() || '';
+  const contenu  = document.getElementById('mkt-contenu')?.value.trim() || '';
+  const tags     = document.getElementById('mkt-tags')?.value.trim() || '';
+  const date     = document.getElementById('mkt-date')?.value || '';
+  const heure    = document.getElementById('mkt-heure')?.value || '';
+  const reseaux  = Array.from(document.querySelectorAll('.mkt-reseau-cb:checked')).map(cb=>cb.value);
+  const imageUrl = document.getElementById('mkt-image-url')?.value.trim() || '';
+
+  if (!contenu && !titre) { toast("Remplis le contenu du post d'abord","error"); return; }
+
+  // Formater les hashtags depuis les tags
+  const hashtags = tags
+    ? tags.split(',').map(t => '#' + t.trim().replace(/\s+/g,'').replace(/[^a-zA-Z0-9À-ɏ_]/g,'')).filter(h=>h.length>1).join(' ')
+    : '';
+
+  // Construire le texte formaté
+  let lines = [];
+  if (contenu) lines.push(contenu);
+  if (hashtags) lines.push('\n' + hashtags);
+
+  const texteToCopy = lines.join('\n').trim();
+
+  // Construire le résumé affiché dans le toast
+  let info = [];
+  if (reseaux.length) info.push('Réseaux : ' + reseaux.map(r => (MKT_RESEAUX_ICONS[r]||'') + ' ' + r).join(', '));
+  if (date) info.push('Date : ' + date + (heure ? ' à ' + heure.slice(0,5) : ''));
+  if (imageUrl) info.push('Image : ' + imageUrl);
+
+  // Copier dans le presse-papiers
+  navigator.clipboard.writeText(texteToCopy).then(() => {
+    // Afficher un popup récapitulatif
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px 24px;max-width:480px;width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <span style="font-size:24px">📋</span>
+          <div>
+            <div style="font-weight:600;font-size:14px">Copié pour Meta Business Suite</div>
+            <div style="font-size:12px;color:var(--text2)">Colle ce contenu directement dans Meta</div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--text);white-space:pre-wrap;max-height:150px;overflow-y:auto;margin-bottom:12px;line-height:1.6">${esc(texteToCopy)}</div>
+        ${info.length ? `<div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:10px;margin-bottom:12px;line-height:1.8">${info.map(i=>'• '+i).join('<br>')}</div>` : ''}
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <a href="https://business.facebook.com" target="_blank" class="btn btn-primary btn-sm" style="font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+            📘 Ouvrir Meta Business Suite
+          </a>
+          <button class="btn btn-ghost btn-sm" style="font-size:12px" onclick="this.closest('div[style*=fixed]').remove()">Fermer</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  }).catch(() => {
+    // Fallback si clipboard API bloquée
+    const ta = document.createElement('textarea');
+    ta.value = texteToCopy;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Contenu copié ✓ — Colle dans Meta Business Suite', 'success');
+  });
 }
 
 // Attacher l'événement de comptage de caractères
