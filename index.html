@@ -619,54 +619,6 @@ textarea.form-control{resize:vertical;min-height:80px}
           </div>
         </div>
 
-        <!-- Vue stats -->
-        <div id="mkt-view-stats" style="display:none">
-          <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="mkt-stats-reseaux"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-            <div class="card">
-              <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
-                <span class="card-title">📈 Évolution abonnés</span>
-                <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-reseau-chart" onchange="renderMktCharts()">
-                  <option value="all">Tous réseaux</option>
-                  <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
-                </select>
-              </div>
-              <div style="padding:12px"><canvas id="mkt-chart-abonnes" height="120"></canvas></div>
-            </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">👁 Évolution portée</span></div>
-              <div style="padding:12px"><canvas id="mkt-chart-portee" height="120"></canvas></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
-              <span class="card-title">📊 Tableau des statistiques</span>
-              <div style="display:flex;gap:8px">
-                <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-filter-reseau" onchange="loadMktStats()">
-                  <option value="">Tous réseaux</option>
-                  <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
-                </select>
-                <select class="form-control" style="width:120px;font-size:12px" id="mkt-stats-filter-periode" onchange="loadMktStats()">
-                  <option value="">Toutes périodes</option>
-                  <option value="semaine">Semaine</option>
-                  <option value="mois">Mois</option>
-                </select>
-                <button class="btn btn-primary btn-sm" onclick="openMktStatsModal()">＋ Saisir stats</button>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th>Réseau</th><th>Période</th><th>Du → Au</th>
-                  <th>Abonnés</th><th>+Gagnés</th><th>Portée</th>
-                  <th>Impressions</th><th>Engagement</th><th>Taux eng.</th><th>Clics</th><th>Actions</th>
-                </tr></thead>
-                <tbody id="mkt-stats-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
         <!-- Vue liste -->
         <div id="mkt-view-list" style="display:none">
           <div class="card">
