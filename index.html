@@ -12014,11 +12014,40 @@ function renderCfgRows() {
   if (!div) return;
   div.innerHTML = CFG_CATEGORIES.map(cat => {
     const selected = CFG_SELECTION[cat];
-    const options  = ALL_COMPOSANTS.filter(c=>c.categorie===cat);
     const required = CFG_CAT_REQUIRED.includes(cat);
+    const cpu = CFG_SELECTION['CPU'];
+    const mb  = CFG_SELECTION['Carte mère'];
+
+    // Filtrage par compatibilité specs
+    let options = ALL_COMPOSANTS.filter(c=>c.categorie===cat);
+    if (cat === 'Carte mère' && cpu?.specs?.socket) {
+      const compatible = options.filter(c => !c.specs?.socket || c.specs.socket === cpu.specs.socket);
+      if (compatible.length > 0) options = compatible;
+    }
+    if (cat === 'RAM' && mb?.specs?.ram) {
+      const mbRam = mb.specs.ram.toUpperCase();
+      const compatible = options.filter(c => {
+        const ramType = (c.specs?.type || c.specs?.ddr || '').toUpperCase();
+        return !ramType || mbRam.includes(ramType);
+      });
+      if (compatible.length > 0) options = compatible;
+    }
+    if (cat === 'RAM' && cpu?.specs?.ddr && !mb) {
+      const cpuDdr = cpu.specs.ddr.toUpperCase();
+      const compatible = options.filter(c => {
+        const ramType = (c.specs?.type || c.specs?.ddr || '').toUpperCase();
+        return !ramType || cpuDdr.includes(ramType);
+      });
+      if (compatible.length > 0) options = compatible;
+    }
+    // Badge compatibilité sur le label catégorie
+    const totalCat = ALL_COMPOSANTS.filter(c=>c.categorie===cat).length;
+    const filteredLabel = options.length < totalCat
+      ? ` <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(34,197,94,.15);color:var(--success-light)">${options.length}/${totalCat} compatibles</span>`
+      : '';
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border)">
       <div style="width:28px;text-align:center;font-size:16px">${CFG_CAT_ICONS[cat]||'🔧'}</div>
-      <div style="min-width:110px;font-size:12px;font-weight:${required?500:400}">${cat}${required?'<span style="color:var(--danger-light)"> *</span>':''}</div>
+      <div style="min-width:110px;font-size:12px;font-weight:${required?500:400}">${cat}${required?'<span style="color:var(--danger-light)"> *</span>':''} ${filteredLabel}</div>
       <select class="form-control" style="flex:1;font-size:12px;padding:5px 8px" onchange="onCfgSelectComp('${cat}',this.value)">
         <option value="">— ${required?'Requis':'Optionnel'} —</option>
         ${options.map(c=>`<option value="${c.id}" ${selected?.id===c.id?'selected':''}>${esc(c.designation)} — PA: ${fmtMoney(c.prix_achat_ht)} DT — Stock: ${c.stock||0}</option>`).join('')}
@@ -12124,50 +12153,55 @@ function getCfgAchatTtc() {
 }
 
 function onPvTTCChange(i) {
-  const ttc = parseFloat(document.getElementById(`cfg-pv${i}-ttc`)?.value)||0;
-  const { achatTtc } = getCfgAchatTtc();
-  const pct = achatTtc > 0 ? Math.round((ttc-achatTtc)/achatTtc*100*10)/10 : 0;
-  const el = document.getElementById(`cfg-pv${i}-pct`);
+  const ttc = parseFloat(document.getElementById('cfg-pv'+i+'-ttc')?.value)||0;
+  const { totalAchat, achatTtc, tva } = getCfgAchatTtc();
+  // marge% = (PV TTC / (Achat HT × (1+TVA%)) - 1) × 100
+  const pvHt = ttc / (1 + tva/100);
+  const pct  = totalAchat > 0 ? Math.round((pvHt/totalAchat - 1)*100*10)/10 : 0;
+  const el = document.getElementById('cfg-pv'+i+'-pct');
   if (el) el.value = pct;
-  // Reset arrondi
-  const arEl = document.getElementById(`cfg-pv${i}-arrondi`);
+  const arEl = document.getElementById('cfg-pv'+i+'-arrondi');
   if (arEl) arEl.value = '';
-  updatePvMargeDisplay(i, ttc, achatTtc);
+  updatePvMargeDisplay(i, ttc, totalAchat, tva);
 }
 
 function onPvPctChange(i) {
-  const pct = parseFloat(document.getElementById(`cfg-pv${i}-pct`)?.value)||0;
-  const { achatTtc } = getCfgAchatTtc();
-  const ttc = Math.round(achatTtc*(1+pct/100)*1000)/1000;
-  const el = document.getElementById(`cfg-pv${i}-ttc`);
+  const pct = parseFloat(document.getElementById('cfg-pv'+i+'-pct')?.value)||0;
+  const { totalAchat, achatTtc, tva } = getCfgAchatTtc();
+  // PV TTC = Achat HT × (1 + marge%) × (1 + TVA%)
+  const ttc = Math.round(totalAchat * (1 + pct/100) * (1 + tva/100) * 1000) / 1000;
+  const el = document.getElementById('cfg-pv'+i+'-ttc');
   if (el) el.value = ttc;
-  // Reset arrondi
-  const arEl = document.getElementById(`cfg-pv${i}-arrondi`);
+  const arEl = document.getElementById('cfg-pv'+i+'-arrondi');
   if (arEl) arEl.value = '';
-  updatePvMargeDisplay(i, ttc, achatTtc);
+  updatePvMargeDisplay(i, ttc, totalAchat, tva);
 }
 
 function onPvArrondiChange(i) {
-  const arrondi = parseFloat(document.getElementById(`cfg-pv${i}-arrondi`)?.value)||0;
+  const arrondi = parseFloat(document.getElementById('cfg-pv'+i+'-arrondi')?.value)||0;
   if (!arrondi) return;
-  const { achatTtc } = getCfgAchatTtc();
-  // Mettre à jour le TTC avec la valeur arrondie
-  const elTtc = document.getElementById(`cfg-pv${i}-ttc`);
+  const { totalAchat, achatTtc, tva } = getCfgAchatTtc();
+  const elTtc = document.getElementById('cfg-pv'+i+'-ttc');
   if (elTtc) elTtc.value = arrondi;
-  // Recalculer le %
-  const pct = achatTtc > 0 ? Math.round((arrondi-achatTtc)/achatTtc*100*10)/10 : 0;
-  const elPct = document.getElementById(`cfg-pv${i}-pct`);
+  const pvHt = arrondi / (1 + tva/100);
+  const pct  = totalAchat > 0 ? Math.round((pvHt/totalAchat - 1)*100*10)/10 : 0;
+  const elPct = document.getElementById('cfg-pv'+i+'-pct');
   if (elPct) elPct.value = pct;
-  updatePvMargeDisplay(i, arrondi, achatTtc);
+  updatePvMargeDisplay(i, arrondi, totalAchat, tva);
 }
 
-function updatePvMargeDisplay(i, pvTtc, achatTtc) {
-  const el = document.getElementById(`cfg-pv${i}-marge`);
+function updatePvMargeDisplay(i, pvTtc, achatHt, tva) {
+  const el = document.getElementById('cfg-pv'+i+'-marge');
   if (!el) return;
-  const mVal = pvTtc - achatTtc;
-  const mPct = achatTtc > 0 ? Math.round(mVal/achatTtc*1000)/10 : 0;
-  const col  = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
-  el.innerHTML = `Marge : <strong style="color:${col}">${fmtMoney(mVal)} DT (${mPct>0?'+':''}${mPct}%)</strong>`;
+  const tvaRate = (tva||19)/100;
+  const pvHt   = pvTtc / (1 + tvaRate);
+  const margeHt = pvHt - achatHt;
+  const margePct = achatHt > 0 ? Math.round(margeHt/achatHt*1000)/10 : 0;
+  const col = margeHt >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+  el.innerHTML = `
+    <span style="color:var(--text2)">HT : ${fmtMoney(pvHt)} DT</span>
+    &nbsp;·&nbsp;
+    <strong style="color:${col}">Marge HT : ${fmtMoney(margeHt)} DT (${margePct>0?'+':''}${margePct}%)</strong>`;
 }
 
 function recalcConfig() {
@@ -12197,21 +12231,20 @@ function recalcConfig() {
     </div>`;
   }
 
-  // Recalculer les marges des 3 PV
+  // Recalculer les 3 PV depuis le % (formule correcte)
   [1,2,3].forEach(i => {
-    const ttc = parseFloat(document.getElementById(`cfg-pv${i}-ttc`)?.value)||0;
-    if (ttc > 0) updatePvMargeDisplay(i, ttc, achatTtc);
-    else {
-      const pct = parseFloat(document.getElementById(`cfg-pv${i}-pct`)?.value)||0;
-      if (pct !== 0) {
-        const newTtc = Math.round(achatTtc*(1+pct/100)*1000)/1000;
-        const elTtc = document.getElementById(`cfg-pv${i}-ttc`);
-        if (elTtc) elTtc.value = newTtc;
-        updatePvMargeDisplay(i, newTtc, achatTtc);
-      } else {
-        const el = document.getElementById(`cfg-pv${i}-marge`);
-        if (el) el.innerHTML = `<span style="color:var(--text2)">Saisir un montant TTC ou un % de marge</span>`;
-      }
+    const pct = parseFloat(document.getElementById('cfg-pv'+i+'-pct')?.value)||0;
+    const arrondi = parseFloat(document.getElementById('cfg-pv'+i+'-arrondi')?.value)||0;
+    if (arrondi > 0) {
+      updatePvMargeDisplay(i, arrondi, totalAchat, tva);
+    } else if (pct !== 0) {
+      const newTtc = Math.round(totalAchat*(1+pct/100)*(1+tva/100)*1000)/1000;
+      const elTtc = document.getElementById('cfg-pv'+i+'-ttc');
+      if (elTtc) elTtc.value = newTtc;
+      updatePvMargeDisplay(i, newTtc, totalAchat, tva);
+    } else {
+      const el = document.getElementById('cfg-pv'+i+'-marge');
+      if (el) el.innerHTML = '<span style="color:var(--text2)">Saisir un % de marge ou un montant arrondi</span>';
     }
   });
 }
