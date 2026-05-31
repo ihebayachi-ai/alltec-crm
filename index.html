@@ -787,9 +787,14 @@ textarea.form-control{resize:vertical;min-height:80px}
               <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Onduleur</option>
             </select>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-              📥 Import Excel/CSV
+              📥 Import nouveau
               <input type="file" id="comp-import-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importComposants(this)">
             </label>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+              🔄 MAJ stock/prix
+              <input type="file" id="comp-update-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="updateComposants(this)">
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="openEntreeStockModal()">📦 Entrée stock</button>
             <button class="btn btn-ghost btn-sm" onclick="exportComposantsTemplate()">📄 Modèle</button>
             <button class="btn btn-primary" onclick="openComposantModal()">＋ Ajouter</button>
           </div>
@@ -3354,6 +3359,58 @@ supabase functions deploy send-sms
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('caisse-modal-overlay')">Annuler</button>
       <button class="btn btn-primary" onclick="saveCaisse()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Entrée Stock -->
+<div class="overlay" id="entree-stock-modal-overlay">
+  <div class="modal" style="max-width:520px;width:96vw">
+    <div class="modal-header">
+      <div class="modal-title">📦 Entrée de stock</div>
+      <button class="modal-close" onclick="closeModal('entree-stock-modal-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Rechercher le composant</label>
+        <input class="form-control" id="es-search" placeholder="Tapez la référence ou la désignation..." oninput="searchEntreeStock(this.value)">
+        <div id="es-results" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-top:4px;display:none"></div>
+      </div>
+      <div id="es-selected" style="display:none">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:2px" id="es-comp-cat"></div>
+          <div style="font-size:13px;font-weight:500" id="es-comp-nom"></div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Stock actuel : <strong id="es-stock-actuel" style="color:var(--accent-light)">0</strong></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="form-group">
+            <label class="form-label">Quantité à ajouter</label>
+            <input class="form-control" type="number" id="es-qte" value="1" min="1" oninput="calcNouveauStock()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nouveau stock (calculé)</label>
+            <input class="form-control" id="es-nouveau-stock" readonly style="background:var(--surface2);font-weight:600;color:var(--success-light)">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="form-group">
+            <label class="form-label">Nouveau prix achat HT (optionnel)</label>
+            <input class="form-control" type="number" id="es-prix" step="0.001" placeholder="Laisser vide = inchangé">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Référence BL / Facture</label>
+            <input class="form-control" id="es-ref-bl" placeholder="BL-2026-001">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="es-notes" rows="2" placeholder="Fournisseur, remarques..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('entree-stock-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" id="es-btn-save" onclick="saveEntreeStock()" style="display:none">📦 Enregistrer entrée</button>
     </div>
   </div>
 </div>
@@ -11596,6 +11653,146 @@ async function saveComposant() {
     loadComposants();
     toast(EDIT_CMP_ID ? 'Composant mis à jour ✓' : 'Composant ajouté ✓');
     EDIT_CMP_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+
+// ─── MISE À JOUR STOCK & PRIX EN MASSE (CSV/Excel) ───────────────────────────
+
+async function updateComposants(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  toast('Mise à jour en cours...', 'info');
+  try {
+    let rows = [];
+    if (ext === 'csv') rows = await parseCSVFile(file);
+    else rows = await parseXLSXFile(file);
+    if (!rows.length) { toast('Aucune donnée trouvée', 'error'); return; }
+
+    // Charger tous les composants pour matcher par référence
+    const allComps = await sb('composants', { order:'reference.asc' });
+    let updated = 0, notFound = 0;
+
+    for (const row of rows) {
+      const ref = row['reference'] || row['Référence'] || row['REF'] || '';
+      if (!ref.trim()) continue;
+
+      const comp = allComps.find(c => c.reference?.toLowerCase() === ref.trim().toLowerCase());
+      if (!comp) { notFound++; continue; }
+
+      const body = {};
+      const newStock = row['stock'] || row['Stock'];
+      const newPrix  = row['prix_achat_ht'] || row['Prix achat HT'] || row['ACHAT'];
+      const addStock = row['ajouter_stock'] || row['Ajouter stock'];
+
+      if (addStock !== undefined && addStock !== '') body.stock = (comp.stock||0) + parseInt(addStock);
+      else if (newStock !== undefined && newStock !== '') body.stock = parseInt(newStock);
+      if (newPrix  !== undefined && newPrix  !== '') body.prix_achat_ht = parseFloat(newPrix);
+
+      // Specs optionnelles
+      const newSpecs = row['specs'] || row['Specs'];
+      if (newSpecs) { try { body.specs = JSON.parse(newSpecs); } catch(e) {} }
+
+      if (Object.keys(body).length > 0) {
+        try { await sbPatch('composants', comp.id, body); updated++; } catch(e) {}
+      }
+    }
+    toast(`${updated} composant(s) mis à jour${notFound>0?' · '+notFound+' référence(s) introuvable(s)':''}`, 'success');
+    loadComposants();
+  } catch(e) { toast('Erreur : '+e.message, 'error'); }
+  input.value = '';
+}
+
+// ─── ENTRÉE DE STOCK RAPIDE ───────────────────────────────────────────────────
+
+let ES_COMP_SELECTED = null;
+
+function openEntreeStockModal() {
+  ES_COMP_SELECTED = null;
+  const searchEl = document.getElementById('es-search');
+  if (searchEl) searchEl.value = '';
+  const resultsEl = document.getElementById('es-results');
+  if (resultsEl) { resultsEl.innerHTML=''; resultsEl.style.display='none'; }
+  const selectedEl = document.getElementById('es-selected');
+  if (selectedEl) selectedEl.style.display = 'none';
+  const btnSave = document.getElementById('es-btn-save');
+  if (btnSave) btnSave.style.display = 'none';
+  const qteEl = document.getElementById('es-qte');
+  if (qteEl) qteEl.value = 1;
+  const prixEl = document.getElementById('es-prix');
+  if (prixEl) prixEl.value = '';
+  const refEl = document.getElementById('es-ref-bl');
+  if (refEl) refEl.value = '';
+  const notesEl = document.getElementById('es-notes');
+  if (notesEl) notesEl.value = '';
+  openModal('entree-stock-modal-overlay');
+}
+
+function searchEntreeStock(q) {
+  const resultsEl = document.getElementById('es-results');
+  if (!resultsEl) return;
+  if (!q || q.length < 2) { resultsEl.style.display='none'; return; }
+
+  const matches = ALL_COMPOSANTS.filter(c =>
+    c.designation?.toLowerCase().includes(q.toLowerCase()) ||
+    c.reference?.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 8);
+
+  if (!matches.length) {
+    resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--text2)">Aucun composant trouvé</div>';
+    resultsEl.style.display = 'block';
+    return;
+  }
+
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = matches.map(c => `
+    <div onclick="selectEntreeComp('${c.id}')" style="padding:8px 12px;cursor:pointer;border-bottom:0.5px solid var(--border);font-size:12px" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="font-weight:500">${esc(c.designation)}</div>
+      <div style="color:var(--text2);font-size:11px">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.categorie)} · Réf: ${esc(c.reference||'—')} · Stock: ${c.stock||0}</div>
+    </div>`).join('');
+}
+
+function selectEntreeComp(id) {
+  ES_COMP_SELECTED = ALL_COMPOSANTS.find(c=>c.id===id);
+  if (!ES_COMP_SELECTED) return;
+
+  document.getElementById('es-comp-cat').textContent  = `${CFG_CAT_ICONS[ES_COMP_SELECTED.categorie]||''} ${ES_COMP_SELECTED.categorie}`;
+  document.getElementById('es-comp-nom').textContent  = ES_COMP_SELECTED.designation;
+  document.getElementById('es-stock-actuel').textContent = ES_COMP_SELECTED.stock||0;
+  document.getElementById('es-results').style.display = 'none';
+  document.getElementById('es-search').value          = ES_COMP_SELECTED.designation;
+  document.getElementById('es-selected').style.display= 'block';
+  document.getElementById('es-btn-save').style.display= 'inline-flex';
+  calcNouveauStock();
+}
+
+function calcNouveauStock() {
+  if (!ES_COMP_SELECTED) return;
+  const qte = parseInt(document.getElementById('es-qte')?.value)||0;
+  const nouveau = (ES_COMP_SELECTED.stock||0) + qte;
+  const el = document.getElementById('es-nouveau-stock');
+  if (el) { el.value = nouveau; el.style.color = nouveau >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
+}
+
+async function saveEntreeStock() {
+  if (!ES_COMP_SELECTED) { toast('Sélectionne un composant','error'); return; }
+  const qte   = parseInt(document.getElementById('es-qte')?.value)||0;
+  const prix  = document.getElementById('es-prix')?.value;
+  if (qte <= 0) { toast('Quantité invalide','error'); return; }
+
+  const nouveau = (ES_COMP_SELECTED.stock||0) + qte;
+  const body = { stock: nouveau };
+  if (prix && prix.trim() !== '') body.prix_achat_ht = parseFloat(prix);
+
+  try {
+    await sbPatch('composants', ES_COMP_SELECTED.id, body);
+    // Mettre à jour le cache local
+    const idx = ALL_COMPOSANTS.findIndex(c=>c.id===ES_COMP_SELECTED.id);
+    if (idx>=0) { ALL_COMPOSANTS[idx].stock = nouveau; if(body.prix_achat_ht) ALL_COMPOSANTS[idx].prix_achat_ht = body.prix_achat_ht; }
+    toast(`Stock mis à jour : ${ES_COMP_SELECTED.designation} → ${nouveau} unité(s) ✓`,'success');
+    closeModal('entree-stock-modal-overlay');
+    loadComposants();
   } catch(e) { toast(e.message,'error'); }
 }
 
