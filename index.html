@@ -2027,7 +2027,14 @@ textarea.form-control{resize:vertical;min-height:80px}
                 <select class="form-control" id="emp-statut"><option>Actif</option><option>Période d'essai</option><option>Inactif</option><option>Démissionnaire</option></select>
               </div>
             </div>
-            <div class="form-grid full" style="margin-top:10px">
+            <div class="form-grid" style="margin-top:10px">
+              <div class="form-group">
+                <label class="form-label">🔗 Compte utilisateur associé</label>
+                <select class="form-control" id="emp-user-id">
+                  <option value="">— Aucun compte lié —</option>
+                </select>
+                <div style="font-size:10px;color:var(--text2);margin-top:4px">Lier cet employé à un compte Zentiq pour remplissage automatique</div>
+              </div>
               <div class="form-group"><label class="form-label">Notes / Observations</label><textarea class="form-control" id="emp-notes" rows="2"></textarea></div>
             </div>
           </div>
@@ -3309,6 +3316,7 @@ function showLoginError(msg) {
 }
 
 function doLogout() {
+  resetEmpSessionCache();
   SESSION = null;
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').style.display = 'flex';
@@ -3955,7 +3963,11 @@ async function openDevisModal(id = null, readOnly = false) {
     document.getElementById('dm-validite').value   = validStr;
     document.getElementById('dm-statut').value     = 'Brouillon';
     document.getElementById('dm-agence').value     = SESSION?.agences?.[0]||'Charguia';
-    document.getElementById('dm-commercial').value = SESSION?.name||'';
+    // Remplir commercial depuis fiche employé liée
+    getEmployeSession().then(emp => {
+      const el = document.getElementById('dm-commercial');
+      if (el && !el.value) el.value = emp?.nom || SESSION?.name || '';
+    });
     document.getElementById('dm-notes').value      = '';
     document.getElementById('dm-remise-globale').value = 0;
     document.getElementById('dm-client').value     = '';
@@ -4352,7 +4364,11 @@ async function openCommandeModal(id = null) {
     document.getElementById('cmod-livraison').value = '';
     document.getElementById('cmod-statut').value    = 'Confirmée';
     document.getElementById('cmod-agence').value    = SESSION?.agences?.[0]||'Charguia';
-    document.getElementById('cmod-commercial').value= SESSION?.name||'';
+    // Remplir commercial depuis fiche employé liée
+    getEmployeSession().then(emp => {
+      const el = document.getElementById('cmod-commercial');
+      if (el && !el.value) el.value = emp?.nom || SESSION?.name || '';
+    });
     document.getElementById('cmod-notes').value     = '';
     document.getElementById('cmod-remise-globale').value = 0;
     CMD_LIGNES = [nouvelleLigneCmd()];
@@ -8517,6 +8533,16 @@ async function openEmployeModal(id=null) {
   EDIT_EMP_ID = id;
   document.getElementById('emp-modal-title').textContent = id?'Modifier employé':'Nouvel employé';
   ['nom','cin','tel','rib','notes'].forEach(f=>{const el=document.getElementById(`emp-${f}`);if(el)el.value='';});
+
+  // Charger la liste des utilisateurs pour la liaison
+  try {
+    const users = await sb('zentiq_users', { order:'name.asc' });
+    const sel = document.getElementById('emp-user-id');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Aucun compte lié —</option>' +
+        users.map(u => `<option value="${u.id}">${esc(u.name||u.email)} (${esc(u.role||'')})</option>`).join('');
+    }
+  } catch(e) { console.warn('Impossible de charger les utilisateurs:', e.message); }
   document.getElementById('emp-statut').value='Actif';
   document.getElementById('emp-agence').value='Charguia';
   document.getElementById('emp-poste').value='Commercial Junior';
@@ -8538,6 +8564,7 @@ async function openEmployeModal(id=null) {
       document.getElementById('emp-rib').value=e.rib||'';
       document.getElementById('emp-statut').value=e.statut||'Actif';
       document.getElementById('emp-notes').value=e.notes||'';
+      document.getElementById('emp-user-id').value=e.user_id||'';
     } catch(err){toast('Erreur: '+err.message,'error');return;}
   }
   openModal('emp-modal-overlay');
@@ -8558,6 +8585,8 @@ async function saveEmploye() {
     objectif_ca:parseFloat(document.getElementById('emp-obj-ca').value)||0,
     rib:document.getElementById('emp-rib').value.trim(),
     statut:document.getElementById('emp-statut').value,
+    user_id:document.getElementById('emp-user-id').value||null,
+    user_login: document.getElementById('emp-user-id').options[document.getElementById('emp-user-id').selectedIndex]?.text||null,
     notes:document.getElementById('emp-notes').value.trim(),
   };
   try {
@@ -10199,6 +10228,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') document.getElementById('login-pass').focus();
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// LIAISON UTILISATEUR ↔ EMPLOYÉ
+// ═════════════════════════════════════════════════════════════════════════════
+
+let _EMP_SESSION_CACHE = null;
+
+// Retourne la fiche employé liée au user connecté
+async function getEmployeSession() {
+  if (_EMP_SESSION_CACHE) return _EMP_SESSION_CACHE;
+  if (!SESSION?.id) return null;
+  try {
+    const data = await sb('rh_employes', { filter:`user_id=eq.${SESSION.id}&statut=eq.Actif` });
+    _EMP_SESSION_CACHE = data?.[0] || null;
+    return _EMP_SESSION_CACHE;
+  } catch { return null; }
+}
+
+// Réinitialiser le cache à la déconnexion
+function resetEmpSessionCache() { _EMP_SESSION_CACHE = null; }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // CA MENSUEL — SAISIE MANUELLE & GRAPHIQUE DASHBOARD
