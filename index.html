@@ -740,6 +740,40 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+      <!-- BOÎTE DE RÉCEPTION UNIFIÉE -->
+      <div class="page" id="page-inbox">
+        <div class="page-header">
+          <div>
+            <div class="page-title">💬 Boîte de réception</div>
+            <div class="page-sub">Messages · Commentaires · Avis — Tous réseaux sociaux</div>
+          </div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" id="inbox-search" placeholder="Expéditeur, contenu..." oninput="loadInbox()"></div>
+            <select class="form-control" style="width:130px" id="inbox-filter-reseau" onchange="loadInbox()">
+              <option value="">Tous réseaux</option>
+              <option>Facebook</option><option>Instagram</option><option>TikTok</option>
+              <option>YouTube</option><option>WhatsApp</option>
+            </select>
+            <select class="form-control" style="width:120px" id="inbox-filter-statut" onchange="loadInbox()">
+              <option value="">Tous statuts</option>
+              <option value="Nouveau">Nouveau</option>
+              <option value="En cours">En cours</option>
+              <option value="Repondu">Répondu</option>
+              <option value="Archive">Archivé</option>
+            </select>
+            <button class="btn btn-primary" onclick="openInboxModal()">＋ Nouveau message</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="inbox-stats"></div>
+
+        <!-- Liste messages style boîte mail -->
+        <div class="card" id="inbox-list-card">
+          <div id="inbox-list" style="divide-y:1px solid var(--border)"></div>
+        </div>
+      </div>
+
       <!-- COMMANDES -->
       <div class="page" id="page-commandes">
         <div class="page-header">
@@ -3271,6 +3305,87 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal Boîte de réception -->
+<div class="overlay" id="inbox-modal-overlay">
+  <div class="modal modal-xl" style="max-width:700px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="inbox-modal-title">Nouveau message</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="inbox-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:rgba(239,68,68,.15);color:#f87171">🔴 Nouveau</span>
+        <button class="modal-close" onclick="closeModal('inbox-modal-overlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="max-height:80vh;overflow-y:auto">
+
+      <!-- Infos message -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Réseau *</label>
+          <select class="form-control" id="msg-reseau">
+            <option>Facebook</option><option>Instagram</option><option>TikTok</option>
+            <option>YouTube</option><option>WhatsApp</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-control" id="msg-type">
+            <option>Message</option><option>Commentaire</option><option>Avis</option><option>Mention</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Priorité</label>
+          <select class="form-control" id="msg-priorite" onchange="onInboxPrioriteChange()">
+            <option value="Basse">🔵 Basse</option>
+            <option value="Normale" selected>⚪ Normale</option>
+            <option value="Haute">🟠 Haute</option>
+            <option value="Urgente">🔴 Urgente</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="msg-statut" onchange="onInboxStatutChange()">
+            <option value="Nouveau">🔴 Nouveau</option>
+            <option value="En cours">🟡 En cours</option>
+            <option value="Repondu">🟢 Répondu</option>
+            <option value="Archive">📦 Archivé</option>
+          </select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Expéditeur *</label>
+          <input class="form-control" id="msg-expediteur" placeholder="Nom ou pseudo"></div>
+        <div class="form-group"><label class="form-label">Client lié</label>
+          <select class="form-control" id="msg-client"></select></div>
+        <div class="form-group"><label class="form-label">Assigné à</label>
+          <input class="form-control" id="msg-assigne" placeholder="Membre de l'équipe"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Lien du post (optionnel)</label>
+          <input class="form-control" id="msg-lien" placeholder="https://facebook.com/..."></div>
+        <div class="form-group"><label class="form-label">Date de réception</label>
+          <input class="form-control" type="datetime-local" id="msg-date"></div>
+      </div>
+
+      <!-- Contenu -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Message / Commentaire reçu *</label>
+        <textarea class="form-control" id="msg-contenu" rows="3" placeholder="Copie le message ou commentaire reçu..."></textarea>
+      </div>
+
+      <!-- Réponse -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">💬 Réponse donnée</div>
+        <textarea class="form-control" id="msg-reponse" rows="3" placeholder="Note la réponse que tu as envoyée..."></textarea>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="copyMsgReponse()" style="font-size:11px">📋 Copier la réponse</button>
+          <span style="font-size:11px;color:var(--text2)" id="msg-date-reponse-label"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes internes</label>
+        <textarea class="form-control" id="msg-notes" rows="2" placeholder="Observations pour l'équipe..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('inbox-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveInboxMsg()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Campagne Publicitaire -->
 <div class="overlay" id="camp-modal-overlay">
   <div class="modal modal-xl" style="max-width:780px;width:96vw">
@@ -3853,6 +3968,7 @@ function buildSidebar() {
       { id:'marketing', icon:'📣', name:'Contenu & Planning', perm:'marketing' },
       { id:'mktStats', icon:'📊', name:'Statistiques', perm:'marketing' },
       { id:'campagnes', icon:'📣', name:'Campagnes Ads', perm:'marketing' },
+      { id:'inbox', icon:'💬', name:'Boîte de réception', perm:'marketing' },
     ]},
     { title: 'Finances', items: [
       { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
@@ -3897,6 +4013,7 @@ function showPage(id) {
     marketing: loadMarketing,
     mktStats: () => { loadMktStats(); renderMktCharts(); },
     campagnes: loadCampagnes,
+    inbox: loadInbox,
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
@@ -11133,6 +11250,179 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// BOÎTE DE RÉCEPTION UNIFIÉE
+// ═════════════════════════════════════════════════════════════════════════════
+
+const INBOX_STATUT = {
+  'Nouveau':   { bg:'rgba(239,68,68,.15)',   color:'#f87171', label:'🔴 Nouveau' },
+  'En cours':  { bg:'rgba(251,191,36,.15)',  color:'#fbbf24', label:'🟡 En cours' },
+  'Repondu':   { bg:'rgba(34,197,94,.15)',   color:'#4ade80', label:'🟢 Répondu' },
+  'Archive':   { bg:'rgba(125,133,144,.15)', color:'#9ca3af', label:'📦 Archivé' },
+};
+const INBOX_PRIORITE = {
+  'Basse':    { color:'#60a5fa', label:'🔵' },
+  'Normale':  { color:'#9ca3af', label:'⚪' },
+  'Haute':    { color:'#f97316', label:'🟠' },
+  'Urgente':  { color:'#f87171', label:'🔴' },
+};
+
+let EDIT_INBOX_ID = null;
+
+async function loadInbox() {
+  const listDiv = document.getElementById('inbox-list');
+  if (!listDiv) return;
+  listDiv.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2)">Chargement...</div>';
+
+  try {
+    const q  = document.getElementById('inbox-search')?.value || '';
+    const rs = document.getElementById('inbox-filter-reseau')?.value || '';
+    const st = document.getElementById('inbox-filter-statut')?.value || '';
+    let filters = [];
+    if (rs) filters.push(`reseau=eq.${encodeURIComponent(rs)}`);
+    if (st) filters.push(`statut=eq.${encodeURIComponent(st)}`);
+    const data = await sb('marketing_messages', { filter: filters.join('&'), order:'date_reception.desc' });
+
+    const filtered = data.filter(m => !q ||
+      m.expediteur?.toLowerCase().includes(q.toLowerCase()) ||
+      m.contenu?.toLowerCase().includes(q.toLowerCase()));
+
+    // Stats
+    const statsDiv = document.getElementById('inbox-stats');
+    if (statsDiv) {
+      const nouveaux  = data.filter(m=>m.statut==='Nouveau').length;
+      const enCours   = data.filter(m=>m.statut==='En cours').length;
+      const repondus  = data.filter(m=>m.statut==='Repondu').length;
+      const urgents   = data.filter(m=>m.priorite==='Urgente'&&m.statut!=='Archive').length;
+      const tauxRep   = data.length > 0 ? Math.round(repondus/data.length*100) : 0;
+      statsDiv.innerHTML = `
+        <div class="stat-card red"><div class="stat-label">🔴 Nouveaux</div><div class="stat-val">${nouveaux}</div></div>
+        <div class="stat-card amber"><div class="stat-label">🟡 En cours</div><div class="stat-val">${enCours}</div></div>
+        <div class="stat-card green"><div class="stat-label">🟢 Répondus</div><div class="stat-val">${repondus}</div></div>
+        <div class="stat-card red"><div class="stat-label">🚨 Urgents</div><div class="stat-val">${urgents}</div></div>
+        <div class="stat-card purple"><div class="stat-label">📊 Taux réponse</div><div class="stat-val">${tauxRep}%</div></div>`;
+    }
+
+    if (!filtered.length) {
+      listDiv.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">📭 Aucun message</div>';
+      return;
+    }
+
+    listDiv.innerHTML = filtered.map(m => {
+      const st   = INBOX_STATUT[m.statut] || INBOX_STATUT['Nouveau'];
+      const pr   = INBOX_PRIORITE[m.priorite] || INBOX_PRIORITE['Normale'];
+      const icon = MKT_RESEAUX_ICONS[m.reseau] || '💬';
+      const date = m.date_reception ? new Date(m.date_reception).toLocaleDateString('fr-TN') : '—';
+      const isNew = m.statut === 'Nouveau';
+      return `
+        <div onclick="openInboxModal('${m.id}')" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:0.5px solid var(--border);cursor:pointer;background:${isNew?'rgba(239,68,68,.04)':'transparent'};transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${isNew?'rgba(239,68,68,.04)':'transparent'}'">
+          <div style="font-size:20px;flex-shrink:0;margin-top:2px">${icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="font-weight:${isNew?700:500};font-size:13px">${esc(m.expediteur||'Inconnu')}</span>
+              <span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${st.bg};color:${st.color}">${st.label}</span>
+              <span style="font-size:11px">${pr.label}</span>
+              <span style="font-size:11px;color:var(--text2);margin-left:auto">${date}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px">${esc((m.contenu||'').substring(0,120))}${(m.contenu||'').length>120?'…':''}</div>
+            <div style="display:flex;gap:8px;margin-top:4px;font-size:10px;color:var(--text2)">
+              <span>${esc(m.reseau)} · ${esc(m.type||'Message')}</span>
+              ${m.assigne_a?`<span>👤 ${esc(m.assigne_a)}</span>`:''}
+              ${m.reponse?'<span style="color:var(--success-light)">✓ Réponse notée</span>':''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) { listDiv.innerHTML = `<div style="padding:20px;color:var(--danger-light)">Erreur : ${e.message}</div>`; }
+}
+
+function onInboxStatutChange() {
+  const st    = document.getElementById('msg-statut')?.value || 'Nouveau';
+  const badge = document.getElementById('inbox-statut-badge');
+  const info  = INBOX_STATUT[st] || INBOX_STATUT['Nouveau'];
+  if (badge) { badge.textContent = info.label; badge.style.background = info.bg; badge.style.color = info.color; }
+  // Afficher date réponse si répondu
+  const lbl = document.getElementById('msg-date-reponse-label');
+  if (lbl) lbl.textContent = st === 'Repondu' ? 'Date réponse : ' + new Date().toLocaleDateString('fr-TN') : '';
+}
+
+function onInboxPrioriteChange() {}
+
+function copyMsgReponse() {
+  const rep = document.getElementById('msg-reponse')?.value.trim();
+  if (!rep) { toast("Remplis la réponse d'abord","error"); return; }
+  navigator.clipboard.writeText(rep).then(() => toast('Réponse copiée ✓','success'))
+    .catch(() => { const ta=document.createElement('textarea'); ta.value=rep; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('Réponse copiée ✓','success'); });
+}
+
+async function openInboxModal(id=null) {
+  EDIT_INBOX_ID = id;
+  document.getElementById('inbox-modal-title').textContent = id ? 'Message / Commentaire' : 'Nouveau message';
+  await fillClientSelect('msg-client');
+
+  if (id) {
+    try {
+      const [m] = await sb('marketing_messages', { filter:`id=eq.${id}` });
+      document.getElementById('msg-reseau').value     = m.reseau||'Facebook';
+      document.getElementById('msg-type').value       = m.type||'Message';
+      document.getElementById('msg-priorite').value   = m.priorite||'Normale';
+      document.getElementById('msg-statut').value     = m.statut||'Nouveau';
+      document.getElementById('msg-expediteur').value = m.expediteur||'';
+      document.getElementById('msg-client').value     = m.client_id||'';
+      document.getElementById('msg-assigne').value    = m.assigne_a||'';
+      document.getElementById('msg-lien').value       = m.lien_post||'';
+      document.getElementById('msg-contenu').value    = m.contenu||'';
+      document.getElementById('msg-reponse').value    = m.reponse||'';
+      document.getElementById('msg-notes').value      = m.notes||'';
+      const d = m.date_reception ? new Date(m.date_reception).toISOString().slice(0,16) : '';
+      document.getElementById('msg-date').value = d;
+    } catch(e) { console.error(e); }
+  } else {
+    ['msg-expediteur','msg-lien','msg-contenu','msg-reponse','msg-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('msg-statut').value   = 'Nouveau';
+    document.getElementById('msg-priorite').value = 'Normale';
+    document.getElementById('msg-assigne').value  = SESSION?.name||'';
+    document.getElementById('msg-date').value     = new Date().toISOString().slice(0,16);
+    document.getElementById('msg-client').value   = '';
+  }
+  onInboxStatutChange();
+  openModal('inbox-modal-overlay');
+}
+
+async function saveInboxMsg() {
+  const contenu = document.getElementById('msg-contenu').value.trim();
+  if (!contenu) { toast('Le contenu est obligatoire','error'); return; }
+  const expediteur = document.getElementById('msg-expediteur').value.trim();
+  if (!expediteur) { toast("L'expéditeur est obligatoire","error"); return; }
+
+  const statut = document.getElementById('msg-statut').value;
+  const body = {
+    reseau:          document.getElementById('msg-reseau').value,
+    type:            document.getElementById('msg-type').value,
+    priorite:        document.getElementById('msg-priorite').value,
+    statut,
+    expediteur,
+    client_id:       document.getElementById('msg-client').value||null,
+    assigne_a:       document.getElementById('msg-assigne').value.trim()||null,
+    lien_post:       document.getElementById('msg-lien').value.trim()||null,
+    contenu,
+    reponse:         document.getElementById('msg-reponse').value.trim()||null,
+    notes:           document.getElementById('msg-notes').value.trim()||null,
+    date_reception:  document.getElementById('msg-date').value||new Date().toISOString(),
+    date_reponse:    statut === 'Repondu' ? new Date().toISOString() : null,
+  };
+
+  try {
+    if (EDIT_INBOX_ID) await sbPatch('marketing_messages', EDIT_INBOX_ID, body);
+    else await sbPost('marketing_messages', body);
+    closeModal('inbox-modal-overlay');
+    loadInbox();
+    toast(EDIT_INBOX_ID ? 'Message mis à jour ✓' : 'Message enregistré ✓');
+    EDIT_INBOX_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MODULE CAMPAGNES PUBLICITAIRES
