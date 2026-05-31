@@ -799,8 +799,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div class="table-wrap"><table>
             <thead><tr>
               <th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Marque</th>
-              <th>Prix achat HT</th><th>PV1 Standard</th><th>PV2 Revendeur</th><th>PV3 Promo</th>
-              <th>TVA</th><th>Stock</th><th>Actions</th>
+              <th>Prix achat HT</th><th>TVA</th><th>Stock</th><th>Actions</th>
             </tr></thead>
             <tbody id="comp-tbody"></tbody>
           </table></div>
@@ -3405,25 +3404,12 @@ supabase functions deploy send-sms
       </div>
       <div style="border-top:1px solid var(--border);padding-top:12px">
         <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Tarification HT</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr;gap:10px">
           <div class="form-group">
             <label class="form-label">Prix achat HT *</label>
-            <input class="form-control" type="number" id="cmp-achat" value="0" step="0.001" oninput="calcCompMarges()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">PV1 Standard HT</label>
-            <input class="form-control" type="number" id="cmp-pv1" value="0" step="0.001" oninput="calcCompMarges()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">PV2 Revendeur HT</label>
-            <input class="form-control" type="number" id="cmp-pv2" value="0" step="0.001" oninput="calcCompMarges()">
-          </div>
-          <div class="form-group">
-            <label class="form-label">PV3 Promo/Lot HT</label>
-            <input class="form-control" type="number" id="cmp-pv3" value="0" step="0.001" oninput="calcCompMarges()">
+            <input class="form-control" type="number" id="cmp-achat" value="0" step="0.001">
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px" id="cmp-marges-display"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3474,8 +3460,42 @@ supabase functions deploy send-sms
           <div style="background:var(--surface2);border-radius:8px;padding:14px;font-size:12px" id="cfg-summary"></div>
 
           <div style="margin-top:12px">
-            <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">3 Prix de vente TTC</div>
-            <div style="display:grid;grid-template-columns:1fr;gap:8px" id="cfg-prix-display"></div>
+            <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">3 Prix de vente sur total config</div>
+            <div id="cfg-prix-display">
+              <!-- PV1 -->
+              <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--accent-light)">PV1 — Standard</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv1-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(1)" style="font-size:12px"></div>
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
+                    <input class="form-control" type="number" id="cfg-pv1-pct" value="0" step="0.1" oninput="onPvPctChange(1)" style="font-size:12px"></div>
+                </div>
+                <div id="cfg-pv1-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+              </div>
+              <!-- PV2 -->
+              <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--warning-light)">PV2 — Revendeur</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv2-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(2)" style="font-size:12px"></div>
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
+                    <input class="form-control" type="number" id="cfg-pv2-pct" value="0" step="0.1" oninput="onPvPctChange(2)" style="font-size:12px"></div>
+                </div>
+                <div id="cfg-pv2-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+              </div>
+              <!-- PV3 -->
+              <div style="background:var(--surface2);border-radius:8px;padding:10px 12px">
+                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--success-light)">PV3 — Promo / Lot</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv3-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(3)" style="font-size:12px"></div>
+                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
+                    <input class="form-control" type="number" id="cfg-pv3-pct" value="0" step="0.1" oninput="onPvPctChange(3)" style="font-size:12px"></div>
+                </div>
+                <div id="cfg-pv3-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+              </div>
+            </div>
           </div>
 
           <div class="form-group" style="margin-top:12px">
@@ -11500,19 +11520,14 @@ async function loadComposants() {
 
     tbody.innerHTML = filtered.map(c => {
       const achat = c.prix_achat_ht||0;
-      const m1 = achat>0 ? Math.round(((c.prix_vente1_ht||0)-achat)/achat*100) : 0;
-      const m2 = achat>0 ? Math.round(((c.prix_vente2_ht||0)-achat)/achat*100) : 0;
-      const m3 = achat>0 ? Math.round(((c.prix_vente3_ht||0)-achat)/achat*100) : 0;
+
       const stockColor = (c.stock||0) < 3 ? 'var(--danger-light)' : (c.stock||0) < 10 ? 'var(--warning-light)' : 'var(--success-light)';
       return `<tr>
         <td style="font-size:11px;color:var(--text2)">${esc(c.reference||'—')}</td>
         <td><strong style="font-size:12px">${esc(c.designation)}</strong></td>
         <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.categorie)}</span></td>
         <td style="font-size:12px;color:var(--text2)">${esc(c.marque||'—')}</td>
-        <td style="font-weight:500">${fmtMoney(achat)}</td>
-        <td><span style="font-size:12px">${fmtMoney(c.prix_vente1_ht||0)}</span> <span style="font-size:10px;color:${m1>=0?'var(--success-light)':'var(--danger-light)'}">${m1>0?'+':''}${m1}%</span></td>
-        <td><span style="font-size:12px">${fmtMoney(c.prix_vente2_ht||0)}</span> <span style="font-size:10px;color:${m2>=0?'var(--success-light)':'var(--danger-light)'}">${m2>0?'+':''}${m2}%</span></td>
-        <td><span style="font-size:12px">${fmtMoney(c.prix_vente3_ht||0)}</span> <span style="font-size:10px;color:${m3>=0?'var(--success-light)':'var(--danger-light)'}">${m3>0?'+':''}${m3}%</span></td>
+        <td style="font-weight:500">${fmtMoney(achat)} DT</td>
         <td style="font-size:12px">${c.tva||19}%</td>
         <td style="font-weight:500;color:${stockColor}">${c.stock||0}</td>
         <td>
@@ -11524,22 +11539,7 @@ async function loadComposants() {
   } catch(e) { tbody.innerHTML = errorRow(11, e.message); }
 }
 
-function calcCompMarges() {
-  const achat = parseFloat(document.getElementById('cmp-achat')?.value)||0;
-  const pvs   = [1,2,3].map(i => parseFloat(document.getElementById(`cmp-pv${i}`)?.value)||0);
-  const div   = document.getElementById('cmp-marges-display');
-  if (!div) return;
-  div.innerHTML = pvs.map((pv,i) => {
-    const mVal = pv - achat;
-    const mPct = achat > 0 ? Math.round(mVal/achat*100) : 0;
-    const color = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
-    return `<div style="background:var(--surface2);border-radius:6px;padding:8px;text-align:center">
-      <div style="font-size:10px;color:var(--text2)">Marge PV${i+1}</div>
-      <div style="font-size:14px;font-weight:500;color:${color}">${fmtMoney(mVal)} DT</div>
-      <div style="font-size:11px;color:${color}">${mPct>0?'+':''}${mPct}%</div>
-    </div>`;
-  }).join('');
-}
+function calcCompMarges() {}  // PV gérés au niveau de la config
 
 async function openComposantModal(id=null) {
   EDIT_CMP_ID = id;
@@ -11820,67 +11820,81 @@ function renderCompatAlerts() {
   div.innerHTML = alerts.map(a => `<div style="font-size:11px;padding:5px 10px;margin-bottom:4px;border-radius:6px;background:${a.startsWith('❌')?'rgba(239,68,68,.1)':'rgba(251,191,36,.1)'};color:${a.startsWith('❌')?'var(--danger-light)':'var(--warning-light)'}">${a}</div>`).join('');
 }
 
+// ── Calcul prix de vente depuis montant TTC ou pourcentage ──
+function getCfgAchatTtc() {
+  const tva   = parseInt(document.getElementById('cfg-tva')?.value)||19;
+  const comps = Object.values(CFG_SELECTION).filter(Boolean);
+  const totalAchat = comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0);
+  return { totalAchat, achatTtc: totalAchat*(1+tva/100), tva };
+}
+
+function onPvTTCChange(i) {
+  const ttc = parseFloat(document.getElementById(`cfg-pv${i}-ttc`)?.value)||0;
+  const { achatTtc } = getCfgAchatTtc();
+  const pct = achatTtc > 0 ? Math.round((ttc-achatTtc)/achatTtc*100*10)/10 : 0;
+  const el = document.getElementById(`cfg-pv${i}-pct`);
+  if (el) el.value = pct;
+  updatePvMargeDisplay(i, ttc, achatTtc);
+}
+
+function onPvPctChange(i) {
+  const pct = parseFloat(document.getElementById(`cfg-pv${i}-pct`)?.value)||0;
+  const { achatTtc } = getCfgAchatTtc();
+  const ttc = Math.round(achatTtc*(1+pct/100)*1000)/1000;
+  const el = document.getElementById(`cfg-pv${i}-ttc`);
+  if (el) el.value = ttc;
+  updatePvMargeDisplay(i, ttc, achatTtc);
+}
+
+function updatePvMargeDisplay(i, pvTtc, achatTtc) {
+  const el = document.getElementById(`cfg-pv${i}-marge`);
+  if (!el) return;
+  const mVal = pvTtc - achatTtc;
+  const mPct = achatTtc > 0 ? Math.round(mVal/achatTtc*1000)/10 : 0;
+  const col  = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+  el.innerHTML = `Marge : <strong style="color:${col}">${fmtMoney(mVal)} DT (${mPct>0?'+':''}${mPct}%)</strong>`;
+}
+
 function recalcConfig() {
-  const tva = parseInt(document.getElementById('cfg-tva')?.value)||19;
+  const { totalAchat, achatTtc, tva } = getCfgAchatTtc();
   const comps = Object.values(CFG_SELECTION).filter(Boolean);
 
-  const totalAchat = comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0);
-  const totalPV1   = comps.reduce((s,c)=>s+(c.prix_vente1_ht||0),0);
-  const totalPV2   = comps.reduce((s,c)=>s+(c.prix_vente2_ht||0),0);
-  const totalPV3   = comps.reduce((s,c)=>s+(c.prix_vente3_ht||0),0);
-
-  const pv1ttc = totalPV1 * (1 + tva/100);
-  const pv2ttc = totalPV2 * (1 + tva/100);
-  const pv3ttc = totalPV3 * (1 + tva/100);
-  const achatTtc = totalAchat * (1 + tva/100);
-
-  // Summary
+  // Récapitulatif composants
   const sumDiv = document.getElementById('cfg-summary');
   if (sumDiv) {
     const rows = comps.map(c=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--border)">
       <span style="color:var(--text2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.designation?.substring(0,30))}${(c.designation||'').length>30?'…':''}</span>
       <span>${fmtMoney(c.prix_achat_ht||0)} DT</span>
     </div>`).join('');
-    sumDiv.innerHTML = `${rows}
+    sumDiv.innerHTML = `${rows || '<div style="color:var(--text2);padding:8px 0;font-size:11px">Aucun composant sélectionné</div>'}
     <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:12px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
       <span>Total achat HT</span><span>${fmtMoney(totalAchat)} DT</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
       <span>TVA ${tva}%</span><span>+ ${fmtMoney(totalAchat*tva/100)} DT</span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0 0;font-size:13px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
+    <div style="display:flex;justify-content:space-between;padding:6px 0 0;font-size:14px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
       <span>Total achat TTC</span><span style="color:var(--warning-light)">${fmtMoney(achatTtc)} DT</span>
     </div>`;
   }
 
-  // Prix de vente
-  const pricesDiv = document.getElementById('cfg-prix-display');
-  if (pricesDiv) {
-    const mkPvBlock = (label, pvHt, pvTtc) => {
-      const mVal = pvTtc - achatTtc;
-      const mPct = achatTtc > 0 ? Math.round(mVal/achatTtc*100) : 0;
-      const col  = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
-      return `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px">
-        <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${label}</div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-          <span style="font-size:11px;color:var(--text2)">HT</span>
-          <span style="font-size:13px;font-weight:500">${fmtMoney(pvHt)} DT</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--text2)">TTC (${tva}%)</span>
-          <span style="font-size:15px;font-weight:500;color:var(--accent-light)">${fmtMoney(pvTtc)} DT</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;border-top:0.5px solid var(--border);padding-top:6px">
-          <span style="font-size:10px;color:var(--text2)">Marge brute</span>
-          <span style="font-size:12px;font-weight:500;color:${col}">${fmtMoney(mVal)} DT (${mPct>0?'+':''}${mPct}%)</span>
-        </div>
-      </div>`;
-    };
-    pricesDiv.innerHTML =
-      mkPvBlock('PV1 — Standard', totalPV1, pv1ttc) +
-      mkPvBlock('PV2 — Revendeur', totalPV2, pv2ttc) +
-      mkPvBlock('PV3 — Promo / Lot', totalPV3, pv3ttc);
-  }
+  // Recalculer les marges des 3 PV
+  [1,2,3].forEach(i => {
+    const ttc = parseFloat(document.getElementById(`cfg-pv${i}-ttc`)?.value)||0;
+    if (ttc > 0) updatePvMargeDisplay(i, ttc, achatTtc);
+    else {
+      const pct = parseFloat(document.getElementById(`cfg-pv${i}-pct`)?.value)||0;
+      if (pct !== 0) {
+        const newTtc = Math.round(achatTtc*(1+pct/100)*1000)/1000;
+        const elTtc = document.getElementById(`cfg-pv${i}-ttc`);
+        if (elTtc) elTtc.value = newTtc;
+        updatePvMargeDisplay(i, newTtc, achatTtc);
+      } else {
+        const el = document.getElementById(`cfg-pv${i}-marge`);
+        if (el) el.innerHTML = `<span style="color:var(--text2)">Saisir un montant TTC ou un % de marge</span>`;
+      }
+    }
+  });
 }
 
 async function openCfgModal(id=null) {
@@ -11905,6 +11919,12 @@ async function openCfgModal(id=null) {
       document.getElementById('cfg-tva').value    = c.tva||19;
       document.getElementById('cfg-notes').value  = c.notes||'';
       document.getElementById('cfg-statut').value = c.statut||'Brouillon';
+      // Remplir les PV sauvegardés
+      const pvTtcs = [c.prix_vente1_total||0, c.prix_vente2_total||0, c.prix_vente3_total||0];
+      pvTtcs.forEach((ttc,i) => {
+        const el = document.getElementById(`cfg-pv${i+1}-ttc`); if(el) el.value=ttc;
+        const elPct = document.getElementById(`cfg-pv${i+1}-pct`); if(elPct) elPct.value=0;
+      });
       const comps = Array.isArray(c.composants) ? c.composants : [];
       comps.forEach(sel => {
         const comp = ALL_COMPOSANTS.find(x=>x.id===sel.id);
@@ -11935,11 +11955,11 @@ async function saveConfig() {
     tva,
     notes:              document.getElementById('cfg-notes').value.trim(),
     statut:             document.getElementById('cfg-statut').value,
-    composants:         JSON.stringify(comps.map(c=>({id:c.id,designation:c.designation,categorie:c.categorie,prix_achat_ht:c.prix_achat_ht,prix_vente1_ht:c.prix_vente1_ht,prix_vente2_ht:c.prix_vente2_ht,prix_vente3_ht:c.prix_vente3_ht}))),
+    composants:         JSON.stringify(comps.map(c=>({id:c.id,designation:c.designation,categorie:c.categorie,prix_achat_ht:c.prix_achat_ht}))),
     prix_achat_total:   comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0),
-    prix_vente1_total:  comps.reduce((s,c)=>s+(c.prix_vente1_ht||0),0),
-    prix_vente2_total:  comps.reduce((s,c)=>s+(c.prix_vente2_ht||0),0),
-    prix_vente3_total:  comps.reduce((s,c)=>s+(c.prix_vente3_ht||0),0),
+    prix_vente1_total:  parseFloat(document.getElementById('cfg-pv1-ttc')?.value)||0,
+    prix_vente2_total:  parseFloat(document.getElementById('cfg-pv2-ttc')?.value)||0,
+    prix_vente3_total:  parseFloat(document.getElementById('cfg-pv3-ttc')?.value)||0,
   };
   try {
     if (EDIT_CFG_ID) await sbPatch('configurations_pc', EDIT_CFG_ID, body);
