@@ -9173,6 +9173,50 @@ async function openPaieFromEmp(empId) {
   },200);
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALCUL PAIE TUNISIEN — Barème IRPP 2024 + CSS + CNSS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Calcule l'IRPP mensuel selon le barème progressif tunisien 2024
+function calcIRPP(revenuImposableMensuel) {
+  // Barème annuel converti en mensuel
+  const revAnnuel = revenuImposableMensuel * 12;
+  let irppAnnuel = 0;
+  // Tranches annuelles 2024
+  const tranches = [
+    { limite: 5000,  taux: 0 },
+    { limite: 7000,  taux: 0.26 },
+    { limite: 16000, taux: 0.28 },
+    { limite: 25000, taux: 0.32 },
+    { limite: 40000, taux: 0.34 },
+    { limite: Infinity, taux: 0.35 },
+  ];
+  let prev = 0;
+  for (const t of tranches) {
+    if (revAnnuel <= prev) break;
+    const base = Math.min(revAnnuel, t.limite) - prev;
+    irppAnnuel += base * t.taux;
+    prev = t.limite;
+  }
+  // Déduction forfaitaire frais professionnels : 10% plafonné 2000 DT/an
+  const fraisPro = Math.min(revAnnuel * 0.10, 2000);
+  irppAnnuel = Math.max(0, irppAnnuel - fraisPro * (irppAnnuel / revAnnuel || 0));
+  return Math.round((irppAnnuel / 12) * 1000) / 1000;
+}
+
+// Calcule la prime d'ancienneté (1j/an plafonné selon Convention Collective)
+function calcAnciennete(dateEmbauche, fixeNet) {
+  if (!dateEmbauche) return 0;
+  const debut = new Date(dateEmbauche);
+  const now = new Date();
+  const annees = Math.floor((now - debut) / (1000 * 60 * 60 * 24 * 365));
+  if (annees < 1) return 0;
+  // 1% du fixe net par année d'ancienneté, plafonné à 15%
+  const taux = Math.min(annees * 0.01, 0.15);
+  return Math.round(fixeNet * taux * 1000) / 1000;
+}
+
 async function calcPaie() {
   const empId=document.getElementById('paie-emp-sel').value;
   const mois=document.getElementById('paie-mois-sel').value;
@@ -9192,10 +9236,15 @@ async function calcPaie() {
     const dedAbsences=Math.round(joursAbsents*(fixeBrut/26)*1000)/1000;
     const variable=parseFloat(document.getElementById('paie-var-input')?.value)||0;
     const primes=parseFloat(document.getElementById('paie-primes-input')?.value)||0;
-    // CNSS salarié tunisien : 9.18% du brut
-    const cnss=Math.round(fixeBrut*0.0918*1000)/1000;
-    const irpp=Math.round(Math.max(0,(fixeNet-cnss-333.333)*0.26)*1000)/1000; // estimation simplifiée
-    const netAPayer=Math.round((fixeNet+variable+primes-totalSanctions-dedAbsences-cnss)*1000)/1000;
+    // ── Calculs conformes loi tunisienne ──
+    const anciennete = calcAnciennete(emp.date_embauche, fixeNet);
+    const brutTotal  = fixeBrut + variable + primes + anciennete;
+    const cnss       = Math.round(brutTotal * 0.0918 * 1000) / 1000;   // 9.18% salarié
+    const cnssPatron = Math.round(brutTotal * 0.1657 * 1000) / 1000;   // 16.57% patronal (affiché seulement)
+    const css        = Math.round(brutTotal * 0.01   * 1000) / 1000;   // CSS 1% (loi 2019)
+    const revImposable = brutTotal - cnss - css;
+    const irpp       = calcIRPP(revImposable);
+    const netAPayer  = Math.round((brutTotal - cnss - css - irpp - totalSanctions - dedAbsences) * 1000) / 1000;
 
     const p=getSocieteProfile();
     const [annee,moisNum]=mois.split('-');
@@ -9213,13 +9262,21 @@ async function calcPaie() {
           <div class="card-body">
             <table style="width:100%;font-size:13px">
               <tbody>
+                <tr style="border-bottom:1px solid var(--border);background:rgba(96,165,250,.05)"><td style="padding:5px 4px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.05em" colspan="2">GAINS</td></tr>
                 <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2)">Salaire fixe brut</td><td style="text-align:right;font-weight:600">${fmtMoney(fixeBrut)} DT</td></tr>
-                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--success-light)">+ Variable mensuel</td><td style="text-align:right;color:var(--success-light);font-weight:600">+ ${fmtMoney(variable)} DT</td></tr>
-                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--success-light)">+ Primes diverses</td><td style="text-align:right;color:var(--success-light);font-weight:600">+ ${fmtMoney(primes)} DT</td></tr>
+                ${anciennete>0?`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--success-light)">+ Prime d'ancienneté</td><td style="text-align:right;color:var(--success-light);font-weight:600">+ ${fmtMoney(anciennete)} DT</td></tr>`:''}
+                ${variable>0?`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--success-light)">+ Variable mensuel</td><td style="text-align:right;color:var(--success-light);font-weight:600">+ ${fmtMoney(variable)} DT</td></tr>`:''}
+                ${primes>0?`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--success-light)">+ Primes diverses</td><td style="text-align:right;color:var(--success-light);font-weight:600">+ ${fmtMoney(primes)} DT</td></tr>`:''}
+                <tr style="border-bottom:1px solid var(--border);font-weight:600"><td style="padding:6px 0">Total brut imposable</td><td style="text-align:right">${fmtMoney(brutTotal)} DT</td></tr>
+                <tr style="border-bottom:1px solid var(--border);background:rgba(239,68,68,.05)"><td style="padding:5px 4px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.05em" colspan="2">RETENUES LÉGALES</td></tr>
                 <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--danger-light)">− CNSS salarié (9.18%)</td><td style="text-align:right;color:var(--danger-light);font-weight:600">− ${fmtMoney(cnss)} DT</td></tr>
-                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--danger-light)">− Déductions sanctions</td><td style="text-align:right;color:var(--danger-light);font-weight:600">− ${fmtMoney(totalSanctions)} DT</td></tr>
-                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--danger-light)">− Absences (${joursAbsents}j)</td><td style="text-align:right;color:var(--danger-light);font-weight:600">− ${fmtMoney(dedAbsences)} DT</td></tr>
-                <tr style="background:rgba(22,163,74,.08);border-radius:6px"><td style="padding:10px 8px;font-weight:700;font-size:15px">NET À PAYER</td><td style="text-align:right;font-weight:800;font-size:18px;color:var(--success-light)">${fmtMoney(netAPayer)} DT</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--danger-light)">− CSS (1% — Loi 2019)</td><td style="text-align:right;color:var(--danger-light);font-weight:600">− ${fmtMoney(css)} DT</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--danger-light)">− IRPP (barème progressif)</td><td style="text-align:right;color:var(--danger-light);font-weight:600">− ${fmtMoney(irpp)} DT</td></tr>
+                ${totalSanctions>0?`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--warning-light)">− Sanctions (max 15% brut)</td><td style="text-align:right;color:var(--warning-light);font-weight:600">− ${fmtMoney(totalSanctions)} DT</td></tr>`:''}
+                ${dedAbsences>0?`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--warning-light)">− Absences (${joursAbsents}j × brut/26)</td><td style="text-align:right;color:var(--warning-light);font-weight:600">− ${fmtMoney(dedAbsences)} DT</td></tr>`:''}
+                <tr style="border-bottom:1px solid var(--border);background:rgba(96,165,250,.05)"><td style="padding:5px 4px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.05em" colspan="2">INFO EMPLOYEUR (non déduit)</td></tr>
+                <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2);font-size:12px">CNSS patronal (16.57%)</td><td style="text-align:right;color:var(--text2);font-size:12px">${fmtMoney(cnssPatron)} DT</td></tr>
+                <tr style="background:rgba(22,163,74,.1)"><td style="padding:10px 8px;font-weight:700;font-size:15px">NET À PAYER</td><td style="text-align:right;font-weight:800;font-size:18px;color:var(--success-light)">${fmtMoney(netAPayer)} DT</td></tr>
               </tbody>
             </table>
           </div>
@@ -9253,8 +9310,14 @@ async function imprimerBulletin(empId, mois) {
   const totalSanctions=Math.min(sanctions.reduce((s,x)=>s+(x.deduction||0),0),fixeBrut*0.15);
   const joursAbs=ptgs.filter(p=>!p.heure_arrivee).length;
   const dedAbs=Math.round(joursAbs*(fixeBrut/26)*1000)/1000;
-  const cnss=Math.round(fixeBrut*0.0918*1000)/1000;
-  const netAPayer=Math.round((fixeNet+variable+primes-totalSanctions-dedAbs-cnss)*1000)/1000;
+  const anciennete = calcAnciennete(emp.date_embauche, fixeNet);
+  const brutTotal  = fixeBrut + variable + primes + anciennete;
+  const cnss       = Math.round(brutTotal * 0.0918 * 1000) / 1000;
+  const cnssPatron = Math.round(brutTotal * 0.1657 * 1000) / 1000;
+  const css        = Math.round(brutTotal * 0.01   * 1000) / 1000;
+  const revImposable = brutTotal - cnss - css;
+  const irpp       = calcIRPP(revImposable);
+  const netAPayer  = Math.round((brutTotal - cnss - css - irpp - totalSanctions - dedAbs) * 1000) / 1000;
   const [annee,moisNum]=mois.split('-');
   const moisNom=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][parseInt(moisNum)-1];
   const header=getDocHeader();
@@ -9274,14 +9337,22 @@ async function imprimerBulletin(empId, mois) {
     <tr><td><strong>Date embauche</strong></td><td>${emp.date_embauche||'—'}</td><td><strong>RIB</strong></td><td>${esc(emp.rib||'—')}</td></tr>
     <tr><td><strong>Période</strong></td><td colspan="3"><strong>${moisNom} ${annee}</strong></td></tr>
   </tbody></table>
-  <table><thead><tr><th>Désignation</th><th style="text-align:right">Montant (DT)</th></tr></thead><tbody>
+  <table><thead><tr><th colspan="2" style="background:#1e3a5f">ÉLÉMENTS DE RÉMUNÉRATION</th></tr></thead><tbody>
+    <tr style="background:#f0f9ff"><td colspan="2" style="font-size:9pt;font-weight:700;color:#1e3a5f;padding:4px 10px">GAINS</td></tr>
     <tr><td>Salaire fixe brut</td><td style="text-align:right">${fmtMoney(fixeBrut)}</td></tr>
+    ${anciennete>0?`<tr><td>Prime d'ancienneté</td><td style="text-align:right;color:green">+ ${fmtMoney(anciennete)}</td></tr>`:''}
     ${variable>0?`<tr><td>Variable mensuel</td><td style="text-align:right;color:green">+ ${fmtMoney(variable)}</td></tr>`:''}
     ${primes>0?`<tr><td>Primes diverses</td><td style="text-align:right;color:green">+ ${fmtMoney(primes)}</td></tr>`:''}
-    <tr class="ded-row"><td>CNSS salarié (9.18%)</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(cnss)}</td></tr>
-    ${totalSanctions>0?`<tr class="ded-row"><td>Déductions sanctions (${sanctions.length} infraction(s))</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(totalSanctions)}</td></tr>`:''}
-    ${dedAbs>0?`<tr class="ded-row"><td>Absences injustifiées (${joursAbs} jour(s))</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(dedAbs)}</td></tr>`:''}
-    <tr class="total-row"><td>NET À PAYER</td><td style="text-align:right;font-size:16pt;color:#16a34a">${fmtMoney(netAPayer)} DT</td></tr>
+    <tr style="font-weight:700;border-top:1px solid #ccc"><td>Total brut imposable</td><td style="text-align:right">${fmtMoney(brutTotal)}</td></tr>
+    <tr style="background:#fff5f5"><td colspan="2" style="font-size:9pt;font-weight:700;color:#dc2626;padding:4px 10px">RETENUES LÉGALES (à charge salarié)</td></tr>
+    <tr class="ded-row"><td>CNSS salarié (9.18% du brut)</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(cnss)}</td></tr>
+    <tr class="ded-row"><td>CSS — Contribution Sociale Solidarité (1%)</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(css)}</td></tr>
+    <tr class="ded-row"><td>IRPP — Revenu imposable : ${fmtMoney(revImposable)} DT</td><td style="text-align:right;color:#dc2626">− ${fmtMoney(irpp)}</td></tr>
+    ${totalSanctions>0?`<tr class="ded-row"><td>Déductions sanctions (${sanctions.length} infraction(s) — max 15%)</td><td style="text-align:right;color:#b45309">− ${fmtMoney(totalSanctions)}</td></tr>`:''}
+    ${dedAbs>0?`<tr class="ded-row"><td>Absences injustifiées (${joursAbs} jour(s) × brut/26)</td><td style="text-align:right;color:#b45309">− ${fmtMoney(dedAbs)}</td></tr>`:''}
+    <tr style="background:#f0f9ff"><td colspan="2" style="font-size:9pt;font-weight:700;color:#1e3a5f;padding:4px 10px">INFORMATION EMPLOYEUR (non déduit du salarié)</td></tr>
+    <tr style="color:#6b7280"><td>CNSS patronal (16.57% du brut)</td><td style="text-align:right">${fmtMoney(cnssPatron)}</td></tr>
+    <tr class="total-row" style="border-top:2px solid #16a34a"><td style="font-size:13pt">NET À PAYER</td><td style="text-align:right;font-size:16pt;color:#16a34a">${fmtMoney(netAPayer)} DT</td></tr>
   </tbody></table>
   ${sanctions.length?`<div style="margin-top:16px"><strong>Détail des déductions disciplinaires :</strong><ul>${sanctions.map(s=>`<li>${s.date_constat} — ${esc(s.infraction)} — ${s.deduction} DT (${s.niveau})</li>`).join('')}</ul></div>`:''}
   <div class="footer">
@@ -9289,7 +9360,7 @@ async function imprimerBulletin(empId, mois) {
     <div style="text-align:center">Signature employé (Lu et approuvé)<div class="sign"></div></div>
     <div style="text-align:right;font-size:9pt">Imprimé le ${new Date().toLocaleDateString('fr-TN')}<br>Document confidentiel C5</div>
   </div></body></html>`;
-  openHtmlWindow(__rhDocHtml, 'Document RH');
+  openHtmlWindow(__bulletinHtml, 'Bulletin de paie');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
