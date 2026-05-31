@@ -570,6 +570,70 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+      <!-- MARKETING DIGITAL -->
+      <div class="page" id="page-marketing">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📣 Marketing Digital</div>
+            <div class="page-sub">Calendrier éditorial · Planning posts · Statistiques réseaux sociaux</div>
+          </div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" id="mkt-search" placeholder="Titre, réseau, tag..." oninput="loadMarketing()"></div>
+            <select class="form-control" style="width:130px" id="mkt-filter-reseau" onchange="loadMarketing()">
+              <option value="">Tous réseaux</option>
+              <option>Facebook</option><option>Instagram</option><option>TikTok</option>
+              <option>YouTube</option><option>WhatsApp</option>
+            </select>
+            <select class="form-control" style="width:130px" id="mkt-filter-statut" onchange="loadMarketing()">
+              <option value="">Tous statuts</option>
+              <option value="Idee">Idée</option>
+              <option value="Redaction">Rédaction</option>
+              <option value="Planifie">Planifié</option>
+              <option value="Publie">Publié</option>
+              <option value="Archive">Archivé</option>
+            </select>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm" id="mkt-btn-cal" onclick="switchMktView('cal')" title="Vue calendrier">📅</button>
+              <button class="btn btn-ghost btn-sm" id="mkt-btn-list" onclick="switchMktView('list')" title="Vue liste">📋</button>
+            </div>
+            <button class="btn btn-primary" onclick="openMktModal()">＋ Nouveau post</button>
+          </div>
+        </div>
+
+        <!-- Stats rapides -->
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="mkt-stats"></div>
+
+        <!-- Vue calendrier -->
+        <div id="mkt-view-cal">
+          <div class="card">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="btn btn-ghost btn-sm" onclick="mktCalNav(-1)">‹</button>
+                <span id="mkt-cal-title" style="font-weight:500;font-size:15px"></span>
+                <button class="btn btn-ghost btn-sm" onclick="mktCalNav(1)">›</button>
+                <button class="btn btn-ghost btn-sm" onclick="mktCalToday()" style="font-size:11px">Aujourd'hui</button>
+              </div>
+            </div>
+            <div id="mkt-calendar" style="padding:12px"></div>
+          </div>
+        </div>
+
+        <!-- Vue liste -->
+        <div id="mkt-view-list" style="display:none">
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Titre</th><th>Réseaux</th><th>Type</th>
+                  <th>Date publication</th><th>Statut</th><th>Auteur</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="mkt-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- COMMANDES -->
       <div class="page" id="page-commandes">
         <div class="page-header">
@@ -3101,6 +3165,110 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal Marketing Post -->
+<div class="overlay" id="mkt-modal-overlay">
+  <div class="modal modal-xl" style="max-width:780px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="mkt-modal-title">Nouveau post</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="mkt-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:var(--surface2);color:var(--text2)">Idée</span>
+        <button class="modal-close" onclick="closeModal('mkt-modal-overlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="max-height:80vh;overflow-y:auto">
+      <!-- Ligne 1 : Titre + Type -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Titre du post *</label>
+          <input class="form-control" id="mkt-titre" placeholder="Ex: Promo Switch TP-Link -20%"></div>
+        <div class="form-group"><label class="form-label">Type de contenu</label>
+          <select class="form-control" id="mkt-type">
+            <option>Promo produit</option><option>Tutoriel</option><option>Avis client</option>
+            <option>Événement</option><option>Coulisse</option><option>Offre flash</option>
+            <option>Concours</option><option>Actualité</option>
+          </select>
+        </div>
+      </div>
+      <!-- Ligne 2 : Réseaux -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Réseaux cibles *</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px"><input type="checkbox" value="Facebook" class="mkt-reseau-cb"> 📘 Facebook</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px"><input type="checkbox" value="Instagram" class="mkt-reseau-cb"> 📸 Instagram</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px"><input type="checkbox" value="TikTok" class="mkt-reseau-cb"> 🎵 TikTok</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px"><input type="checkbox" value="YouTube" class="mkt-reseau-cb"> ▶️ YouTube</label>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px"><input type="checkbox" value="WhatsApp" class="mkt-reseau-cb"> 💬 WhatsApp</label>
+        </div>
+      </div>
+      <!-- Ligne 3 : Contenu texte -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Contenu du post</label>
+        <textarea class="form-control" id="mkt-contenu" rows="4" placeholder="Texte du post, hashtags, emojis..."></textarea>
+        <div style="font-size:10px;color:var(--text2);text-align:right;margin-top:2px" id="mkt-char-count">0 caractères</div>
+      </div>
+      <!-- Ligne 4 : Image -->
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Image / Visuel</label>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div id="mkt-img-preview" style="width:80px;height:80px;border:1px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:24px;flex-shrink:0;overflow:hidden">🖼</div>
+          <div style="flex:1">
+            <input class="form-control" id="mkt-image-url" placeholder="URL de l'image (https://...)" oninput="previewMktImg(this.value)" style="margin-bottom:6px">
+            <div style="font-size:11px;color:var(--text2)">Colle l'URL d'une image hébergée (Imgur, Google Drive, etc.)</div>
+          </div>
+        </div>
+      </div>
+      <!-- Ligne 5 : Date + Heure + Statut -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Date publication</label>
+          <input class="form-control" type="date" id="mkt-date"></div>
+        <div class="form-group"><label class="form-label">Heure</label>
+          <input class="form-control" type="time" id="mkt-heure"></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="mkt-statut" onchange="onMktStatutChange()">
+            <option value="Idee">💡 Idée</option>
+            <option value="Redaction">✏️ Rédaction</option>
+            <option value="Planifie">📅 Planifié</option>
+            <option value="Publie">✅ Publié</option>
+            <option value="Archive">📦 Archivé</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Agence</label>
+          <select class="form-control" id="mkt-agence">
+            <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+          </select>
+        </div>
+      </div>
+      <!-- Ligne 6 : Tags + Auteur -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Tags</label>
+          <input class="form-control" id="mkt-tags" placeholder="gaming, promo, réseau..."></div>
+        <div class="form-group"><label class="form-label">Auteur / Responsable</label>
+          <input class="form-control" id="mkt-auteur" placeholder="Nom du créateur"></div>
+      </div>
+      <!-- Stats (si publié) -->
+      <div id="mkt-stats-section" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📊 Statistiques post publié</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="form-group"><label class="form-label">👍 Likes</label>
+            <input class="form-control" type="number" id="mkt-likes" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">👁 Portée (reach)</label>
+            <input class="form-control" type="number" id="mkt-reach" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">💬 Commentaires</label>
+            <input class="form-control" type="number" id="mkt-commentaires" value="0" min="0"></div>
+        </div>
+      </div>
+      <!-- Notes -->
+      <div class="form-group">
+        <label class="form-label">Notes internes</label>
+        <textarea class="form-control" id="mkt-notes" rows="2" placeholder="Remarques, consignes visuelles..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('mkt-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMktPost()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal CA Mensuel -->
 <div class="overlay" id="ca-modal-overlay">
   <div class="modal" style="max-width:460px">
@@ -3374,6 +3542,9 @@ function buildSidebar() {
     { title: 'Communication', items: [
       { id:'sms', icon:'📱', name:'SMS & Notifications', perm:'sms' },
     ]},
+    { title: 'Marketing Digital', items: [
+      { id:'marketing', icon:'📣', name:'Marketing Digital', perm:'marketing' },
+    ]},
     { title: 'Finances', items: [
       { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
       { id:'rapports', icon:'📊', name:'Rapports', perm:'rapports' },
@@ -3414,6 +3585,7 @@ function showPage(id) {
     dashboard: loadDashboard, clients: loadClients, devis: loadDevis,
     commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
     rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
+    marketing: loadMarketing,
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
@@ -10274,6 +10446,284 @@ async function fillClientSelect(selId) {
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MODULE MARKETING DIGITAL
+// ═════════════════════════════════════════════════════════════════════════════
+
+const MKT_RESEAUX_ICONS = { Facebook:'📘', Instagram:'📸', TikTok:'🎵', YouTube:'▶️', WhatsApp:'💬' };
+const MKT_STATUT_STYLE = {
+  'Idee':      { bg:'rgba(125,133,144,.15)', color:'#9ca3af', label:'💡 Idée' },
+  'Redaction': { bg:'rgba(251,191,36,.15)',  color:'#fbbf24', label:'✏️ Rédaction' },
+  'Planifie':  { bg:'rgba(59,130,246,.15)',  color:'#60a5fa', label:'📅 Planifié' },
+  'Publie':    { bg:'rgba(34,197,94,.15)',   color:'#4ade80', label:'✅ Publié' },
+  'Archive':   { bg:'rgba(156,163,175,.15)', color:'#6b7280', label:'📦 Archivé' },
+};
+
+let EDIT_MKT_ID = null;
+let MKT_VIEW = 'cal';
+let MKT_CAL_DATE = new Date();
+let MKT_ALL_POSTS = [];
+
+// ── Chargement principal ──
+async function loadMarketing() {
+  try {
+    const q  = document.getElementById('mkt-search')?.value || '';
+    const rs = document.getElementById('mkt-filter-reseau')?.value || '';
+    const st = document.getElementById('mkt-filter-statut')?.value || '';
+
+    let filter = [];
+    if (st) filter.push(`statut=eq.${st}`);
+    const filterStr = filter.join('&');
+
+    const data = await sb('marketing_posts', { filter: filterStr, order:'date_publication.asc' });
+    MKT_ALL_POSTS = (data || []).filter(p => {
+      if (q && !p.titre?.toLowerCase().includes(q.toLowerCase()) &&
+               !p.tags?.toLowerCase().includes(q.toLowerCase())) return false;
+      if (rs && !(p.reseau||[]).includes(rs)) return false;
+      return true;
+    });
+
+    renderMktStats(MKT_ALL_POSTS);
+    if (MKT_VIEW === 'cal') renderMktCalendar();
+    else renderMktList();
+  } catch(e) { console.error('loadMarketing:', e); }
+}
+
+// ── Stats rapides ──
+function renderMktStats(posts) {
+  const div = document.getElementById('mkt-stats');
+  if (!div) return;
+  const total    = posts.length;
+  const planifie = posts.filter(p=>p.statut==='Planifie').length;
+  const publie   = posts.filter(p=>p.statut==='Publie').length;
+  const redac    = posts.filter(p=>p.statut==='Redaction').length;
+  const totalReach = posts.reduce((s,p)=>s+(p.reach||0),0);
+  div.innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">📝 Total posts</div><div class="stat-val">${total}</div></div>
+    <div class="stat-card amber"><div class="stat-label">✏️ En rédaction</div><div class="stat-val">${redac}</div></div>
+    <div class="stat-card blue"><div class="stat-label">📅 Planifiés</div><div class="stat-val">${planifie}</div></div>
+    <div class="stat-card green"><div class="stat-label">✅ Publiés</div><div class="stat-val">${publie}</div></div>
+    <div class="stat-card purple"><div class="stat-label">👁 Portée totale</div><div class="stat-val" style="font-size:16px">${totalReach.toLocaleString()}</div></div>`;
+}
+
+// ── Switcher vue ──
+function switchMktView(v) {
+  MKT_VIEW = v;
+  document.getElementById('mkt-view-cal').style.display  = v==='cal'  ? 'block' : 'none';
+  document.getElementById('mkt-view-list').style.display = v==='list' ? 'block' : 'none';
+  document.getElementById('mkt-btn-cal').style.background  = v==='cal'  ? 'var(--surface2)' : '';
+  document.getElementById('mkt-btn-list').style.background = v==='list' ? 'var(--surface2)' : '';
+  if (v==='cal') renderMktCalendar();
+  else renderMktList();
+}
+
+// ── Vue calendrier ──
+function renderMktCalendar() {
+  const yr  = MKT_CAL_DATE.getFullYear();
+  const mo  = MKT_CAL_DATE.getMonth();
+  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  document.getElementById('mkt-cal-title').textContent = `${MOIS[mo]} ${yr}`;
+
+  const firstDay = new Date(yr, mo, 1);
+  const lastDay  = new Date(yr, mo+1, 0);
+  let startDow = firstDay.getDay(); // 0=dim
+  startDow = startDow === 0 ? 6 : startDow - 1; // lundi=0
+
+  // Grouper posts par date
+  const postsByDate = {};
+  MKT_ALL_POSTS.forEach(p => {
+    if (!p.date_publication) return;
+    const d = p.date_publication.slice(0,10);
+    if (!postsByDate[d]) postsByDate[d] = [];
+    postsByDate[d].push(p);
+  });
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">`;
+  JOURS.forEach(j => html += `<div style="text-align:center;font-size:11px;font-weight:500;color:var(--text2);padding:4px">${j}</div>`);
+  html += `</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">`;
+
+  // Cellules vides avant
+  for (let i=0; i<startDow; i++) html += `<div style="min-height:70px;padding:4px;border-radius:4px;background:var(--surface2);opacity:.3"></div>`;
+
+  const today = new Date().toISOString().slice(0,10);
+  for (let d=1; d<=lastDay.getDate(); d++) {
+    const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === today;
+    const dayPosts = postsByDate[dateStr] || [];
+
+    html += `<div style="min-height:70px;padding:4px;border-radius:4px;border:0.5px solid ${isToday?'var(--accent-light)':'var(--border)'};background:${isToday?'rgba(96,165,250,.05)':'transparent'};cursor:pointer" onclick="openMktModal(null,'${dateStr}')">`;
+    html += `<div style="font-size:11px;font-weight:${isToday?'700':'400'};color:${isToday?'var(--accent-light)':'var(--text2)'};margin-bottom:3px">${d}</div>`;
+    dayPosts.slice(0,3).forEach(p => {
+      const st = MKT_STATUT_STYLE[p.statut] || MKT_STATUT_STYLE['Idee'];
+      const icon = (p.reseau||[])[0] ? MKT_RESEAUX_ICONS[(p.reseau||[])[0]] : '📝';
+      html += `<div onclick="event.stopPropagation();openMktModal('${p.id}')" style="font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:1px;background:${st.bg};color:${st.color};cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="${esc(p.titre)}">${icon} ${esc(p.titre.substring(0,18))}${p.titre.length>18?'…':''}</div>`;
+    });
+    if (dayPosts.length > 3) html += `<div style="font-size:9px;color:var(--text2);text-align:right">+${dayPosts.length-3}</div>`;
+    html += `</div>`;
+  }
+
+  // Cellules vides après
+  const total = startDow + lastDay.getDate();
+  const reste = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i=0; i<reste; i++) html += `<div style="min-height:70px;padding:4px;border-radius:4px;background:var(--surface2);opacity:.3"></div>`;
+  html += `</div>`;
+
+  document.getElementById('mkt-calendar').innerHTML = html;
+}
+
+function mktCalNav(dir) {
+  MKT_CAL_DATE = new Date(MKT_CAL_DATE.getFullYear(), MKT_CAL_DATE.getMonth() + dir, 1);
+  renderMktCalendar();
+}
+function mktCalToday() {
+  MKT_CAL_DATE = new Date();
+  renderMktCalendar();
+}
+
+// ── Vue liste ──
+function renderMktList() {
+  const tbody = document.getElementById('mkt-tbody');
+  if (!tbody) return;
+  if (!MKT_ALL_POSTS.length) { tbody.innerHTML = emptyRow(7, 'Aucun post'); return; }
+
+  tbody.innerHTML = MKT_ALL_POSTS.map(p => {
+    const st = MKT_STATUT_STYLE[p.statut] || MKT_STATUT_STYLE['Idee'];
+    const reseaux = (p.reseau||[]).map(r => MKT_RESEAUX_ICONS[r]||r).join(' ');
+    return `<tr>
+      <td><strong>${esc(p.titre)}</strong>${p.tags?`<div style="font-size:10px;color:var(--text2)">${esc(p.tags)}</div>`:''}</td>
+      <td style="font-size:14px">${reseaux||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${esc(p.type_contenu||'—')}</td>
+      <td style="font-size:12px">${p.date_publication||'—'}${p.heure_publication?` ${p.heure_publication.slice(0,5)}`:''}}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;background:${st.bg};color:${st.color}">${st.label}</span></td>
+      <td style="color:var(--text2);font-size:12px">${esc(p.auteur||'—')}</td>
+      <td>
+        <button class="btn btn-ghost btn-xs" onclick="openMktModal('${p.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('marketing_posts','${p.id}',loadMarketing)">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Ouvrir modal ──
+async function openMktModal(id=null, datePreset=null) {
+  EDIT_MKT_ID = id;
+  document.getElementById('mkt-modal-title').textContent = id ? 'Modifier post' : 'Nouveau post';
+  document.querySelectorAll('.mkt-reseau-cb').forEach(cb => cb.checked = false);
+
+  if (id) {
+    try {
+      const [p] = await sb('marketing_posts', { filter:`id=eq.${id}` });
+      document.getElementById('mkt-titre').value    = p.titre||'';
+      document.getElementById('mkt-type').value     = p.type_contenu||'Promo produit';
+      document.getElementById('mkt-contenu').value  = p.contenu||'';
+      document.getElementById('mkt-image-url').value= p.image_url||'';
+      document.getElementById('mkt-date').value     = p.date_publication||'';
+      document.getElementById('mkt-heure').value    = p.heure_publication||'';
+      document.getElementById('mkt-statut').value   = p.statut||'Idee';
+      document.getElementById('mkt-agence').value   = p.agence||'Charguia';
+      document.getElementById('mkt-tags').value     = p.tags||'';
+      document.getElementById('mkt-auteur').value   = p.auteur||'';
+      document.getElementById('mkt-notes').value    = p.notes||'';
+      document.getElementById('mkt-likes').value    = p.likes||0;
+      document.getElementById('mkt-reach').value    = p.reach||0;
+      document.getElementById('mkt-commentaires').value = p.commentaires||0;
+      const reseaux = Array.isArray(p.reseau) ? p.reseau : (p.reseau ? JSON.parse(p.reseau) : []);
+      document.querySelectorAll('.mkt-reseau-cb').forEach(cb => { if (reseaux.includes(cb.value)) cb.checked = true; });
+      previewMktImg(p.image_url||'');
+    } catch(e) { console.error(e); }
+  } else {
+    document.getElementById('mkt-titre').value    = '';
+    document.getElementById('mkt-contenu').value  = '';
+    document.getElementById('mkt-image-url').value= '';
+    document.getElementById('mkt-date').value     = datePreset || '';
+    document.getElementById('mkt-heure').value    = '09:00';
+    document.getElementById('mkt-statut').value   = 'Idee';
+    document.getElementById('mkt-agence').value   = SESSION?.agences?.[0]||'Charguia';
+    document.getElementById('mkt-tags').value     = '';
+    document.getElementById('mkt-auteur').value   = SESSION?.name||'';
+    document.getElementById('mkt-notes').value    = '';
+    document.getElementById('mkt-likes').value    = 0;
+    document.getElementById('mkt-reach').value    = 0;
+    document.getElementById('mkt-commentaires').value = 0;
+    previewMktImg('');
+  }
+
+  onMktStatutChange();
+  updateMktCharCount();
+  openModal('mkt-modal-overlay');
+}
+
+function previewMktImg(url) {
+  const prev = document.getElementById('mkt-img-preview');
+  if (!prev) return;
+  if (url && url.startsWith('http')) {
+    prev.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px" onerror="this.parentElement.innerHTML='❌'">`;
+  } else {
+    prev.innerHTML = '🖼';
+  }
+}
+
+function updateMktCharCount() {
+  const txt = document.getElementById('mkt-contenu')?.value || '';
+  const el  = document.getElementById('mkt-char-count');
+  if (el) el.textContent = txt.length + ' caractères';
+}
+
+function onMktStatutChange() {
+  const st = document.getElementById('mkt-statut')?.value || 'Idee';
+  const badge = document.getElementById('mkt-statut-badge');
+  const statsSection = document.getElementById('mkt-stats-section');
+  const info = MKT_STATUT_STYLE[st] || MKT_STATUT_STYLE['Idee'];
+  if (badge) { badge.textContent = info.label; badge.style.background = info.bg; badge.style.color = info.color; }
+  if (statsSection) statsSection.style.display = st === 'Publie' ? 'block' : 'none';
+}
+
+// ── Sauvegarder ──
+async function saveMktPost() {
+  const titre = document.getElementById('mkt-titre').value.trim();
+  if (!titre) { toast('Le titre est obligatoire','error'); return; }
+
+  const reseaux = Array.from(document.querySelectorAll('.mkt-reseau-cb:checked')).map(cb=>cb.value);
+  if (!reseaux.length) { toast('Sélectionne au moins un réseau','error'); return; }
+
+  const body = {
+    titre,
+    type_contenu:      document.getElementById('mkt-type').value,
+    contenu:           document.getElementById('mkt-contenu').value.trim(),
+    reseau:            JSON.stringify(reseaux),
+    image_url:         document.getElementById('mkt-image-url').value.trim()||null,
+    date_publication:  document.getElementById('mkt-date').value||null,
+    heure_publication: document.getElementById('mkt-heure').value||null,
+    statut:            document.getElementById('mkt-statut').value,
+    agence:            document.getElementById('mkt-agence').value,
+    tags:              document.getElementById('mkt-tags').value.trim(),
+    auteur:            document.getElementById('mkt-auteur').value.trim(),
+    notes:             document.getElementById('mkt-notes').value.trim(),
+    likes:             parseInt(document.getElementById('mkt-likes').value)||0,
+    reach:             parseInt(document.getElementById('mkt-reach').value)||0,
+    commentaires:      parseInt(document.getElementById('mkt-commentaires').value)||0,
+  };
+
+  try {
+    if (EDIT_MKT_ID) await sbPatch('marketing_posts', EDIT_MKT_ID, body);
+    else await sbPost('marketing_posts', body);
+    closeModal('mkt-modal-overlay');
+    loadMarketing();
+    toast(EDIT_MKT_ID ? 'Post mis à jour ✓' : 'Post créé ✓');
+    EDIT_MKT_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// Attacher l'événement de comptage de caractères
+document.addEventListener('DOMContentLoaded', () => {
+  const txt = document.getElementById('mkt-contenu');
+  if (txt) txt.addEventListener('input', updateMktCharCount);
+});
+
 
 // Click outside modal = ne ferme PAS (évite perte de données)
 
