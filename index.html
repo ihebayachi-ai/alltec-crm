@@ -698,6 +698,48 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+      <!-- CAMPAGNES PUBLICITAIRES -->
+      <div class="page" id="page-campagnes">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📣 Campagnes Publicitaires</div>
+            <div class="page-sub">Meta Ads · TikTok Ads · YouTube Ads · Google Ads</div>
+          </div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" id="camp-search" placeholder="Nom campagne..." oninput="loadCampagnes()"></div>
+            <select class="form-control" style="width:140px" id="camp-filter-plateforme" onchange="loadCampagnes()">
+              <option value="">Toutes plateformes</option>
+              <option>Meta Ads</option><option>TikTok Ads</option><option>YouTube Ads</option><option>Google Ads</option>
+            </select>
+            <select class="form-control" style="width:130px" id="camp-filter-statut" onchange="loadCampagnes()">
+              <option value="">Tous statuts</option>
+              <option value="Planifiee">Planifiée</option>
+              <option value="Active">Active</option>
+              <option value="Pausee">Pausée</option>
+              <option value="Terminee">Terminée</option>
+            </select>
+            <button class="btn btn-primary" onclick="openCampModal()">＋ Nouvelle campagne</button>
+          </div>
+        </div>
+
+        <!-- KPIs globaux -->
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="camp-stats"></div>
+
+        <!-- Tableau campagnes -->
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Campagne</th><th>Plateforme</th><th>Objectif</th>
+                <th>Période</th><th>Budget alloué</th><th>Dépensé</th><th>Reste</th>
+                <th>Leads</th><th>CPL</th><th>ROI</th><th>Statut</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="camp-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- COMMANDES -->
       <div class="page" id="page-commandes">
         <div class="page-header">
@@ -3229,6 +3271,125 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal Campagne Publicitaire -->
+<div class="overlay" id="camp-modal-overlay">
+  <div class="modal modal-xl" style="max-width:780px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="camp-modal-title">Nouvelle campagne</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="camp-statut-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500;background:var(--surface2);color:var(--text2)">Planifiée</span>
+        <button class="modal-close" onclick="closeModal('camp-modal-overlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="max-height:80vh;overflow-y:auto">
+
+      <!-- Infos générales -->
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Nom de la campagne *</label>
+          <input class="form-control" id="camp-nom" placeholder="Ex: Promo Ramadan 2026"></div>
+        <div class="form-group"><label class="form-label">Plateforme *</label>
+          <select class="form-control" id="camp-plateforme">
+            <option>Meta Ads</option><option>TikTok Ads</option><option>YouTube Ads</option><option>Google Ads</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-control" id="camp-statut" onchange="onCampStatutChange()">
+            <option value="Planifiee">📋 Planifiée</option>
+            <option value="Active">🟢 Active</option>
+            <option value="Pausee">⏸ Pausée</option>
+            <option value="Terminee">✅ Terminée</option>
+          </select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Objectif</label>
+          <select class="form-control" id="camp-objectif">
+            <option>Notoriété</option><option>Trafic</option><option>Génération leads</option>
+            <option>Ventes</option><option>Abonnés</option><option>Engagement</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Agence</label>
+          <select class="form-control" id="camp-agence">
+            <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Date début</label>
+          <input class="form-control" type="date" id="camp-date-debut"></div>
+        <div class="form-group"><label class="form-label">Date fin</label>
+          <input class="form-control" type="date" id="camp-date-fin"></div>
+      </div>
+
+      <!-- Budget -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Budget</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="form-group"><label class="form-label">Budget alloué (DT)</label>
+            <input class="form-control" type="number" id="camp-budget-alloue" value="0" step="0.001" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">Budget dépensé (DT)</label>
+            <input class="form-control" type="number" id="camp-budget-depense" value="0" step="0.001" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">Budget restant</label>
+            <input class="form-control" id="camp-budget-reste" readonly style="background:var(--surface2);font-weight:600;color:var(--success-light)"></div>
+        </div>
+      </div>
+
+      <!-- Performance -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">📊 Performance</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+          <div class="form-group"><label class="form-label">Impressions</label>
+            <input class="form-control" type="number" id="camp-impressions" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">Clics</label>
+            <input class="form-control" type="number" id="camp-clics" value="0" min="0" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">Leads générés</label>
+            <input class="form-control" type="number" id="camp-leads" value="0" min="0" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">Conversions (ventes)</label>
+            <input class="form-control" type="number" id="camp-conversions" value="0" min="0" oninput="calcCampROI()"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="form-group"><label class="form-label">Revenu généré estimé (DT)</label>
+            <input class="form-control" type="number" id="camp-revenu" value="0" step="0.001" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">Responsable</label>
+            <input class="form-control" id="camp-responsable" placeholder="Nom du responsable"></div>
+        </div>
+      </div>
+
+      <!-- KPIs calculés -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">CTR (Taux de clic)</div>
+          <div id="camp-ctr" style="font-size:16px;font-weight:600;color:var(--accent-light)">0.00%</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">CPL (Coût/lead)</div>
+          <div id="camp-cpl" style="font-size:16px;font-weight:600;color:var(--warning-light)">0.000 DT</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">Taux conversion</div>
+          <div id="camp-taux-conv" style="font-size:16px;font-weight:600;color:var(--success-light)">0.00%</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">ROI estimé</div>
+          <div id="camp-roi" style="font-size:16px;font-weight:600">0%</div>
+        </div>
+      </div>
+
+      <!-- Créer leads en prospects -->
+      <div id="camp-leads-section" style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;display:none">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">👥 Leads → Prospects</div>
+        <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:12px">Créer <strong id="camp-leads-count">0</strong> prospect(s) dans le module Clients depuis cette campagne</div>
+          <button class="btn btn-primary btn-sm" onclick="creerProspectsDepuisCampagne()">👥 Créer prospects</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="camp-notes" rows="2" placeholder="Audience cible, visuels utilisés, résultats..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('camp-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCampagne()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Stats Marketing -->
 <div class="overlay" id="mkt-stats-modal-overlay">
   <div class="modal" style="max-width:600px;width:96vw">
@@ -3677,6 +3838,7 @@ function buildSidebar() {
     { title: 'Marketing Digital', items: [
       { id:'marketing', icon:'📣', name:'Contenu & Planning', perm:'marketing' },
       { id:'mktStats', icon:'📊', name:'Statistiques', perm:'marketing' },
+      { id:'campagnes', icon:'📣', name:'Campagnes Ads', perm:'marketing' },
     ]},
     { title: 'Finances', items: [
       { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
@@ -3720,6 +3882,7 @@ function showPage(id) {
     rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
     marketing: loadMarketing,
     mktStats: () => { loadMktStats(); renderMktCharts(); },
+    campagnes: loadCampagnes,
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
@@ -10955,6 +11118,220 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MODULE CAMPAGNES PUBLICITAIRES
+// ═════════════════════════════════════════════════════════════════════════════
+
+const CAMP_PLAT_ICONS = { 'Meta Ads':'📘', 'TikTok Ads':'🎵', 'YouTube Ads':'▶️', 'Google Ads':'🔍' };
+const CAMP_STATUT_STYLE = {
+  'Planifiee': { bg:'rgba(125,133,144,.15)', color:'#9ca3af', label:'📋 Planifiée' },
+  'Active':    { bg:'rgba(34,197,94,.15)',   color:'#4ade80', label:'🟢 Active' },
+  'Pausee':    { bg:'rgba(251,191,36,.15)',  color:'#fbbf24', label:'⏸ Pausée' },
+  'Terminee':  { bg:'rgba(96,165,250,.15)',  color:'#60a5fa', label:'✅ Terminée' },
+};
+
+let EDIT_CAMP_ID = null;
+
+async function loadCampagnes() {
+  const tbody = document.getElementById('camp-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = loadingRow(12);
+  try {
+    const q  = document.getElementById('camp-search')?.value || '';
+    const pl = document.getElementById('camp-filter-plateforme')?.value || '';
+    const st = document.getElementById('camp-filter-statut')?.value || '';
+    let filters = [];
+    if (pl) filters.push(`plateforme=eq.${encodeURIComponent(pl)}`);
+    if (st) filters.push(`statut=eq.${st}`);
+    const data = await sb('marketing_campagnes', { filter: filters.join('&'), order:'date_debut.desc' });
+
+    const filtered = data.filter(c => !q || c.nom?.toLowerCase().includes(q.toLowerCase()));
+
+    // KPIs globaux
+    const statsDiv = document.getElementById('camp-stats');
+    if (statsDiv) {
+      const totalBudget  = filtered.reduce((s,c)=>s+(c.budget_alloue||0),0);
+      const totalDepense = filtered.reduce((s,c)=>s+(c.budget_depense||0),0);
+      const totalLeads   = filtered.reduce((s,c)=>s+(c.leads||0),0);
+      const totalRevenu  = filtered.reduce((s,c)=>s+(c.revenu_genere||0),0);
+      const actives      = filtered.filter(c=>c.statut==='Active').length;
+      const roiGlobal    = totalDepense > 0 ? Math.round((totalRevenu - totalDepense) / totalDepense * 100) : 0;
+      statsDiv.innerHTML = `
+        <div class="stat-card blue"><div class="stat-label">📣 Total campagnes</div><div class="stat-val">${filtered.length}</div></div>
+        <div class="stat-card green"><div class="stat-label">🟢 Actives</div><div class="stat-val">${actives}</div></div>
+        <div class="stat-card amber"><div class="stat-label">💰 Budget total</div><div class="stat-val" style="font-size:15px">${fmtMoney(totalBudget)} DT</div></div>
+        <div class="stat-card red"><div class="stat-label">💸 Dépensé</div><div class="stat-val" style="font-size:15px">${fmtMoney(totalDepense)} DT</div></div>
+        <div class="stat-card ${roiGlobal>=0?'green':'red'}"><div class="stat-label">📈 ROI global</div><div class="stat-val">${roiGlobal}%</div><div class="stat-sub">${totalLeads} leads total</div></div>`;
+    }
+
+    if (!filtered.length) { tbody.innerHTML = emptyRow(12,'Aucune campagne'); return; }
+
+    tbody.innerHTML = filtered.map(c => {
+      const st   = CAMP_STATUT_STYLE[c.statut] || CAMP_STATUT_STYLE['Planifiee'];
+      const icon = CAMP_PLAT_ICONS[c.plateforme] || '📣';
+      const reste = (c.budget_alloue||0) - (c.budget_depense||0);
+      const cpl   = (c.leads||0) > 0 ? ((c.budget_depense||0)/(c.leads||1)).toFixed(3) : '—';
+      const roi   = (c.budget_depense||0) > 0 ? Math.round(((c.revenu_genere||0)-(c.budget_depense||0))/(c.budget_depense||1)*100) : 0;
+      const roiColor = roi >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+      return `<tr>
+        <td><strong>${esc(c.nom)}</strong>${c.responsable?`<div style="font-size:10px;color:var(--text2)">${esc(c.responsable)}</div>`:''}</td>
+        <td>${icon} <span style="font-size:12px">${esc(c.plateforme)}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${esc(c.objectif||'—')}</td>
+        <td style="font-size:11px;color:var(--text2)">${c.date_debut||'—'}<br>${c.date_fin||'—'}</td>
+        <td style="font-weight:500">${fmtMoney(c.budget_alloue||0)} DT</td>
+        <td style="color:var(--warning-light)">${fmtMoney(c.budget_depense||0)} DT</td>
+        <td style="font-weight:600;color:${reste>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(reste)} DT</td>
+        <td style="font-weight:600;color:var(--accent-light)">${c.leads||0}</td>
+        <td style="font-size:12px">${cpl !== '—' ? cpl+' DT' : '—'}</td>
+        <td style="font-weight:600;color:${roiColor}">${roi}%</td>
+        <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;background:${st.bg};color:${st.color}">${st.label}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-xs" onclick="openCampModal('${c.id}')">✏️</button>
+          <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('marketing_campagnes','${c.id}',loadCampagnes)">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = errorRow(12, e.message); }
+}
+
+function calcCampROI() {
+  const alloue  = parseFloat(document.getElementById('camp-budget-alloue')?.value)||0;
+  const depense = parseFloat(document.getElementById('camp-budget-depense')?.value)||0;
+  const impr    = parseInt(document.getElementById('camp-impressions')?.value)||0;
+  const clics   = parseInt(document.getElementById('camp-clics')?.value)||0;
+  const leads   = parseInt(document.getElementById('camp-leads')?.value)||0;
+  const conv    = parseInt(document.getElementById('camp-conversions')?.value)||0;
+  const revenu  = parseFloat(document.getElementById('camp-revenu')?.value)||0;
+
+  const reste     = alloue - depense;
+  const ctr       = impr > 0 ? (clics/impr*100).toFixed(2) : 0;
+  const cpl       = leads > 0 ? (depense/leads).toFixed(3) : 0;
+  const tauxConv  = leads > 0 ? (conv/leads*100).toFixed(2) : 0;
+  const roi       = depense > 0 ? Math.round((revenu-depense)/depense*100) : 0;
+
+  const resteEl = document.getElementById('camp-budget-reste');
+  if (resteEl) { resteEl.value = fmtMoney(reste)+' DT'; resteEl.style.color = reste >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
+
+  const ctrEl = document.getElementById('camp-ctr'); if (ctrEl) ctrEl.textContent = ctr+'%';
+  const cplEl = document.getElementById('camp-cpl'); if (cplEl) cplEl.textContent = cpl > 0 ? cpl+' DT' : '—';
+  const tcEl  = document.getElementById('camp-taux-conv'); if (tcEl) tcEl.textContent = tauxConv+'%';
+  const roiEl = document.getElementById('camp-roi');
+  if (roiEl) { roiEl.textContent = roi+'%'; roiEl.style.color = roi >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
+
+  // Afficher section leads si leads > 0
+  const leadsSection = document.getElementById('camp-leads-section');
+  const leadsCount   = document.getElementById('camp-leads-count');
+  if (leadsSection) leadsSection.style.display = leads > 0 ? 'block' : 'none';
+  if (leadsCount) leadsCount.textContent = leads;
+}
+
+function onCampStatutChange() {
+  const st    = document.getElementById('camp-statut')?.value || 'Planifiee';
+  const badge = document.getElementById('camp-statut-badge');
+  const info  = CAMP_STATUT_STYLE[st] || CAMP_STATUT_STYLE['Planifiee'];
+  if (badge) { badge.textContent = info.label; badge.style.background = info.bg; badge.style.color = info.color; }
+}
+
+async function openCampModal(id=null) {
+  EDIT_CAMP_ID = id;
+  document.getElementById('camp-modal-title').textContent = id ? 'Modifier campagne' : 'Nouvelle campagne';
+
+  if (id) {
+    try {
+      const [c] = await sb('marketing_campagnes', { filter:`id=eq.${id}` });
+      document.getElementById('camp-nom').value            = c.nom||'';
+      document.getElementById('camp-plateforme').value     = c.plateforme||'Meta Ads';
+      document.getElementById('camp-objectif').value       = c.objectif||'Notoriété';
+      document.getElementById('camp-statut').value         = c.statut||'Planifiee';
+      document.getElementById('camp-agence').value         = c.agence||'Charguia';
+      document.getElementById('camp-date-debut').value     = c.date_debut||'';
+      document.getElementById('camp-date-fin').value       = c.date_fin||'';
+      document.getElementById('camp-budget-alloue').value  = c.budget_alloue||0;
+      document.getElementById('camp-budget-depense').value = c.budget_depense||0;
+      document.getElementById('camp-impressions').value    = c.impressions||0;
+      document.getElementById('camp-clics').value          = c.clics||0;
+      document.getElementById('camp-leads').value          = c.leads||0;
+      document.getElementById('camp-conversions').value    = c.conversions||0;
+      document.getElementById('camp-revenu').value         = c.revenu_genere||0;
+      document.getElementById('camp-responsable').value    = c.responsable||'';
+      document.getElementById('camp-notes').value          = c.notes||'';
+    } catch(e) { console.error(e); }
+  } else {
+    ['camp-nom','camp-notes','camp-responsable'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    ['camp-budget-alloue','camp-budget-depense','camp-impressions','camp-clics','camp-leads','camp-conversions','camp-revenu'].forEach(id => { const el=document.getElementById(id); if(el) el.value=0; });
+    document.getElementById('camp-statut').value     = 'Planifiee';
+    document.getElementById('camp-agence').value     = SESSION?.agences?.[0]||'Charguia';
+    document.getElementById('camp-responsable').value= SESSION?.name||'';
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('camp-date-debut').value = today;
+    document.getElementById('camp-date-fin').value   = '';
+  }
+  onCampStatutChange();
+  calcCampROI();
+  openModal('camp-modal-overlay');
+}
+
+async function saveCampagne() {
+  const nom = document.getElementById('camp-nom').value.trim();
+  if (!nom) { toast('Le nom est obligatoire','error'); return; }
+
+  const body = {
+    nom,
+    plateforme:      document.getElementById('camp-plateforme').value,
+    objectif:        document.getElementById('camp-objectif').value,
+    statut:          document.getElementById('camp-statut').value,
+    agence:          document.getElementById('camp-agence').value,
+    date_debut:      document.getElementById('camp-date-debut').value||null,
+    date_fin:        document.getElementById('camp-date-fin').value||null,
+    budget_alloue:   parseFloat(document.getElementById('camp-budget-alloue').value)||0,
+    budget_depense:  parseFloat(document.getElementById('camp-budget-depense').value)||0,
+    impressions:     parseInt(document.getElementById('camp-impressions').value)||0,
+    clics:           parseInt(document.getElementById('camp-clics').value)||0,
+    leads:           parseInt(document.getElementById('camp-leads').value)||0,
+    conversions:     parseInt(document.getElementById('camp-conversions').value)||0,
+    revenu_genere:   parseFloat(document.getElementById('camp-revenu').value)||0,
+    responsable:     document.getElementById('camp-responsable').value.trim(),
+    notes:           document.getElementById('camp-notes').value.trim(),
+  };
+
+  try {
+    if (EDIT_CAMP_ID) await sbPatch('marketing_campagnes', EDIT_CAMP_ID, body);
+    else await sbPost('marketing_campagnes', body);
+    closeModal('camp-modal-overlay');
+    loadCampagnes();
+    toast(EDIT_CAMP_ID ? 'Campagne mise à jour ✓' : 'Campagne créée ✓');
+    EDIT_CAMP_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Créer prospects depuis campagne ──
+async function creerProspectsDepuisCampagne() {
+  const nom      = document.getElementById('camp-nom').value.trim();
+  const plateforme = document.getElementById('camp-plateforme').value;
+  const leads    = parseInt(document.getElementById('camp-leads').value)||0;
+  if (!leads) { toast('Aucun lead à créer','error'); return; }
+
+  if (!confirm(`Créer ${leads} prospect(s) depuis la campagne "${nom}" ?`)) return;
+
+  try {
+    const now = new Date().toISOString().split('T')[0];
+    const promises = Array.from({length: leads}, (_, i) =>
+      sbPost('clients', {
+        nom:     `Lead ${plateforme} — ${nom} #${i+1}`,
+        type:    'prospect',
+        categorie: 'B2C',
+        notes:   `Lead généré via campagne publicitaire : ${nom} (${plateforme}) — ${now}`,
+        secteur: 'Lead digital',
+      })
+    );
+    await Promise.all(promises);
+    toast(`${leads} prospect(s) créés dans le module Clients ✓`, 'success');
+    closeModal('camp-modal-overlay');
+    loadCampagnes();
+  } catch(e) { toast(e.message,'error'); }
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MARKETING STATS — SAISIE & GRAPHIQUES
