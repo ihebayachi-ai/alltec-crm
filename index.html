@@ -595,6 +595,7 @@ textarea.form-control{resize:vertical;min-height:80px}
             <div style="display:flex;gap:4px">
               <button class="btn btn-ghost btn-sm" id="mkt-btn-cal" onclick="switchMktView('cal')" title="Vue calendrier">📅</button>
               <button class="btn btn-ghost btn-sm" id="mkt-btn-list" onclick="switchMktView('list')" title="Vue liste">📋</button>
+              <button class="btn btn-ghost btn-sm" id="mkt-btn-stats" onclick="switchMktView('stats')" title="Statistiques">📊</button>
             </div>
             <button class="btn btn-primary" onclick="openMktModal()">＋ Nouveau post</button>
           </div>
@@ -615,6 +616,54 @@ textarea.form-control{resize:vertical;min-height:80px}
               </div>
             </div>
             <div id="mkt-calendar" style="padding:12px"></div>
+          </div>
+        </div>
+
+        <!-- Vue stats -->
+        <div id="mkt-view-stats" style="display:none">
+          <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="mkt-stats-reseaux"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <div class="card">
+              <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+                <span class="card-title">📈 Évolution abonnés</span>
+                <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-reseau-chart" onchange="renderMktCharts()">
+                  <option value="all">Tous réseaux</option>
+                  <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
+                </select>
+              </div>
+              <div style="padding:12px"><canvas id="mkt-chart-abonnes" height="120"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">👁 Évolution portée</span></div>
+              <div style="padding:12px"><canvas id="mkt-chart-portee" height="120"></canvas></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+              <span class="card-title">📊 Tableau des statistiques</span>
+              <div style="display:flex;gap:8px">
+                <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-filter-reseau" onchange="loadMktStats()">
+                  <option value="">Tous réseaux</option>
+                  <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
+                </select>
+                <select class="form-control" style="width:120px;font-size:12px" id="mkt-stats-filter-periode" onchange="loadMktStats()">
+                  <option value="">Toutes périodes</option>
+                  <option value="semaine">Semaine</option>
+                  <option value="mois">Mois</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="openMktStatsModal()">＋ Saisir stats</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Réseau</th><th>Période</th><th>Du → Au</th>
+                  <th>Abonnés</th><th>+Gagnés</th><th>Portée</th>
+                  <th>Impressions</th><th>Engagement</th><th>Taux eng.</th><th>Clics</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="mkt-stats-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -3161,6 +3210,73 @@ supabase functions deploy send-sms
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('caisse-modal-overlay')">Annuler</button>
       <button class="btn btn-primary" onclick="saveCaisse()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Stats Marketing -->
+<div class="overlay" id="mkt-stats-modal-overlay">
+  <div class="modal" style="max-width:600px;width:96vw">
+    <div class="modal-header">
+      <div class="modal-title" id="mkt-stats-modal-title">Saisir statistiques</div>
+      <button class="modal-close" onclick="closeModal('mkt-stats-modal-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Réseau *</label>
+          <select class="form-control" id="mst-reseau">
+            <option>Facebook</option><option>Instagram</option><option>TikTok</option>
+            <option>YouTube</option><option>WhatsApp</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Période *</label>
+          <select class="form-control" id="mst-periode" onchange="onMstPeriodeChange()">
+            <option value="semaine">Semaine</option>
+            <option value="mois">Mois</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label" id="mst-date-label">Semaine du</label>
+          <input class="form-control" type="date" id="mst-date-debut" oninput="calcMstDateFin()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Date de fin</label>
+          <input class="form-control" type="date" id="mst-date-fin" readonly style="background:var(--surface2)">
+        </div>
+        <div class="form-group"><label class="form-label">Posts publiés</label>
+          <input class="form-control" type="number" id="mst-posts" value="0" min="0">
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Indicateurs</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="form-group"><label class="form-label">👥 Abonnés total</label>
+            <input class="form-control" type="number" id="mst-abonnes" value="0" min="0" oninput="calcMstTaux()"></div>
+          <div class="form-group"><label class="form-label">📈 Abonnés gagnés</label>
+            <input class="form-control" type="number" id="mst-abonnes-gagnes" value="0"></div>
+          <div class="form-group"><label class="form-label">👁 Portée</label>
+            <input class="form-control" type="number" id="mst-portee" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">📢 Impressions</label>
+            <input class="form-control" type="number" id="mst-impressions" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">❤️ Engagement</label>
+            <input class="form-control" type="number" id="mst-engagement" value="0" min="0" oninput="calcMstTaux()"></div>
+          <div class="form-group"><label class="form-label">🔗 Clics</label>
+            <input class="form-control" type="number" id="mst-clics" value="0" min="0"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:12px;color:var(--text2)">Taux d'engagement calculé :</span>
+          <strong id="mst-taux-display" style="font-size:16px;color:var(--accent-light)">0.00%</strong>
+          <span style="font-size:11px;color:var(--text2)">(engagement ÷ portée × 100)</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="mst-notes" rows="2" placeholder="Observations, événements particuliers..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('mkt-stats-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveMktStats()">💾 Enregistrer</button>
     </div>
   </div>
 </div>
@@ -10512,12 +10628,15 @@ function renderMktStats(posts) {
 // ── Switcher vue ──
 function switchMktView(v) {
   MKT_VIEW = v;
-  document.getElementById('mkt-view-cal').style.display  = v==='cal'  ? 'block' : 'none';
-  document.getElementById('mkt-view-list').style.display = v==='list' ? 'block' : 'none';
-  document.getElementById('mkt-btn-cal').style.background  = v==='cal'  ? 'var(--surface2)' : '';
-  document.getElementById('mkt-btn-list').style.background = v==='list' ? 'var(--surface2)' : '';
-  if (v==='cal') renderMktCalendar();
-  else renderMktList();
+  document.getElementById('mkt-view-cal').style.display   = v==='cal'   ? 'block' : 'none';
+  document.getElementById('mkt-view-list').style.display  = v==='list'  ? 'block' : 'none';
+  document.getElementById('mkt-view-stats').style.display = v==='stats' ? 'block' : 'none';
+  document.getElementById('mkt-btn-cal').style.background   = v==='cal'   ? 'var(--surface2)' : '';
+  document.getElementById('mkt-btn-list').style.background  = v==='list'  ? 'var(--surface2)' : '';
+  document.getElementById('mkt-btn-stats').style.background = v==='stats' ? 'var(--surface2)' : '';
+  if (v==='cal')   renderMktCalendar();
+  else if (v==='list')  renderMktList();
+  else if (v==='stats') { loadMktStats(); renderMktCharts(); }
 }
 
 // ── Vue calendrier ──
@@ -10818,6 +10937,243 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') document.getElementById('login-pass').focus();
   });
 });
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MARKETING STATS — SAISIE & GRAPHIQUES
+// ═════════════════════════════════════════════════════════════════════════════
+
+const MKT_RESEAU_COLORS = {
+  Facebook:  { bg:'rgba(24,119,242,.6)',  border:'#1877F2' },
+  Instagram: { bg:'rgba(225,48,108,.6)',  border:'#E1306C' },
+  TikTok:    { bg:'rgba(0,0,0,.5)',       border:'#333' },
+  YouTube:   { bg:'rgba(255,0,0,.6)',     border:'#FF0000' },
+  WhatsApp:  { bg:'rgba(37,211,102,.6)',  border:'#25D366' },
+};
+
+let EDIT_MST_ID = null;
+let _mktChartAbo = null;
+let _mktChartPrt = null;
+
+// ── Charger stats ──
+async function loadMktStats() {
+  try {
+    const rs = document.getElementById('mkt-stats-filter-reseau')?.value || '';
+    const pe = document.getElementById('mkt-stats-filter-periode')?.value || '';
+    let filters = [];
+    if (rs) filters.push(`reseau=eq.${encodeURIComponent(rs)}`);
+    if (pe) filters.push(`periode=eq.${pe}`);
+    const data = await sb('marketing_stats', { filter: filters.join('&'), order:'date_debut.desc' });
+
+    renderMktStatsCards(data);
+    renderMktStatsTable(data);
+    renderMktCharts();
+  } catch(e) { console.error('loadMktStats:', e); }
+}
+
+// ── Cards par réseau ──
+function renderMktStatsCards(data) {
+  const div = document.getElementById('mkt-stats-reseaux');
+  if (!div) return;
+  const reseaux = ['Facebook','Instagram','TikTok','YouTube','WhatsApp'];
+  div.innerHTML = reseaux.map(r => {
+    const latest = data.filter(d=>d.reseau===r).sort((a,b)=>b.date_debut.localeCompare(a.date_debut))[0];
+    const icon = MKT_RESEAUX_ICONS[r] || '📱';
+    return `<div class="stat-card" style="cursor:pointer" onclick="document.getElementById('mkt-stats-filter-reseau').value='${r}';loadMktStats()">
+      <div class="stat-label">${icon} ${r}</div>
+      <div class="stat-val" style="font-size:16px">${latest ? latest.abonnes.toLocaleString() : '—'}</div>
+      <div class="stat-sub">${latest ? (latest.abonnes_gagnes>=0?'+':'')+latest.abonnes_gagnes+' ce mois' : 'Aucune donnée'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Tableau stats ──
+function renderMktStatsTable(data) {
+  const tbody = document.getElementById('mkt-stats-tbody');
+  if (!tbody) return;
+  if (!data.length) { tbody.innerHTML = emptyRow(11,'Aucune statistique saisie'); return; }
+  tbody.innerHTML = data.map(s => {
+    const icon = MKT_RESEAUX_ICONS[s.reseau] || '📱';
+    const taux = s.taux_engagement ? s.taux_engagement.toFixed(2)+'%' : '—';
+    const tauxColor = s.taux_engagement >= 5 ? 'var(--success-light)' : s.taux_engagement >= 2 ? 'var(--warning-light)' : 'var(--danger-light)';
+    return `<tr>
+      <td>${icon} <strong>${s.reseau}</strong></td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${s.periode}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${s.date_debut} → ${s.date_fin}</td>
+      <td><strong>${(s.abonnes||0).toLocaleString()}</strong></td>
+      <td style="color:${(s.abonnes_gagnes||0)>=0?'var(--success-light)':'var(--danger-light)'}">${(s.abonnes_gagnes||0)>=0?'+':''}${(s.abonnes_gagnes||0).toLocaleString()}</td>
+      <td>${(s.portee||0).toLocaleString()}</td>
+      <td>${(s.impressions||0).toLocaleString()}</td>
+      <td>${(s.engagement||0).toLocaleString()}</td>
+      <td style="color:${tauxColor};font-weight:600">${taux}</td>
+      <td>${(s.clics||0).toLocaleString()}</td>
+      <td>
+        <button class="btn btn-ghost btn-xs" onclick="openMktStatsModal('${s.id}')">✏️</button>
+        <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('marketing_stats','${s.id}',loadMktStats)">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Graphiques ──
+async function renderMktCharts() {
+  try {
+    const rs = document.getElementById('mkt-stats-reseau-chart')?.value || 'all';
+    let filter = 'periode=eq.mois&order=date_debut.asc';
+    if (rs !== 'all') filter += `&reseau=eq.${encodeURIComponent(rs)}`;
+    const data = await sb('marketing_stats', { filter });
+
+    const grouped = {};
+    data.forEach(d => {
+      if (!grouped[d.reseau]) grouped[d.reseau] = [];
+      grouped[d.reseau].push(d);
+    });
+
+    const labels = [...new Set(data.map(d=>d.date_debut.slice(0,7)))].sort();
+
+    const makeDatasets = (key) => Object.entries(grouped).map(([r, rows]) => {
+      const c = MKT_RESEAU_COLORS[r] || { bg:'rgba(150,150,150,.5)', border:'#999' };
+      return {
+        label: r,
+        data: labels.map(l => { const row = rows.find(r2=>r2.date_debut.slice(0,7)===l); return row ? row[key] : null; }),
+        backgroundColor: c.bg, borderColor: c.border, borderWidth: 2,
+        tension: 0.3, fill: false, pointRadius: 4, spanGaps: true
+      };
+    });
+
+    const opts = {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color:'#8b949e', font:{ size:10 } } } },
+      scales: {
+        x: { ticks:{ color:'#8b949e', font:{size:10} }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        y: { ticks:{ color:'#8b949e', font:{size:10}, callback: v => v>=1000?(v/1000).toFixed(0)+'k':v }, grid:{ color:'rgba(255,255,255,0.05)' } }
+      }
+    };
+
+    const canvasAbo = document.getElementById('mkt-chart-abonnes');
+    const canvasPrt = document.getElementById('mkt-chart-portee');
+    if (!canvasAbo || !canvasPrt) return;
+
+    if (_mktChartAbo) { _mktChartAbo.destroy(); _mktChartAbo = null; }
+    if (_mktChartPrt) { _mktChartPrt.destroy(); _mktChartPrt = null; }
+
+    if (labels.length) {
+      _mktChartAbo = new Chart(canvasAbo, { type:'line', data:{ labels, datasets: makeDatasets('abonnes') }, options: opts });
+      _mktChartPrt = new Chart(canvasPrt, { type:'line', data:{ labels, datasets: makeDatasets('portee') }, options: opts });
+    }
+  } catch(e) { console.error('renderMktCharts:', e); }
+}
+
+// ── Modal saisie stats ──
+function onMstPeriodeChange() {
+  const pe = document.getElementById('mst-periode')?.value;
+  const lbl = document.getElementById('mst-date-label');
+  if (lbl) lbl.textContent = pe === 'semaine' ? 'Semaine du (lundi)' : 'Mois (1er du mois)';
+  calcMstDateFin();
+}
+
+function calcMstDateFin() {
+  const pe    = document.getElementById('mst-periode')?.value;
+  const debut = document.getElementById('mst-date-debut')?.value;
+  const finEl = document.getElementById('mst-date-fin');
+  if (!debut || !finEl) return;
+  const d = new Date(debut);
+  if (pe === 'semaine') {
+    d.setDate(d.getDate() + 6);
+  } else {
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(0); // dernier jour du mois
+  }
+  finEl.value = d.toISOString().slice(0,10);
+}
+
+function calcMstTaux() {
+  const portee = parseFloat(document.getElementById('mst-portee')?.value) || 0;
+  const eng    = parseFloat(document.getElementById('mst-engagement')?.value) || 0;
+  const taux   = portee > 0 ? (eng / portee * 100).toFixed(2) : 0;
+  const el     = document.getElementById('mst-taux-display');
+  if (el) el.textContent = taux + '%';
+}
+
+async function openMktStatsModal(id=null) {
+  EDIT_MST_ID = id;
+  document.getElementById('mkt-stats-modal-title').textContent = id ? 'Modifier statistiques' : 'Saisir statistiques';
+
+  if (id) {
+    try {
+      const [s] = await sb('marketing_stats', { filter:`id=eq.${id}` });
+      document.getElementById('mst-reseau').value           = s.reseau||'Facebook';
+      document.getElementById('mst-periode').value          = s.periode||'semaine';
+      document.getElementById('mst-date-debut').value       = s.date_debut||'';
+      document.getElementById('mst-date-fin').value         = s.date_fin||'';
+      document.getElementById('mst-abonnes').value          = s.abonnes||0;
+      document.getElementById('mst-abonnes-gagnes').value   = s.abonnes_gagnes||0;
+      document.getElementById('mst-portee').value           = s.portee||0;
+      document.getElementById('mst-impressions').value      = s.impressions||0;
+      document.getElementById('mst-engagement').value       = s.engagement||0;
+      document.getElementById('mst-clics').value            = s.clics||0;
+      document.getElementById('mst-posts').value            = s.posts_publies||0;
+      document.getElementById('mst-notes').value            = s.notes||'';
+      calcMstTaux();
+      onMstPeriodeChange();
+    } catch(e) { console.error(e); }
+  } else {
+    const now = new Date();
+    // Lundi de la semaine courante
+    const day = now.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    const lundi = new Date(now);
+    lundi.setDate(now.getDate() + diff);
+    document.getElementById('mst-reseau').value         = 'Facebook';
+    document.getElementById('mst-periode').value        = 'semaine';
+    document.getElementById('mst-date-debut').value     = lundi.toISOString().slice(0,10);
+    document.getElementById('mst-abonnes').value        = 0;
+    document.getElementById('mst-abonnes-gagnes').value = 0;
+    document.getElementById('mst-portee').value         = 0;
+    document.getElementById('mst-impressions').value    = 0;
+    document.getElementById('mst-engagement').value     = 0;
+    document.getElementById('mst-clics').value          = 0;
+    document.getElementById('mst-posts').value          = 0;
+    document.getElementById('mst-notes').value          = '';
+    calcMstDateFin();
+    calcMstTaux();
+    onMstPeriodeChange();
+  }
+  openModal('mkt-stats-modal-overlay');
+}
+
+async function saveMktStats() {
+  const reseau     = document.getElementById('mst-reseau').value;
+  const periode    = document.getElementById('mst-periode').value;
+  const date_debut = document.getElementById('mst-date-debut').value;
+  const date_fin   = document.getElementById('mst-date-fin').value;
+
+  if (!reseau || !date_debut) { toast('Réseau et date obligatoires','error'); return; }
+
+  const portee     = parseInt(document.getElementById('mst-portee').value)||0;
+  const engagement = parseInt(document.getElementById('mst-engagement').value)||0;
+  const taux       = portee > 0 ? Math.round(engagement/portee*10000)/100 : 0;
+
+  const body = {
+    reseau, periode, date_debut, date_fin,
+    abonnes:         parseInt(document.getElementById('mst-abonnes').value)||0,
+    abonnes_gagnes:  parseInt(document.getElementById('mst-abonnes-gagnes').value)||0,
+    portee, impressions: parseInt(document.getElementById('mst-impressions').value)||0,
+    engagement, taux_engagement: taux,
+    clics:           parseInt(document.getElementById('mst-clics').value)||0,
+    posts_publies:   parseInt(document.getElementById('mst-posts').value)||0,
+    notes:           document.getElementById('mst-notes').value.trim(),
+  };
+
+  try {
+    if (EDIT_MST_ID) await sbPatch('marketing_stats', EDIT_MST_ID, body);
+    else await sbPost('marketing_stats', body);
+    closeModal('mkt-stats-modal-overlay');
+    loadMktStats();
+    toast(EDIT_MST_ID ? 'Stats mises à jour ✓' : 'Stats enregistrées ✓');
+    EDIT_MST_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // LIAISON UTILISATEUR ↔ EMPLOYÉ
