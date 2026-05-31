@@ -8213,6 +8213,8 @@ function printEtiquetteQuarantaine() {
 
 // ── IMPRESSION FICHE A4 ──
 function printFicheQuarantaine() {
+  try {
+  const p = getSocieteProfile();
   const r = {
     numero:     document.getElementById('qf-numero').value,
     agence:     document.getElementById('qf-agence').value,
@@ -8306,6 +8308,7 @@ function printFicheQuarantaine() {
   </div>
   </body></html>`;
   openHtmlWindow(__ficheHtml, 'Fiche Quarantaine');
+  } catch(e) { console.error('printFicheQuarantaine error:', e); toast('Erreur impression: ' + e.message, 'error'); }
 }
 
 // helper réutilisable : ouvrir un HTML dans une nouvelle fenêtre
