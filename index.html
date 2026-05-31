@@ -3518,40 +3518,73 @@ supabase functions deploy send-sms
           <div style="background:var(--surface2);border-radius:8px;padding:14px;font-size:12px" id="cfg-summary"></div>
 
           <div style="margin-top:12px">
-            <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">3 Prix de vente sur total config</div>
+            <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">3 Prix de vente</div>
             <div id="cfg-prix-display">
               <!-- PV1 -->
               <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">
-                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--accent-light)">PV1 — Standard</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
-                    <input class="form-control" type="number" id="cfg-pv1-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(1)" style="font-size:12px"></div>
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
-                    <input class="form-control" type="number" id="cfg-pv1-pct" value="0" step="0.1" oninput="onPvPctChange(1)" style="font-size:12px"></div>
+                <div style="font-size:11px;font-weight:500;margin-bottom:8px;color:var(--accent-light)">PV1 — Standard</div>
+                <div style="display:grid;grid-template-columns:80px 1fr 100px;gap:8px;align-items:end">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Marge %</label>
+                    <div style="position:relative">
+                      <input class="form-control" type="number" id="cfg-pv1-pct" value="10" step="0.1" oninput="onPvPctChange(1)" style="font-size:12px;padding-right:22px">
+                      <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text2)">%</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Montant TTC calculé (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv1-ttc" value="0" step="0.001" oninput="onPvTTCChange(1)" style="font-size:12px;font-weight:500;color:var(--accent-light)">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Arrondi (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv1-arrondi" step="1" placeholder="Ex: 950" oninput="onPvArrondiChange(1)" style="font-size:12px">
+                  </div>
                 </div>
-                <div id="cfg-pv1-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+                <div id="cfg-pv1-marge" style="font-size:11px;margin-top:4px"></div>
               </div>
               <!-- PV2 -->
               <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px">
-                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--warning-light)">PV2 — Revendeur</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
-                    <input class="form-control" type="number" id="cfg-pv2-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(2)" style="font-size:12px"></div>
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
-                    <input class="form-control" type="number" id="cfg-pv2-pct" value="0" step="0.1" oninput="onPvPctChange(2)" style="font-size:12px"></div>
+                <div style="font-size:11px;font-weight:500;margin-bottom:8px;color:var(--warning-light)">PV2 — Revendeur</div>
+                <div style="display:grid;grid-template-columns:80px 1fr 100px;gap:8px;align-items:end">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Marge %</label>
+                    <div style="position:relative">
+                      <input class="form-control" type="number" id="cfg-pv2-pct" value="15" step="0.1" oninput="onPvPctChange(2)" style="font-size:12px;padding-right:22px">
+                      <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text2)">%</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Montant TTC calculé (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv2-ttc" value="0" step="0.001" oninput="onPvTTCChange(2)" style="font-size:12px;font-weight:500;color:var(--warning-light)">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Arrondi (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv2-arrondi" step="1" placeholder="Ex: 1100" oninput="onPvArrondiChange(2)" style="font-size:12px">
+                  </div>
                 </div>
-                <div id="cfg-pv2-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+                <div id="cfg-pv2-marge" style="font-size:11px;margin-top:4px"></div>
               </div>
               <!-- PV3 -->
               <div style="background:var(--surface2);border-radius:8px;padding:10px 12px">
-                <div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--success-light)">PV3 — Promo / Lot</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Montant TTC (DT)</label>
-                    <input class="form-control" type="number" id="cfg-pv3-ttc" value="0" step="0.001" min="0" oninput="onPvTTCChange(3)" style="font-size:12px"></div>
-                  <div class="form-group"><label class="form-label" style="font-size:10px">Ou marge %</label>
-                    <input class="form-control" type="number" id="cfg-pv3-pct" value="0" step="0.1" oninput="onPvPctChange(3)" style="font-size:12px"></div>
+                <div style="font-size:11px;font-weight:500;margin-bottom:8px;color:var(--success-light)">PV3 — Promo / Lot</div>
+                <div style="display:grid;grid-template-columns:80px 1fr 100px;gap:8px;align-items:end">
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Marge %</label>
+                    <div style="position:relative">
+                      <input class="form-control" type="number" id="cfg-pv3-pct" value="20" step="0.1" oninput="onPvPctChange(3)" style="font-size:12px;padding-right:22px">
+                      <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text2)">%</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Montant TTC calculé (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv3-ttc" value="0" step="0.001" oninput="onPvTTCChange(3)" style="font-size:12px;font-weight:500;color:var(--success-light)">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-size:10px">Arrondi (DT)</label>
+                    <input class="form-control" type="number" id="cfg-pv3-arrondi" step="1" placeholder="Ex: 900" oninput="onPvArrondiChange(3)" style="font-size:12px">
+                  </div>
                 </div>
-                <div id="cfg-pv3-marge" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+                <div id="cfg-pv3-marge" style="font-size:11px;margin-top:4px"></div>
               </div>
             </div>
           </div>
@@ -11816,12 +11849,29 @@ async function importComposants(input) {
     let imported = 0, errors = 0;
     for (const row of rows) {
       const designation = row['designation'] || row['Désignation'] || row['DESIGNATION'] || '';
-      const categorie   = row['categorie'] || row['Catégorie'] || row['CATEGORIE'] || 'CPU';
+      const categorie = row['categorie'] || row['Catégorie'] || row['CATEGORIE'] ||
+                      row['Categorie'] || row['categorie'] || row['cat'] || row['CAT'] ||
+                      row['Category'] || row['CATEGORY'] || 'CPU';
+    // Normaliser la catégorie vers les valeurs acceptées
+    const catMap = {
+      'cpu':'CPU','carte mere':'Carte mère','carte mère':'Carte mère','motherboard':'Carte mère',
+      'ram':'RAM','memoire':'RAM','mémoire':'RAM','memory':'RAM',
+      'stockage':'Stockage','storage':'Stockage','ssd':'Stockage','hdd':'Stockage','disque':'Stockage',
+      'gpu':'GPU','carte graphique':'GPU','graphics':'GPU','vga':'GPU',
+      'psu':'PSU','alimentation':'PSU','power':'PSU',
+      'boitier':'Boîtier','boîtier':'Boîtier','case':'Boîtier',
+      'refroidissement':'Refroidissement','cooling':'Refroidissement','cooler':'Refroidissement',
+      'ecran':'Ecran','écran':'Ecran','monitor':'Ecran',
+      'clavier':'Clavier','keyboard':'Clavier',
+      'souris':'Souris','mouse':'Souris',
+      'onduleur':'Onduleur','ups':'Onduleur',
+    };
+    const catNorm = catMap[categorie.toLowerCase().trim()] || categorie.trim();
       if (!designation.trim()) continue;
       const body = {
         reference:      row['reference'] || row['Référence'] || row['REF'] || null,
         designation:    designation.trim(),
-        categorie:      categorie.trim(),
+        categorie:      catNorm,
         marque:         row['marque'] || row['Marque'] || null,
         prix_achat_ht:  parseFloat(row['prix_achat_ht'] || row['Prix achat HT'] || row['ACHAT'] || 0),
         prix_vente1_ht: parseFloat(row['prix_vente1_ht'] || row['PV1'] || row['Prix vente 1'] || 0),
@@ -11921,17 +11971,19 @@ async function loadConfigurateur() {
     tbody.innerHTML = filtered.map(c => {
       const comps = Array.isArray(c.composants) ? c.composants : [];
       const tva   = c.tva||19;
-      const pv1ttc= Math.round((c.prix_vente1_total||0)*(1+tva/100)*1000)/1000;
+      // prix_vente1_total = TTC direct (nouveau format) ou HT * (1+tva) (ancien)
+      const pv1raw = c.prix_vente1_total||0;
       const achat  = c.prix_achat_total||0;
-      const marge  = pv1ttc - achat*(1+tva/100);
-      const margePct = achat>0 ? Math.round(marge/((c.prix_vente1_total||0))*100) : 0;
+      const pv1ttc = pv1raw > 0 ? pv1raw : 0;  // déjà TTC
+      const marge  = pv1ttc > 0 ? pv1ttc - achat*(1+tva/100) : 0;
+      const margePct = pv1ttc > 0 && achat > 0 ? Math.round(marge/pv1ttc*100) : 0;
       return `<tr>
         <td><strong>${esc(c.nom)}</strong></td>
         <td style="font-size:12px;color:var(--text2)">${clientName(c.client_id)}</td>
         <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${esc(c.profil||'Bureau')}</span></td>
         <td style="font-size:11px;color:var(--text2)">${comps.length} composant(s)</td>
         <td>${fmtMoney(achat)} DT</td>
-        <td><strong style="color:var(--accent-light)">${fmtMoney(pv1ttc)} DT</strong></td>
+        <td>${pv1ttc > 0 ? `<strong style="color:var(--accent-light)">${fmtMoney(pv1ttc)} DT</strong>` : `<span style="color:var(--text2);font-size:11px">Non défini</span>`}</td>
         <td style="color:${marge>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(marge)} DT <span style="font-size:10px">(${margePct}%)</span></td>
         <td><span style="font-size:11px;font-weight:500;color:${STATUT_CFG[c.statut]||'var(--text2)'}">${esc(c.statut||'Brouillon')}</span></td>
         <td>
@@ -11955,9 +12007,17 @@ function renderCfgRows() {
       <div style="min-width:110px;font-size:12px;font-weight:${required?500:400}">${cat}${required?'<span style="color:var(--danger-light)"> *</span>':''}</div>
       <select class="form-control" style="flex:1;font-size:12px;padding:5px 8px" onchange="onCfgSelectComp('${cat}',this.value)">
         <option value="">— ${required?'Requis':'Optionnel'} —</option>
-        ${options.map(c=>`<option value="${c.id}" ${selected?.id===c.id?'selected':''}>${esc(c.designation)} — ${fmtMoney(c.prix_vente1_ht)} DT</option>`).join('')}
+        ${options.map(c=>`<option value="${c.id}" ${selected?.id===c.id?'selected':''}>${esc(c.designation)} — PA: ${fmtMoney(c.prix_achat_ht)} DT — Stock: ${c.stock||0}</option>`).join('')}
       </select>
-      ${selected ? `<div style="font-size:11px;color:var(--accent-light);min-width:70px;text-align:right">${fmtMoney(selected.prix_achat_ht)} DT</div>` : '<div style="min-width:70px"></div>'}
+      ${selected ? `
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" value="1" min="1" style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" 
+            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}" title="Quantité">
+          <div style="font-size:11px;color:var(--accent-light);min-width:80px;text-align:right">
+            ${fmtMoney(selected.prix_achat_ht)} DT × <span id="cfg-qte-display-${cat.replace(/[^a-zA-Z]/g,'')}">1</span>
+            = <strong id="cfg-subtotal-${cat.replace(/[^a-zA-Z]/g,'')}">${fmtMoney(selected.prix_achat_ht)}</strong> DT
+          </div>
+        </div>` : '<div style="min-width:140px"></div>'}
       <div style="font-size:16px;min-width:20px">${selected ? checkCompat(cat, selected) : ''}</div>
     </div>`;
   }).join('');
@@ -12019,10 +12079,33 @@ function renderCompatAlerts() {
 }
 
 // ── Calcul prix de vente depuis montant TTC ou pourcentage ──
+
+const CFG_QTE = {};  // quantités par catégorie
+
+function onCfgQteChange(cat, val) {
+  const qte = Math.max(1, parseInt(val)||1);
+  CFG_QTE[cat] = qte;
+  const comp = CFG_SELECTION[cat];
+  if (!comp) return;
+  const key = cat.replace(/[^a-zA-Z]/g,'');
+  const dispEl = document.getElementById(`cfg-qte-display-${key}`);
+  const subtEl = document.getElementById(`cfg-subtotal-${key}`);
+  if (dispEl) dispEl.textContent = qte;
+  if (subtEl) subtEl.textContent = fmtMoney((comp.prix_achat_ht||0)*qte);
+  recalcConfig();
+  [1,2,3].forEach(i => {
+    const pct = parseFloat(document.getElementById(`cfg-pv${i}-pct`)?.value)||0;
+    if (pct !== 0) onPvPctChange(i);
+  });
+}
+
 function getCfgAchatTtc() {
   const tva   = parseInt(document.getElementById('cfg-tva')?.value)||19;
   const comps = Object.values(CFG_SELECTION).filter(Boolean);
-  const totalAchat = comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0);
+  const totalAchat = comps.reduce((s,c)=>{
+    const qte = CFG_QTE[c.categorie]||1;
+    return s+(c.prix_achat_ht||0)*qte;
+  },0);
   return { totalAchat, achatTtc: totalAchat*(1+tva/100), tva };
 }
 
@@ -12032,6 +12115,9 @@ function onPvTTCChange(i) {
   const pct = achatTtc > 0 ? Math.round((ttc-achatTtc)/achatTtc*100*10)/10 : 0;
   const el = document.getElementById(`cfg-pv${i}-pct`);
   if (el) el.value = pct;
+  // Reset arrondi
+  const arEl = document.getElementById(`cfg-pv${i}-arrondi`);
+  if (arEl) arEl.value = '';
   updatePvMargeDisplay(i, ttc, achatTtc);
 }
 
@@ -12041,7 +12127,24 @@ function onPvPctChange(i) {
   const ttc = Math.round(achatTtc*(1+pct/100)*1000)/1000;
   const el = document.getElementById(`cfg-pv${i}-ttc`);
   if (el) el.value = ttc;
+  // Reset arrondi
+  const arEl = document.getElementById(`cfg-pv${i}-arrondi`);
+  if (arEl) arEl.value = '';
   updatePvMargeDisplay(i, ttc, achatTtc);
+}
+
+function onPvArrondiChange(i) {
+  const arrondi = parseFloat(document.getElementById(`cfg-pv${i}-arrondi`)?.value)||0;
+  if (!arrondi) return;
+  const { achatTtc } = getCfgAchatTtc();
+  // Mettre à jour le TTC avec la valeur arrondie
+  const elTtc = document.getElementById(`cfg-pv${i}-ttc`);
+  if (elTtc) elTtc.value = arrondi;
+  // Recalculer le %
+  const pct = achatTtc > 0 ? Math.round((arrondi-achatTtc)/achatTtc*100*10)/10 : 0;
+  const elPct = document.getElementById(`cfg-pv${i}-pct`);
+  if (elPct) elPct.value = pct;
+  updatePvMargeDisplay(i, arrondi, achatTtc);
 }
 
 function updatePvMargeDisplay(i, pvTtc, achatTtc) {
@@ -12060,10 +12163,14 @@ function recalcConfig() {
   // Récapitulatif composants
   const sumDiv = document.getElementById('cfg-summary');
   if (sumDiv) {
-    const rows = comps.map(c=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--border)">
-      <span style="color:var(--text2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.designation?.substring(0,30))}${(c.designation||'').length>30?'…':''}</span>
-      <span>${fmtMoney(c.prix_achat_ht||0)} DT</span>
-    </div>`).join('');
+    const rows = comps.map(c=>{
+    const qte = CFG_QTE[c.categorie]||1;
+    const sub = (c.prix_achat_ht||0)*qte;
+    return `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--border)">
+      <span style="color:var(--text2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.designation?.substring(0,25))}${(c.designation||'').length>25?'…':''} ${qte>1?`<strong>×${qte}</strong>`:''}</span>
+      <span>${fmtMoney(sub)} DT</span>
+    </div>`;
+  }).join('');
     sumDiv.innerHTML = `${rows || '<div style="color:var(--text2);padding:8px 0;font-size:11px">Aucun composant sélectionné</div>'}
     <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:12px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
       <span>Total achat HT</span><span>${fmtMoney(totalAchat)} DT</span>
@@ -12098,6 +12205,7 @@ function recalcConfig() {
 async function openCfgModal(id=null) {
   EDIT_CFG_ID = id;
   CFG_SELECTION = {};
+  Object.keys(CFG_QTE).forEach(k => delete CFG_QTE[k]);
   document.getElementById('cfg-modal-title').textContent = id ? 'Modifier configuration' : 'Nouvelle configuration PC';
   document.getElementById('cfg-btn-devis').style.display = id ? 'inline-flex' : 'none';
 
@@ -12134,6 +12242,13 @@ async function openCfgModal(id=null) {
     document.getElementById('cfg-tva').value    = 19;
     document.getElementById('cfg-notes').value  = '';
     document.getElementById('cfg-statut').value = 'Brouillon';
+    // Init PV% par défaut 10/15/20%
+    [[1,10],[2,15],[3,20]].forEach(([i,pct]) => {
+      const elTtc = document.getElementById('cfg-pv'+i+'-ttc'); if(elTtc) elTtc.value=0;
+      const elPct = document.getElementById('cfg-pv'+i+'-pct'); if(elPct) elPct.value=pct;
+      const elAr  = document.getElementById('cfg-pv'+i+'-arrondi'); if(elAr) elAr.value='';
+      const elMrg = document.getElementById('cfg-pv'+i+'-marge'); if(elMrg) elMrg.innerHTML='';
+    });
   }
   renderCfgRows();
   renderCompatAlerts();
