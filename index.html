@@ -3342,11 +3342,19 @@ supabase functions deploy send-sms
             <input class="form-control" type="number" id="camp-conversions" value="0" min="0" oninput="calcCampROI()"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-          <div class="form-group"><label class="form-label">Revenu généré estimé (DT)</label>
-            <input class="form-control" type="number" id="camp-revenu" value="0" step="0.001" oninput="calcCampROI()"></div>
+          <div class="form-group"><label class="form-label">CA généré (DT)</label>
+            <input class="form-control" type="number" id="camp-revenu" value="0" step="0.001" oninput="calcCampROI()" placeholder="Chiffre d'affaires total"></div>
+          <div class="form-group"><label class="form-label">Marge générée (DT) *</label>
+            <input class="form-control" type="number" id="camp-marge" value="0" step="0.001" oninput="calcCampROI()" placeholder="Marge nette réelle"></div>
           <div class="form-group"><label class="form-label">Responsable</label>
             <input class="form-control" id="camp-responsable" placeholder="Nom du responsable"></div>
         </div>
+      </div>
+
+      <!-- Aide taux de marge -->
+      <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--text2)">
+        💡 <strong>Marge générée</strong> = CA généré × taux de marge moyen de tes produits vendus.<br>
+        Exemples : Matériel informatique ~8-15% · Réseau/sécurité ~15-25% · Services/installation ~40-60%
       </div>
 
       <!-- KPIs calculés -->
@@ -3364,8 +3372,14 @@ supabase functions deploy send-sms
           <div id="camp-taux-conv" style="font-size:16px;font-weight:600;color:var(--success-light)">0.00%</div>
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">ROI estimé</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">ROI sur marge ✅</div>
           <div id="camp-roi" style="font-size:16px;font-weight:600">0%</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:2px">(marge - pub) ÷ pub</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">ROI sur CA ⚠️</div>
+          <div id="camp-roi-ca" style="font-size:16px;font-weight:600;color:var(--text2)">0%</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:2px">(trompeur)</div>
         </div>
       </div>
 
@@ -11157,7 +11171,10 @@ async function loadCampagnes() {
       const totalLeads   = filtered.reduce((s,c)=>s+(c.leads||0),0);
       const totalRevenu  = filtered.reduce((s,c)=>s+(c.revenu_genere||0),0);
       const actives      = filtered.filter(c=>c.statut==='Active').length;
-      const roiGlobal    = totalDepense > 0 ? Math.round((totalRevenu - totalDepense) / totalDepense * 100) : 0;
+      const totalMarge   = filtered.reduce((s,c)=>s+(c.marge_generee||0),0);
+      const roiGlobal    = totalDepense > 0 && totalMarge > 0
+        ? Math.round((totalMarge - totalDepense) / totalDepense * 100)
+        : totalDepense > 0 ? Math.round((totalRevenu - totalDepense) / totalDepense * 100) : 0;
       statsDiv.innerHTML = `
         <div class="stat-card blue"><div class="stat-label">📣 Total campagnes</div><div class="stat-val">${filtered.length}</div></div>
         <div class="stat-card green"><div class="stat-label">🟢 Actives</div><div class="stat-val">${actives}</div></div>
@@ -11173,7 +11190,10 @@ async function loadCampagnes() {
       const icon = CAMP_PLAT_ICONS[c.plateforme] || '📣';
       const reste = (c.budget_alloue||0) - (c.budget_depense||0);
       const cpl   = (c.leads||0) > 0 ? ((c.budget_depense||0)/(c.leads||1)).toFixed(3) : '—';
-      const roi   = (c.budget_depense||0) > 0 ? Math.round(((c.revenu_genere||0)-(c.budget_depense||0))/(c.budget_depense||1)*100) : 0;
+      const marge = c.marge_generee || 0;
+      const roi   = (c.budget_depense||0) > 0 && marge > 0
+        ? Math.round((marge-(c.budget_depense||0))/(c.budget_depense||1)*100)
+        : (c.budget_depense||0) > 0 ? Math.round(((c.revenu_genere||0)-(c.budget_depense||0))/(c.budget_depense||1)*100) : 0;
       const roiColor = roi >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
       return `<tr>
         <td><strong>${esc(c.nom)}</strong>${c.responsable?`<div style="font-size:10px;color:var(--text2)">${esc(c.responsable)}</div>`:''}</td>
@@ -11209,7 +11229,9 @@ function calcCampROI() {
   const ctr       = impr > 0 ? (clics/impr*100).toFixed(2) : 0;
   const cpl       = leads > 0 ? (depense/leads).toFixed(3) : 0;
   const tauxConv  = leads > 0 ? (conv/leads*100).toFixed(2) : 0;
-  const roi       = depense > 0 ? Math.round((revenu-depense)/depense*100) : 0;
+  const marge     = parseFloat(document.getElementById('camp-marge')?.value)||0;
+  const roiMarge  = depense > 0 ? Math.round((marge - depense) / depense * 100) : 0;
+  const roiCA     = depense > 0 ? Math.round((revenu - depense) / depense * 100) : 0;
 
   const resteEl = document.getElementById('camp-budget-reste');
   if (resteEl) { resteEl.value = fmtMoney(reste)+' DT'; resteEl.style.color = reste >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
@@ -11218,7 +11240,9 @@ function calcCampROI() {
   const cplEl = document.getElementById('camp-cpl'); if (cplEl) cplEl.textContent = cpl > 0 ? cpl+' DT' : '—';
   const tcEl  = document.getElementById('camp-taux-conv'); if (tcEl) tcEl.textContent = tauxConv+'%';
   const roiEl = document.getElementById('camp-roi');
-  if (roiEl) { roiEl.textContent = roi+'%'; roiEl.style.color = roi >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
+  if (roiEl) { roiEl.textContent = roiMarge+'%'; roiEl.style.color = roiMarge >= 0 ? 'var(--success-light)' : 'var(--danger-light)'; }
+  const roiCaEl = document.getElementById('camp-roi-ca');
+  if (roiCaEl) roiCaEl.textContent = roiCA+'%';
 
   // Afficher section leads si leads > 0
   const leadsSection = document.getElementById('camp-leads-section');
@@ -11255,12 +11279,13 @@ async function openCampModal(id=null) {
       document.getElementById('camp-leads').value          = c.leads||0;
       document.getElementById('camp-conversions').value    = c.conversions||0;
       document.getElementById('camp-revenu').value         = c.revenu_genere||0;
+      document.getElementById('camp-marge')?.value !== undefined && (document.getElementById('camp-marge').value = c.marge_generee||0);
       document.getElementById('camp-responsable').value    = c.responsable||'';
       document.getElementById('camp-notes').value          = c.notes||'';
     } catch(e) { console.error(e); }
   } else {
     ['camp-nom','camp-notes','camp-responsable'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-    ['camp-budget-alloue','camp-budget-depense','camp-impressions','camp-clics','camp-leads','camp-conversions','camp-revenu'].forEach(id => { const el=document.getElementById(id); if(el) el.value=0; });
+    ['camp-budget-alloue','camp-budget-depense','camp-impressions','camp-clics','camp-leads','camp-conversions','camp-revenu','camp-marge'].forEach(id => { const el=document.getElementById(id); if(el) el.value=0; });
     document.getElementById('camp-statut').value     = 'Planifiee';
     document.getElementById('camp-agence').value     = SESSION?.agences?.[0]||'Charguia';
     document.getElementById('camp-responsable').value= SESSION?.name||'';
@@ -11292,6 +11317,7 @@ async function saveCampagne() {
     leads:           parseInt(document.getElementById('camp-leads').value)||0,
     conversions:     parseInt(document.getElementById('camp-conversions').value)||0,
     revenu_genere:   parseFloat(document.getElementById('camp-revenu').value)||0,
+    marge_generee:   parseFloat(document.getElementById('camp-marge')?.value)||0,
     responsable:     document.getElementById('camp-responsable').value.trim(),
     notes:           document.getElementById('camp-notes').value.trim(),
   };
