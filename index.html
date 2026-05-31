@@ -8585,7 +8585,7 @@ async function saveEmploye() {
     objectif_ca:parseFloat(document.getElementById('emp-obj-ca').value)||0,
     rib:document.getElementById('emp-rib').value.trim(),
     statut:document.getElementById('emp-statut').value,
-    user_id:document.getElementById('emp-user-id').value||null,
+    user_id:(()=>{ const v=document.getElementById('emp-user-id').value; return (v && v!=='')?v:null; })(),
     notes:document.getElementById('emp-notes').value.trim(),
   };
   try {
