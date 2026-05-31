@@ -8586,7 +8586,6 @@ async function saveEmploye() {
     rib:document.getElementById('emp-rib').value.trim(),
     statut:document.getElementById('emp-statut').value,
     user_id:document.getElementById('emp-user-id').value||null,
-    user_login: document.getElementById('emp-user-id').options[document.getElementById('emp-user-id').selectedIndex]?.text||null,
     notes:document.getElementById('emp-notes').value.trim(),
   };
   try {
