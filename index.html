@@ -774,6 +774,60 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+      <!-- CATALOGUE COMPOSANTS -->
+      <div class="page" id="page-composants">
+        <div class="page-header">
+          <div><div class="page-title">🔧 Catalogue composants</div><div class="page-sub">Base de données des composants PC · Import Excel / CSV</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" id="comp-search" placeholder="Désignation, référence..." oninput="loadComposants()"></div>
+            <select class="form-control" style="width:150px" id="comp-filter-cat" onchange="loadComposants()">
+              <option value="">Toutes catégories</option>
+              <option>CPU</option><option>Carte mère</option><option>RAM</option><option>Stockage</option>
+              <option>GPU</option><option>PSU</option><option>Boîtier</option><option>Refroidissement</option>
+              <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Onduleur</option>
+            </select>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+              📥 Import Excel/CSV
+              <input type="file" id="comp-import-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importComposants(this)">
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="exportComposantsTemplate()">📄 Modèle</button>
+            <button class="btn btn-primary" onclick="openComposantModal()">＋ Ajouter</button>
+          </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="comp-stats"></div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Marque</th>
+              <th>Prix achat HT</th><th>PV1 Standard</th><th>PV2 Revendeur</th><th>PV3 Promo</th>
+              <th>TVA</th><th>Stock</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="comp-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- CONFIGURATEUR PC -->
+      <div class="page" id="page-configurateur">
+        <div class="page-header">
+          <div><div class="page-title">🖥️ Configurateur PC</div><div class="page-sub">Composez une configuration · Calcul prix et marge · Génération devis</div></div>
+          <div class="toolbar">
+            <div class="search-bar">🔍 <input type="text" id="cfg-search" placeholder="Nom config, client..." oninput="loadConfigurateur()"></div>
+            <button class="btn btn-primary" onclick="openCfgModal()">＋ Nouvelle configuration</button>
+          </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="cfg-stats"></div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>Nom</th><th>Client</th><th>Profil</th><th>Composants</th>
+              <th>Prix achat HT</th><th>PV1 TTC</th><th>Marge PV1</th><th>Statut</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="cfg-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <!-- COMMANDES -->
       <div class="page" id="page-commandes">
         <div class="page-header">
@@ -3305,6 +3359,145 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal Composant -->
+<div class="overlay" id="composant-modal-overlay">
+  <div class="modal" style="max-width:680px;width:96vw">
+    <div class="modal-header">
+      <div class="modal-title" id="composant-modal-title">Nouveau composant</div>
+      <button class="modal-close" onclick="closeModal('composant-modal-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Référence</label><input class="form-control" id="cmp-ref" placeholder="REF-001"></div>
+        <div class="form-group"><label class="form-label">Catégorie *</label>
+          <select class="form-control" id="cmp-cat">
+            <option>CPU</option><option>Carte mère</option><option>RAM</option><option>Stockage</option>
+            <option>GPU</option><option>PSU</option><option>Boîtier</option><option>Refroidissement</option>
+            <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Onduleur</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Marque</label><input class="form-control" id="cmp-marque" placeholder="Intel, AMD, MSI..."></div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Désignation *</label>
+        <input class="form-control" id="cmp-designation" placeholder="Ex: Intel Core i5-13400F 2.5GHz 6c/12t">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Specs techniques (JSON)</label>
+          <textarea class="form-control" id="cmp-specs" rows="3" placeholder='{"socket":"LGA1700","tdp":"65W","ddr":"DDR4/DDR5"}'></textarea>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">Pour la vérification de compatibilité</div>
+        </div>
+        <div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="form-group"><label class="form-label">TVA</label>
+              <select class="form-control" id="cmp-tva">
+                <option value="0">0%</option><option value="7">7%</option><option value="19" selected>19%</option>
+              </select></div>
+            <div class="form-group"><label class="form-label">Stock</label>
+              <input class="form-control" type="number" id="cmp-stock" value="0" min="0"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Agence</label>
+            <select class="form-control" id="cmp-agence">
+              <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">💰 Tarification HT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">Prix achat HT *</label>
+            <input class="form-control" type="number" id="cmp-achat" value="0" step="0.001" oninput="calcCompMarges()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">PV1 Standard HT</label>
+            <input class="form-control" type="number" id="cmp-pv1" value="0" step="0.001" oninput="calcCompMarges()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">PV2 Revendeur HT</label>
+            <input class="form-control" type="number" id="cmp-pv2" value="0" step="0.001" oninput="calcCompMarges()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">PV3 Promo/Lot HT</label>
+            <input class="form-control" type="number" id="cmp-pv3" value="0" step="0.001" oninput="calcCompMarges()">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px" id="cmp-marges-display"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('composant-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveComposant()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Configurateur PC -->
+<div class="overlay" id="cfg-modal-overlay">
+  <div class="modal modal-xl" style="max-width:1100px;width:98vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title" id="cfg-modal-title">Nouvelle configuration PC</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="genererDevisDepuisConfig()" id="cfg-btn-devis" style="display:none">📄 Générer devis</button>
+        <button class="modal-close" onclick="closeModal('cfg-modal-overlay')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="max-height:85vh;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group"><label class="form-label">Nom configuration *</label>
+          <input class="form-control" id="cfg-nom" placeholder="Config Gaming Client X"></div>
+        <div class="form-group"><label class="form-label">Client</label>
+          <select class="form-control" id="cfg-client"></select></div>
+        <div class="form-group"><label class="form-label">Profil d'usage</label>
+          <select class="form-control" id="cfg-profil" onchange="onCfgProfilChange()">
+            <option>Bureau</option><option>Gaming</option><option>Graphisme</option>
+            <option>Serveur</option><option>Scolaire</option><option>Pro</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">TVA</label>
+          <select class="form-control" id="cfg-tva" onchange="recalcConfig()">
+            <option value="7">7%</option><option value="19" selected>19%</option>
+          </select></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
+        <!-- Composants -->
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Sélection des composants</div>
+          <div id="cfg-composants-rows"></div>
+          <div id="cfg-compat-alerts" style="margin-top:8px"></div>
+        </div>
+
+        <!-- Récapitulatif prix -->
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Récapitulatif</div>
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;font-size:12px" id="cfg-summary"></div>
+
+          <div style="margin-top:12px">
+            <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">3 Prix de vente TTC</div>
+            <div style="display:grid;grid-template-columns:1fr;gap:8px" id="cfg-prix-display"></div>
+          </div>
+
+          <div class="form-group" style="margin-top:12px">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" id="cfg-notes" rows="3" placeholder="Remarques, options..."></textarea>
+          </div>
+          <div class="form-group" style="margin-top:8px">
+            <label class="form-label">Statut</label>
+            <select class="form-control" id="cfg-statut">
+              <option>Brouillon</option><option>Proposé</option><option>Validé</option><option>Commandé</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cfg-modal-overlay')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveConfig()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Boîte de réception -->
 <div class="overlay" id="inbox-modal-overlay">
   <div class="modal modal-xl" style="max-width:700px;width:96vw">
@@ -3964,6 +4157,10 @@ function buildSidebar() {
     { title: 'Communication', items: [
       { id:'sms', icon:'📱', name:'SMS & Notifications', perm:'sms' },
     ]},
+    { title: 'Configurateur PC', items: [
+      { id:'configurateur', icon:'🖥️', name:'Configurateur PC', perm:'configurateur' },
+      { id:'composants', icon:'🔧', name:'Catalogue composants', perm:'configurateur' },
+    ]},
     { title: 'Marketing Digital', items: [
       { id:'marketing', icon:'📣', name:'Contenu & Planning', perm:'marketing' },
       { id:'mktStats', icon:'📊', name:'Statistiques', perm:'marketing' },
@@ -4011,6 +4208,8 @@ function showPage(id) {
     commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
     rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
     marketing: loadMarketing,
+    configurateur: loadConfigurateur,
+    composants: loadComposants,
     mktStats: () => { loadMktStats(); renderMktCharts(); },
     campagnes: loadCampagnes,
     inbox: loadInbox,
@@ -11251,6 +11450,548 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MODULE CONFIGURATEUR PC
+// ═════════════════════════════════════════════════════════════════════════════
+
+const CFG_CATEGORIES = ['CPU','Carte mère','RAM','Stockage','GPU','PSU','Boîtier','Refroidissement','Ecran','Clavier','Souris','Onduleur'];
+const CFG_CAT_ICONS  = { 'CPU':'🧠','Carte mère':'🟩','RAM':'💾','Stockage':'💿','GPU':'🖼','PSU':'⚡','Boîtier':'📦','Refroidissement':'❄️','Ecran':'🖥','Clavier':'⌨️','Souris':'🖱','Onduleur':'🔋' };
+const CFG_CAT_REQUIRED = ['CPU','Carte mère','RAM','Stockage','PSU','Boîtier'];
+
+let EDIT_CMP_ID  = null;
+let EDIT_CFG_ID  = null;
+let ALL_COMPOSANTS = [];
+let CFG_SELECTION  = {};
+
+// ─── CATALOGUE COMPOSANTS ────────────────────────────────────────────────────
+
+async function loadComposants() {
+  const tbody = document.getElementById('comp-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = loadingRow(11);
+  try {
+    const q   = document.getElementById('comp-search')?.value||'';
+    const cat = document.getElementById('comp-filter-cat')?.value||'';
+    let filters = [];
+    if (cat) filters.push(`categorie=eq.${encodeURIComponent(cat)}`);
+    const data = await sb('composants', { filter: filters.join('&'), order:'categorie.asc,designation.asc' });
+    ALL_COMPOSANTS = data || [];
+
+    const filtered = ALL_COMPOSANTS.filter(c => !q ||
+      c.designation?.toLowerCase().includes(q.toLowerCase()) ||
+      c.reference?.toLowerCase().includes(q.toLowerCase()));
+
+    const statsDiv = document.getElementById('comp-stats');
+    if (statsDiv) {
+      const cats = [...new Set(ALL_COMPOSANTS.map(c=>c.categorie))].length;
+      const total = ALL_COMPOSANTS.length;
+      const stockFaible = ALL_COMPOSANTS.filter(c=>(c.stock||0)<3).length;
+      const valStock = ALL_COMPOSANTS.reduce((s,c)=>s+(c.prix_achat_ht||0)*(c.stock||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat-card blue"><div class="stat-label">🔧 Total composants</div><div class="stat-val">${total}</div></div>
+        <div class="stat-card purple"><div class="stat-label">📂 Catégories</div><div class="stat-val">${cats}</div></div>
+        <div class="stat-card amber"><div class="stat-label">⚠️ Stock faible</div><div class="stat-val">${stockFaible}</div></div>
+        <div class="stat-card green"><div class="stat-label">💰 Valeur stock HT</div><div class="stat-val" style="font-size:15px">${fmtMoney(valStock)} DT</div></div>`;
+    }
+
+    if (!filtered.length) { tbody.innerHTML = emptyRow(11,'Aucun composant — Importez un fichier Excel/CSV'); return; }
+
+    tbody.innerHTML = filtered.map(c => {
+      const achat = c.prix_achat_ht||0;
+      const m1 = achat>0 ? Math.round(((c.prix_vente1_ht||0)-achat)/achat*100) : 0;
+      const m2 = achat>0 ? Math.round(((c.prix_vente2_ht||0)-achat)/achat*100) : 0;
+      const m3 = achat>0 ? Math.round(((c.prix_vente3_ht||0)-achat)/achat*100) : 0;
+      const stockColor = (c.stock||0) < 3 ? 'var(--danger-light)' : (c.stock||0) < 10 ? 'var(--warning-light)' : 'var(--success-light)';
+      return `<tr>
+        <td style="font-size:11px;color:var(--text2)">${esc(c.reference||'—')}</td>
+        <td><strong style="font-size:12px">${esc(c.designation)}</strong></td>
+        <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.categorie)}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${esc(c.marque||'—')}</td>
+        <td style="font-weight:500">${fmtMoney(achat)}</td>
+        <td><span style="font-size:12px">${fmtMoney(c.prix_vente1_ht||0)}</span> <span style="font-size:10px;color:${m1>=0?'var(--success-light)':'var(--danger-light)'}">${m1>0?'+':''}${m1}%</span></td>
+        <td><span style="font-size:12px">${fmtMoney(c.prix_vente2_ht||0)}</span> <span style="font-size:10px;color:${m2>=0?'var(--success-light)':'var(--danger-light)'}">${m2>0?'+':''}${m2}%</span></td>
+        <td><span style="font-size:12px">${fmtMoney(c.prix_vente3_ht||0)}</span> <span style="font-size:10px;color:${m3>=0?'var(--success-light)':'var(--danger-light)'}">${m3>0?'+':''}${m3}%</span></td>
+        <td style="font-size:12px">${c.tva||19}%</td>
+        <td style="font-weight:500;color:${stockColor}">${c.stock||0}</td>
+        <td>
+          <button class="btn btn-ghost btn-xs" onclick="openComposantModal('${c.id}')">✏️</button>
+          <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('composants','${c.id}',loadComposants)">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = errorRow(11, e.message); }
+}
+
+function calcCompMarges() {
+  const achat = parseFloat(document.getElementById('cmp-achat')?.value)||0;
+  const pvs   = [1,2,3].map(i => parseFloat(document.getElementById(`cmp-pv${i}`)?.value)||0);
+  const div   = document.getElementById('cmp-marges-display');
+  if (!div) return;
+  div.innerHTML = pvs.map((pv,i) => {
+    const mVal = pv - achat;
+    const mPct = achat > 0 ? Math.round(mVal/achat*100) : 0;
+    const color = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+    return `<div style="background:var(--surface2);border-radius:6px;padding:8px;text-align:center">
+      <div style="font-size:10px;color:var(--text2)">Marge PV${i+1}</div>
+      <div style="font-size:14px;font-weight:500;color:${color}">${fmtMoney(mVal)} DT</div>
+      <div style="font-size:11px;color:${color}">${mPct>0?'+':''}${mPct}%</div>
+    </div>`;
+  }).join('');
+}
+
+async function openComposantModal(id=null) {
+  EDIT_CMP_ID = id;
+  document.getElementById('composant-modal-title').textContent = id ? 'Modifier composant' : 'Nouveau composant';
+  if (id) {
+    try {
+      const [c] = await sb('composants', { filter:`id=eq.${id}` });
+      document.getElementById('cmp-ref').value        = c.reference||'';
+      document.getElementById('cmp-cat').value        = c.categorie||'CPU';
+      document.getElementById('cmp-marque').value     = c.marque||'';
+      document.getElementById('cmp-designation').value= c.designation||'';
+      document.getElementById('cmp-specs').value      = c.specs ? JSON.stringify(c.specs,null,2) : '';
+      document.getElementById('cmp-tva').value        = c.tva||19;
+      document.getElementById('cmp-stock').value      = c.stock||0;
+      document.getElementById('cmp-agence').value     = c.agence||'Charguia';
+      document.getElementById('cmp-achat').value      = c.prix_achat_ht||0;
+      document.getElementById('cmp-pv1').value        = c.prix_vente1_ht||0;
+      document.getElementById('cmp-pv2').value        = c.prix_vente2_ht||0;
+      document.getElementById('cmp-pv3').value        = c.prix_vente3_ht||0;
+    } catch(e) { console.error(e); }
+  } else {
+    ['cmp-ref','cmp-marque','cmp-designation','cmp-specs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['cmp-achat','cmp-pv1','cmp-pv2','cmp-pv3'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=0;});
+    document.getElementById('cmp-stock').value = 0;
+    document.getElementById('cmp-tva').value   = 19;
+  }
+  calcCompMarges();
+  openModal('composant-modal-overlay');
+}
+
+async function saveComposant() {
+  const designation = document.getElementById('cmp-designation').value.trim();
+  const categorie   = document.getElementById('cmp-cat').value;
+  if (!designation) { toast('La désignation est obligatoire','error'); return; }
+  let specs = {};
+  try { specs = JSON.parse(document.getElementById('cmp-specs').value||'{}'); } catch(e) { specs = {}; }
+  const body = {
+    reference:      document.getElementById('cmp-ref').value.trim()||null,
+    designation, categorie,
+    marque:         document.getElementById('cmp-marque').value.trim()||null,
+    specs,
+    tva:            parseInt(document.getElementById('cmp-tva').value)||19,
+    stock:          parseInt(document.getElementById('cmp-stock').value)||0,
+    agence:         document.getElementById('cmp-agence').value,
+    prix_achat_ht:  parseFloat(document.getElementById('cmp-achat').value)||0,
+    prix_vente1_ht: parseFloat(document.getElementById('cmp-pv1').value)||0,
+    prix_vente2_ht: parseFloat(document.getElementById('cmp-pv2').value)||0,
+    prix_vente3_ht: parseFloat(document.getElementById('cmp-pv3').value)||0,
+  };
+  try {
+    if (EDIT_CMP_ID) await sbPatch('composants', EDIT_CMP_ID, body);
+    else await sbPost('composants', body);
+    closeModal('composant-modal-overlay');
+    loadComposants();
+    toast(EDIT_CMP_ID ? 'Composant mis à jour ✓' : 'Composant ajouté ✓');
+    EDIT_CMP_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── IMPORT EXCEL/CSV ────────────────────────────────────────────────────────
+
+async function importComposants(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  toast('Import en cours...','info');
+  try {
+    let rows = [];
+    if (ext === 'csv') {
+      rows = await parseCSVFile(file);
+    } else {
+      rows = await parseXLSXFile(file);
+    }
+    if (!rows.length) { toast('Aucune donnée trouvée dans le fichier','error'); return; }
+
+    let imported = 0, errors = 0;
+    for (const row of rows) {
+      const designation = row['designation'] || row['Désignation'] || row['DESIGNATION'] || '';
+      const categorie   = row['categorie'] || row['Catégorie'] || row['CATEGORIE'] || 'CPU';
+      if (!designation.trim()) continue;
+      const body = {
+        reference:      row['reference'] || row['Référence'] || row['REF'] || null,
+        designation:    designation.trim(),
+        categorie:      categorie.trim(),
+        marque:         row['marque'] || row['Marque'] || null,
+        prix_achat_ht:  parseFloat(row['prix_achat_ht'] || row['Prix achat HT'] || row['ACHAT'] || 0),
+        prix_vente1_ht: parseFloat(row['prix_vente1_ht'] || row['PV1'] || row['Prix vente 1'] || 0),
+        prix_vente2_ht: parseFloat(row['prix_vente2_ht'] || row['PV2'] || row['Prix vente 2'] || 0),
+        prix_vente3_ht: parseFloat(row['prix_vente3_ht'] || row['PV3'] || row['Prix vente 3'] || 0),
+        tva:            parseInt(row['tva'] || row['TVA'] || 19),
+        stock:          parseInt(row['stock'] || row['Stock'] || 0),
+        agence:         row['agence'] || row['Agence'] || 'Charguia',
+      };
+      try { await sbPost('composants', body); imported++; } catch(e) { errors++; }
+    }
+    toast(`${imported} composant(s) importé(s)${errors>0?' ('+errors+' erreurs)':''}`, 'success');
+    loadComposants();
+  } catch(e) { toast('Erreur import : '+e.message,'error'); }
+  input.value = '';
+}
+
+function parseCSVFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split('\n').filter(l=>l.trim());
+      if (!lines.length) { resolve([]); return; }
+      const sep = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+      const rows = lines.slice(1).map(line => {
+        const vals = line.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+        const obj = {};
+        headers.forEach((h,i) => obj[h] = vals[i]||'');
+        return obj;
+      });
+      resolve(rows);
+    };
+    reader.onerror = reject;
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+function parseXLSXFile(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX === 'undefined') {
+      reject(new Error('SheetJS non chargé — utilisez CSV'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+        resolve(rows);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function exportComposantsTemplate() {
+  const headers = ['reference','designation','categorie','marque','prix_achat_ht','prix_vente1_ht','prix_vente2_ht','prix_vente3_ht','tva','stock','agence'];
+  const example = ['REF-001','Intel Core i5-13400F 2.5GHz','CPU','Intel','250.000','299.000','280.000','260.000','19','5','Charguia'];
+  const csv = headers.join(';') + '\n' + example.join(';');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'modele_composants.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast('Modèle CSV téléchargé ✓');
+}
+
+// ─── CONFIGURATEUR ────────────────────────────────────────────────────────────
+
+async function loadConfigurateur() {
+  const tbody = document.getElementById('cfg-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = loadingRow(9);
+  try {
+    const q = document.getElementById('cfg-search')?.value||'';
+    const data = await sb('configurations_pc', { order:'created_at.desc' });
+    const filtered = data.filter(c => !q || c.nom?.toLowerCase().includes(q.toLowerCase()));
+
+    const statsDiv = document.getElementById('cfg-stats');
+    if (statsDiv) {
+      const total    = filtered.length;
+      const valides  = filtered.filter(c=>c.statut==='Validé').length;
+      const commandes= filtered.filter(c=>c.statut==='Commandé').length;
+      const caTotal  = filtered.filter(c=>c.statut==='Commandé').reduce((s,c)=>s+(c.prix_vente1_total||0)*(1+(c.tva||19)/100),0);
+      statsDiv.innerHTML = `
+        <div class="stat-card blue"><div class="stat-label">🖥️ Configurations</div><div class="stat-val">${total}</div></div>
+        <div class="stat-card green"><div class="stat-label">✅ Validées</div><div class="stat-val">${valides}</div></div>
+        <div class="stat-card purple"><div class="stat-label">📦 Commandées</div><div class="stat-val">${commandes}</div></div>
+        <div class="stat-card amber"><div class="stat-label">💰 CA commandé TTC</div><div class="stat-val" style="font-size:15px">${fmtMoney(caTotal)} DT</div></div>`;
+    }
+
+    if (!filtered.length) { tbody.innerHTML = emptyRow(9,'Aucune configuration'); return; }
+    const STATUT_CFG = { 'Brouillon':'var(--text2)','Proposé':'#60a5fa','Validé':'#4ade80','Commandé':'#f59e0b' };
+    tbody.innerHTML = filtered.map(c => {
+      const comps = Array.isArray(c.composants) ? c.composants : [];
+      const tva   = c.tva||19;
+      const pv1ttc= Math.round((c.prix_vente1_total||0)*(1+tva/100)*1000)/1000;
+      const achat  = c.prix_achat_total||0;
+      const marge  = pv1ttc - achat*(1+tva/100);
+      const margePct = achat>0 ? Math.round(marge/((c.prix_vente1_total||0))*100) : 0;
+      return `<tr>
+        <td><strong>${esc(c.nom)}</strong></td>
+        <td style="font-size:12px;color:var(--text2)">${clientName(c.client_id)}</td>
+        <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${esc(c.profil||'Bureau')}</span></td>
+        <td style="font-size:11px;color:var(--text2)">${comps.length} composant(s)</td>
+        <td>${fmtMoney(achat)} DT</td>
+        <td><strong style="color:var(--accent-light)">${fmtMoney(pv1ttc)} DT</strong></td>
+        <td style="color:${marge>=0?'var(--success-light)':'var(--danger-light)'}">${fmtMoney(marge)} DT <span style="font-size:10px">(${margePct}%)</span></td>
+        <td><span style="font-size:11px;font-weight:500;color:${STATUT_CFG[c.statut]||'var(--text2)'}">${esc(c.statut||'Brouillon')}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-xs" onclick="openCfgModal('${c.id}')">✏️</button>
+          <button class="btn btn-danger-ghost btn-xs" onclick="deleteRecord('configurations_pc','${c.id}',loadConfigurateur)">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = errorRow(9, e.message); }
+}
+
+function renderCfgRows() {
+  const div = document.getElementById('cfg-composants-rows');
+  if (!div) return;
+  div.innerHTML = CFG_CATEGORIES.map(cat => {
+    const selected = CFG_SELECTION[cat];
+    const options  = ALL_COMPOSANTS.filter(c=>c.categorie===cat);
+    const required = CFG_CAT_REQUIRED.includes(cat);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+      <div style="width:28px;text-align:center;font-size:16px">${CFG_CAT_ICONS[cat]||'🔧'}</div>
+      <div style="min-width:110px;font-size:12px;font-weight:${required?500:400}">${cat}${required?'<span style="color:var(--danger-light)"> *</span>':''}</div>
+      <select class="form-control" style="flex:1;font-size:12px;padding:5px 8px" onchange="onCfgSelectComp('${cat}',this.value)">
+        <option value="">— ${required?'Requis':'Optionnel'} —</option>
+        ${options.map(c=>`<option value="${c.id}" ${selected?.id===c.id?'selected':''}>${esc(c.designation)} — ${fmtMoney(c.prix_vente1_ht)} DT</option>`).join('')}
+      </select>
+      ${selected ? `<div style="font-size:11px;color:var(--accent-light);min-width:70px;text-align:right">${fmtMoney(selected.prix_achat_ht)} DT</div>` : '<div style="min-width:70px"></div>'}
+      <div style="font-size:16px;min-width:20px">${selected ? checkCompat(cat, selected) : ''}</div>
+    </div>`;
+  }).join('');
+  recalcConfig();
+}
+
+function onCfgSelectComp(cat, id) {
+  if (!id) { delete CFG_SELECTION[cat]; }
+  else { CFG_SELECTION[cat] = ALL_COMPOSANTS.find(c=>c.id===id); }
+  recalcConfig();
+  renderCompatAlerts();
+}
+
+function checkCompat(cat, comp) {
+  const cpu = CFG_SELECTION['CPU'];
+  const mb  = CFG_SELECTION['Carte mère'];
+  const ram = CFG_SELECTION['RAM'];
+  if (cat === 'Carte mère' && cpu) {
+    const cpuSocket = cpu.specs?.socket;
+    const mbSocket  = comp.specs?.socket;
+    if (cpuSocket && mbSocket && cpuSocket !== mbSocket) return '❌';
+  }
+  if (cat === 'RAM' && mb) {
+    const ramType = comp.specs?.type || comp.specs?.ddr;
+    const mbRam   = mb.specs?.ram || mb.specs?.ddr;
+    if (ramType && mbRam && !mbRam.includes(ramType)) return '⚠️';
+  }
+  return '✅';
+}
+
+function renderCompatAlerts() {
+  const div = document.getElementById('cfg-compat-alerts');
+  if (!div) return;
+  const alerts = [];
+  const cpu = CFG_SELECTION['CPU'];
+  const mb  = CFG_SELECTION['Carte mère'];
+  const ram = CFG_SELECTION['RAM'];
+  const psu = CFG_SELECTION['PSU'];
+
+  if (cpu && mb) {
+    const cs = cpu.specs?.socket;
+    const ms = mb.specs?.socket;
+    if (cs && ms && cs !== ms)
+      alerts.push(`❌ Socket incompatible : CPU ${cs} ≠ Carte mère ${ms}`);
+  }
+  if (ram && mb) {
+    const rt = ram.specs?.type||ram.specs?.ddr;
+    const mr = mb.specs?.ram||mb.specs?.ddr;
+    if (rt && mr && !mr.includes(rt))
+      alerts.push(`⚠️ RAM ${rt} potentiellement incompatible avec la carte mère`);
+  }
+
+  CFG_CAT_REQUIRED.forEach(cat => {
+    if (!CFG_SELECTION[cat])
+      alerts.push(`⚠️ Composant requis manquant : ${cat}`);
+  });
+
+  div.innerHTML = alerts.map(a => `<div style="font-size:11px;padding:5px 10px;margin-bottom:4px;border-radius:6px;background:${a.startsWith('❌')?'rgba(239,68,68,.1)':'rgba(251,191,36,.1)'};color:${a.startsWith('❌')?'var(--danger-light)':'var(--warning-light)'}">${a}</div>`).join('');
+}
+
+function recalcConfig() {
+  const tva = parseInt(document.getElementById('cfg-tva')?.value)||19;
+  const comps = Object.values(CFG_SELECTION).filter(Boolean);
+
+  const totalAchat = comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0);
+  const totalPV1   = comps.reduce((s,c)=>s+(c.prix_vente1_ht||0),0);
+  const totalPV2   = comps.reduce((s,c)=>s+(c.prix_vente2_ht||0),0);
+  const totalPV3   = comps.reduce((s,c)=>s+(c.prix_vente3_ht||0),0);
+
+  const pv1ttc = totalPV1 * (1 + tva/100);
+  const pv2ttc = totalPV2 * (1 + tva/100);
+  const pv3ttc = totalPV3 * (1 + tva/100);
+  const achatTtc = totalAchat * (1 + tva/100);
+
+  // Summary
+  const sumDiv = document.getElementById('cfg-summary');
+  if (sumDiv) {
+    const rows = comps.map(c=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--border)">
+      <span style="color:var(--text2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.designation?.substring(0,30))}${(c.designation||'').length>30?'…':''}</span>
+      <span>${fmtMoney(c.prix_achat_ht||0)} DT</span>
+    </div>`).join('');
+    sumDiv.innerHTML = `${rows}
+    <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:12px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
+      <span>Total achat HT</span><span>${fmtMoney(totalAchat)} DT</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+      <span>TVA ${tva}%</span><span>+ ${fmtMoney(totalAchat*tva/100)} DT</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0 0;font-size:13px;font-weight:500;border-top:1px solid var(--border);margin-top:4px">
+      <span>Total achat TTC</span><span style="color:var(--warning-light)">${fmtMoney(achatTtc)} DT</span>
+    </div>`;
+  }
+
+  // Prix de vente
+  const pricesDiv = document.getElementById('cfg-prix-display');
+  if (pricesDiv) {
+    const mkPvBlock = (label, pvHt, pvTtc) => {
+      const mVal = pvTtc - achatTtc;
+      const mPct = achatTtc > 0 ? Math.round(mVal/achatTtc*100) : 0;
+      const col  = mVal >= 0 ? 'var(--success-light)' : 'var(--danger-light)';
+      return `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${label}</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:11px;color:var(--text2)">HT</span>
+          <span style="font-size:13px;font-weight:500">${fmtMoney(pvHt)} DT</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--text2)">TTC (${tva}%)</span>
+          <span style="font-size:15px;font-weight:500;color:var(--accent-light)">${fmtMoney(pvTtc)} DT</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-top:0.5px solid var(--border);padding-top:6px">
+          <span style="font-size:10px;color:var(--text2)">Marge brute</span>
+          <span style="font-size:12px;font-weight:500;color:${col}">${fmtMoney(mVal)} DT (${mPct>0?'+':''}${mPct}%)</span>
+        </div>
+      </div>`;
+    };
+    pricesDiv.innerHTML =
+      mkPvBlock('PV1 — Standard', totalPV1, pv1ttc) +
+      mkPvBlock('PV2 — Revendeur', totalPV2, pv2ttc) +
+      mkPvBlock('PV3 — Promo / Lot', totalPV3, pv3ttc);
+  }
+}
+
+async function openCfgModal(id=null) {
+  EDIT_CFG_ID = id;
+  CFG_SELECTION = {};
+  document.getElementById('cfg-modal-title').textContent = id ? 'Modifier configuration' : 'Nouvelle configuration PC';
+  document.getElementById('cfg-btn-devis').style.display = id ? 'inline-flex' : 'none';
+
+  // Charger les composants si pas encore chargés
+  if (!ALL_COMPOSANTS.length) {
+    const data = await sb('composants', { order:'categorie.asc,designation.asc' });
+    ALL_COMPOSANTS = data || [];
+  }
+  await fillClientSelect('cfg-client');
+
+  if (id) {
+    try {
+      const [c] = await sb('configurations_pc', { filter:`id=eq.${id}` });
+      document.getElementById('cfg-nom').value    = c.nom||'';
+      document.getElementById('cfg-client').value = c.client_id||'';
+      document.getElementById('cfg-profil').value = c.profil||'Bureau';
+      document.getElementById('cfg-tva').value    = c.tva||19;
+      document.getElementById('cfg-notes').value  = c.notes||'';
+      document.getElementById('cfg-statut').value = c.statut||'Brouillon';
+      const comps = Array.isArray(c.composants) ? c.composants : [];
+      comps.forEach(sel => {
+        const comp = ALL_COMPOSANTS.find(x=>x.id===sel.id);
+        if (comp) CFG_SELECTION[comp.categorie] = comp;
+      });
+    } catch(e) { console.error(e); }
+  } else {
+    document.getElementById('cfg-nom').value    = '';
+    document.getElementById('cfg-tva').value    = 19;
+    document.getElementById('cfg-notes').value  = '';
+    document.getElementById('cfg-statut').value = 'Brouillon';
+  }
+  renderCfgRows();
+  renderCompatAlerts();
+  openModal('cfg-modal-overlay');
+}
+
+async function saveConfig() {
+  const nom = document.getElementById('cfg-nom').value.trim();
+  if (!nom) { toast('Le nom est obligatoire','error'); return; }
+  const tva = parseInt(document.getElementById('cfg-tva').value)||19;
+  const comps = Object.values(CFG_SELECTION).filter(Boolean);
+
+  const body = {
+    nom,
+    client_id:          document.getElementById('cfg-client').value||null,
+    profil:             document.getElementById('cfg-profil').value,
+    tva,
+    notes:              document.getElementById('cfg-notes').value.trim(),
+    statut:             document.getElementById('cfg-statut').value,
+    composants:         JSON.stringify(comps.map(c=>({id:c.id,designation:c.designation,categorie:c.categorie,prix_achat_ht:c.prix_achat_ht,prix_vente1_ht:c.prix_vente1_ht,prix_vente2_ht:c.prix_vente2_ht,prix_vente3_ht:c.prix_vente3_ht}))),
+    prix_achat_total:   comps.reduce((s,c)=>s+(c.prix_achat_ht||0),0),
+    prix_vente1_total:  comps.reduce((s,c)=>s+(c.prix_vente1_ht||0),0),
+    prix_vente2_total:  comps.reduce((s,c)=>s+(c.prix_vente2_ht||0),0),
+    prix_vente3_total:  comps.reduce((s,c)=>s+(c.prix_vente3_ht||0),0),
+  };
+  try {
+    if (EDIT_CFG_ID) await sbPatch('configurations_pc', EDIT_CFG_ID, body);
+    else await sbPost('configurations_pc', body);
+    closeModal('cfg-modal-overlay');
+    loadConfigurateur();
+    toast(EDIT_CFG_ID ? 'Configuration mise à jour ✓' : 'Configuration créée ✓');
+    EDIT_CFG_ID = null;
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function genererDevisDepuisConfig() {
+  if (!EDIT_CFG_ID) return;
+  const nom    = document.getElementById('cfg-nom').value.trim();
+  const client = document.getElementById('cfg-client').value||null;
+  const tva    = parseInt(document.getElementById('cfg-tva').value)||19;
+  const comps  = Object.values(CFG_SELECTION).filter(Boolean);
+  if (!comps.length) { toast('Aucun composant sélectionné','error'); return; }
+
+  const lignes = comps.map(c=>({
+    designation: c.designation,
+    qte: 1,
+    pu_ht: c.prix_vente1_ht||0,
+    remise: 0,
+    tva
+  }));
+  const totalTTC = lignes.reduce((s,l)=>s+l.pu_ht*(1+l.tva/100),0);
+  const year = new Date().getFullYear();
+  const numDevis = await genNumDevis();
+
+  const body = {
+    numero: numDevis,
+    client_id: client,
+    date_emission: new Date().toISOString().split('T')[0],
+    date_validite: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
+    statut: 'Brouillon',
+    agence: SESSION?.agences?.[0]||'Charguia',
+    commercial: SESSION?.name||'',
+    notes: `Configuration PC : ${nom}`,
+    remise_globale: 0,
+    montant_ttc: totalTTC,
+    lignes: JSON.stringify(lignes),
+  };
+
+  try {
+    await sbPost('devis', body);
+    toast(`Devis ${numDevis} créé depuis la configuration ✓`,'success');
+    closeModal('cfg-modal-overlay');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function onCfgProfilChange() {}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // BOÎTE DE RÉCEPTION UNIFIÉE
