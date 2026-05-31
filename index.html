@@ -11836,8 +11836,21 @@ async function importComposants(input) {
   const file = input.files[0];
   if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-  toast('Import en cours...','info');
+
+  // Demander confirmation avant d'écraser
+  if (!confirm('⚠️ Cette importation va SUPPRIMER tous les composants existants et les remplacer par le nouveau fichier.\n\nConfirmer ?')) {
+    input.value = '';
+    return;
+  }
+
+  toast('Suppression des anciens composants...','info');
   try {
+    // Supprimer tous les composants existants
+    const existing = await sb('composants', { order:'id.asc' });
+    for (const c of existing) {
+      try { await sbDelete('composants', c.id); } catch(e) {}
+    }
+
     let rows = [];
     if (ext === 'csv') {
       rows = await parseCSVFile(file);
@@ -11846,6 +11859,7 @@ async function importComposants(input) {
     }
     if (!rows.length) { toast('Aucune donnée trouvée dans le fichier','error'); return; }
 
+    toast('Import des nouveaux composants...','info');
     let imported = 0, errors = 0;
     for (const row of rows) {
       const designation = row['designation'] || row['Désignation'] || row['DESIGNATION'] || '';
