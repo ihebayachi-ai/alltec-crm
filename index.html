@@ -11588,7 +11588,10 @@ async function loadComposants() {
     let filters = [];
     if (cat) filters.push(`categorie=eq.${encodeURIComponent(cat)}`);
     const data = await sb('composants', { filter: filters.join('&'), order:'categorie.asc,designation.asc' });
-    ALL_COMPOSANTS = data || [];
+    ALL_COMPOSANTS = (data || []).map(c => ({
+      ...c,
+      specs: typeof c.specs === 'string' ? (() => { try { return JSON.parse(c.specs); } catch(e) { return {}; } })() : (c.specs || {})
+    }));
 
     const filtered = ALL_COMPOSANTS.filter(c => !q ||
       c.designation?.toLowerCase().includes(q.toLowerCase()) ||
@@ -12020,25 +12023,36 @@ function renderCfgRows() {
 
     // Filtrage par compatibilité specs
     let options = ALL_COMPOSANTS.filter(c=>c.categorie===cat);
-    if (cat === 'Carte mère' && cpu?.specs?.socket) {
-      const compatible = options.filter(c => !c.specs?.socket || c.specs.socket === cpu.specs.socket);
-      if (compatible.length > 0) options = compatible;
+    const getSpec = (comp, ...keys) => {
+      const sp = comp.specs || {};
+      for (const k of keys) { if (sp[k]) return String(sp[k]).toUpperCase(); }
+      return '';
+    };
+
+    if (cat === 'Carte mère' && cpu) {
+      const cpuSocket = getSpec(cpu, 'socket');
+      if (cpuSocket) {
+        const compatible = options.filter(c => {
+          const mbSocket = getSpec(c, 'socket');
+          return !mbSocket || mbSocket === cpuSocket;
+        });
+        if (compatible.length > 0) options = compatible;
+      }
     }
-    if (cat === 'RAM' && mb?.specs?.ram) {
-      const mbRam = mb.specs.ram.toUpperCase();
-      const compatible = options.filter(c => {
-        const ramType = (c.specs?.type || c.specs?.ddr || '').toUpperCase();
-        return !ramType || mbRam.includes(ramType);
-      });
-      if (compatible.length > 0) options = compatible;
-    }
-    if (cat === 'RAM' && cpu?.specs?.ddr && !mb) {
-      const cpuDdr = cpu.specs.ddr.toUpperCase();
-      const compatible = options.filter(c => {
-        const ramType = (c.specs?.type || c.specs?.ddr || '').toUpperCase();
-        return !ramType || cpuDdr.includes(ramType);
-      });
-      if (compatible.length > 0) options = compatible;
+    if (cat === 'RAM') {
+      const ref = mb || cpu;
+      if (ref) {
+        const refRam = mb ? getSpec(mb, 'ram', 'ddr') : getSpec(cpu, 'ddr', 'ram');
+        if (refRam) {
+          const compatible = options.filter(c => {
+            const ramType = getSpec(c, 'type', 'ddr');
+            if (!ramType) return true;
+            // DDR4/DDR5 : vérifier si le type est dans la liste supportée
+            return refRam.includes(ramType) || ramType.split('/').some(t => refRam.includes(t.trim()));
+          });
+          if (compatible.length > 0) options = compatible;
+        }
+      }
     }
     // Badge compatibilité sur le label catégorie
     const totalCat = ALL_COMPOSANTS.filter(c=>c.categorie===cat).length;
@@ -12259,7 +12273,10 @@ async function openCfgModal(id=null) {
   // Charger les composants si pas encore chargés
   if (!ALL_COMPOSANTS.length) {
     const data = await sb('composants', { order:'categorie.asc,designation.asc' });
-    ALL_COMPOSANTS = data || [];
+    ALL_COMPOSANTS = (data || []).map(c => ({
+      ...c,
+      specs: typeof c.specs === 'string' ? (() => { try { return JSON.parse(c.specs); } catch(e) { return {}; } })() : (c.specs || {})
+    }));
   }
   await fillClientSelect('cfg-client');
 
