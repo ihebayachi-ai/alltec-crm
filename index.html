@@ -664,10 +664,16 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div class="card">
             <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
               <span class="card-title">📈 Évolution abonnés</span>
-              <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-reseau-chart" onchange="renderMktCharts()">
-                <option value="all">Tous réseaux</option>
-                <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
-              </select>
+              <div style="display:flex;gap:6px">
+                  <select class="form-control" style="width:110px;font-size:12px" id="mkt-stats-chart-periode" onchange="renderMktCharts()">
+                    <option value="mois">Par mois</option>
+                    <option value="semaine">Par semaine</option>
+                  </select>
+                  <select class="form-control" style="width:120px;font-size:12px" id="mkt-stats-reseau-chart" onchange="renderMktCharts()">
+                    <option value="all">Tous réseaux</option>
+                    <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
+                  </select>
+                </div>
             </div>
             <div style="padding:12px"><canvas id="mkt-chart-abonnes" height="120"></canvas></div>
           </div>
@@ -11030,7 +11036,8 @@ function renderMktStatsTable(data) {
 async function renderMktCharts() {
   try {
     const rs = document.getElementById('mkt-stats-reseau-chart')?.value || 'all';
-    let filter = 'periode=eq.mois&order=date_debut.asc';
+    const pe = document.getElementById('mkt-stats-chart-periode')?.value || 'mois';
+    let filter = `periode=eq.${pe}&order=date_debut.asc`;
     if (rs !== 'all') filter += `&reseau=eq.${encodeURIComponent(rs)}`;
     const data = await sb('marketing_stats', { filter });
 
@@ -11040,13 +11047,15 @@ async function renderMktCharts() {
       grouped[d.reseau].push(d);
     });
 
-    const labels = [...new Set(data.map(d=>d.date_debut.slice(0,7)))].sort();
+    // Labels : mois (YYYY-MM) ou semaine (date_debut)
+    const labelFn = d => pe === 'mois' ? d.date_debut.slice(0,7) : d.date_debut;
+    const labels = [...new Set(data.map(labelFn))].sort();
 
     const makeDatasets = (key) => Object.entries(grouped).map(([r, rows]) => {
       const c = MKT_RESEAU_COLORS[r] || { bg:'rgba(150,150,150,.5)', border:'#999' };
       return {
         label: r,
-        data: labels.map(l => { const row = rows.find(r2=>r2.date_debut.slice(0,7)===l); return row ? row[key] : null; }),
+        data: labels.map(l => { const row = rows.find(r2=>labelFn(r2)===l); return row ? row[key] : null; }),
         backgroundColor: c.bg, borderColor: c.border, borderWidth: 2,
         tension: 0.3, fill: false, pointRadius: 4, spanGaps: true
       };
