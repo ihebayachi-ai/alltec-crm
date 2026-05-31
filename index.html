@@ -10632,7 +10632,7 @@ async function openMktModal(id=null, datePreset=null) {
       document.getElementById('mkt-likes').value    = p.likes||0;
       document.getElementById('mkt-reach').value    = p.reach||0;
       document.getElementById('mkt-commentaires').value = p.commentaires||0;
-      const reseaux = Array.isArray(p.reseau) ? p.reseau : (p.reseau ? JSON.parse(p.reseau) : []);
+      const reseaux = Array.isArray(p.reseau) ? p.reseau : [];
       document.querySelectorAll('.mkt-reseau-cb').forEach(cb => { if (reseaux.includes(cb.value)) cb.checked = true; });
       previewMktImg(p.image_url||'');
     } catch(e) { console.error(e); }
@@ -10695,7 +10695,7 @@ async function saveMktPost() {
     titre,
     type_contenu:      document.getElementById('mkt-type').value,
     contenu:           document.getElementById('mkt-contenu').value.trim(),
-    reseau:            JSON.stringify(reseaux),
+    reseau:            reseaux,
     image_url:         document.getElementById('mkt-image-url').value.trim()||null,
     date_publication:  document.getElementById('mkt-date').value||null,
     heure_publication: document.getElementById('mkt-heure').value||null,
