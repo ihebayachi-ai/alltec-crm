@@ -574,7 +574,7 @@ textarea.form-control{resize:vertical;min-height:80px}
       <div class="page" id="page-marketing">
         <div class="page-header">
           <div>
-            <div class="page-title">📣 Marketing Digital</div>
+            <div class="page-title">📣 Contenu & Planning</div>
             <div class="page-sub">Calendrier éditorial · Planning posts · Statistiques réseaux sociaux</div>
           </div>
           <div class="toolbar">
@@ -595,7 +595,7 @@ textarea.form-control{resize:vertical;min-height:80px}
             <div style="display:flex;gap:4px">
               <button class="btn btn-ghost btn-sm" id="mkt-btn-cal" onclick="switchMktView('cal')" title="Vue calendrier">📅</button>
               <button class="btn btn-ghost btn-sm" id="mkt-btn-list" onclick="switchMktView('list')" title="Vue liste">📋</button>
-              <button class="btn btn-ghost btn-sm" id="mkt-btn-stats" onclick="switchMktView('stats')" title="Statistiques">📊</button>
+              <button class="btn btn-ghost btn-sm" onclick="showPage('mktStats')" title="Statistiques">📊</button>
             </div>
             <button class="btn btn-primary" onclick="openMktModal()">＋ Nouveau post</button>
           </div>
@@ -679,6 +679,63 @@ textarea.form-control{resize:vertical;min-height:80px}
                 <tbody id="mkt-tbody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATISTIQUES MARKETING -->
+      <div class="page" id="page-mktStats">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📊 Statistiques Marketing</div>
+            <div class="page-sub">Suivi portée · Abonnés · Engagement · Impressions · Clics</div>
+          </div>
+          <div class="toolbar">
+            <select class="form-control" style="width:130px" id="mkt-stats-filter-reseau" onchange="loadMktStats()">
+              <option value="">Tous réseaux</option>
+              <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
+            </select>
+            <select class="form-control" style="width:120px" id="mkt-stats-filter-periode" onchange="loadMktStats()">
+              <option value="">Toutes périodes</option>
+              <option value="semaine">Semaine</option>
+              <option value="mois">Mois</option>
+            </select>
+            <button class="btn btn-primary" onclick="openMktStatsModal()">＋ Saisir stats</button>
+          </div>
+        </div>
+
+        <!-- Cards par réseau -->
+        <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px" id="mkt-stats-reseaux"></div>
+
+        <!-- Graphiques -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="card">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+              <span class="card-title">📈 Évolution abonnés</span>
+              <select class="form-control" style="width:130px;font-size:12px" id="mkt-stats-reseau-chart" onchange="renderMktCharts()">
+                <option value="all">Tous réseaux</option>
+                <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>WhatsApp</option>
+              </select>
+            </div>
+            <div style="padding:12px"><canvas id="mkt-chart-abonnes" height="120"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">👁 Évolution portée</span></div>
+            <div style="padding:12px"><canvas id="mkt-chart-portee" height="120"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Tableau -->
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Réseau</th><th>Période</th><th>Du → Au</th>
+                <th>Abonnés</th><th>+Gagnés</th><th>Portée</th>
+                <th>Impressions</th><th>Engagement</th><th>Taux eng.</th><th>Clics</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="mkt-stats-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -3660,7 +3717,8 @@ function buildSidebar() {
       { id:'sms', icon:'📱', name:'SMS & Notifications', perm:'sms' },
     ]},
     { title: 'Marketing Digital', items: [
-      { id:'marketing', icon:'📣', name:'Marketing Digital', perm:'marketing' },
+      { id:'marketing', icon:'📣', name:'Contenu & Planning', perm:'marketing' },
+      { id:'mktStats', icon:'📊', name:'Statistiques', perm:'marketing' },
     ]},
     { title: 'Finances', items: [
       { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
@@ -3703,6 +3761,7 @@ function showPage(id) {
     commandes: loadCommandes, sav: loadSAV, caisse: loadCaisse,
     rapports: loadRapports, analyse: loadAnalyse, commercial: loadCommercial,
     marketing: loadMarketing,
+    mktStats: () => { loadMktStats(); renderMktCharts(); },
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
