@@ -3416,6 +3416,95 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- Modal Description IA -->
+<div class="overlay" id="cfg-desc-modal-overlay">
+  <div class="modal modal-xl" style="max-width:860px;width:96vw">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="modal-title">🤖 Description IA — SEO & GEO</div>
+      <button class="modal-close" onclick="closeModal('cfg-desc-modal-overlay')">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:85vh;overflow-y:auto">
+
+      <!-- Paramètres -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Site web AllTEC</label>
+          <input class="form-control" id="ia-site-url" placeholder="https://alltec.tn" value="https://alltec.tn">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mots-clés cibles (séparés par virgule)</label>
+          <input class="form-control" id="ia-keywords" placeholder="pc gamer tunisie, ordinateur bureau tunisie, config gaming">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Prix affiché</label>
+          <select class="form-control" id="ia-pv">
+            <option value="1">PV1 — Standard</option>
+            <option value="2">PV2 — Revendeur</option>
+            <option value="3">PV3 — Promo/Lot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Profil d'usage</label>
+          <input class="form-control" id="ia-profil" readonly style="background:var(--surface2)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Langue</label>
+          <select class="form-control" id="ia-langue">
+            <option value="both">Français + Arabe</option>
+            <option value="fr">Français uniquement</option>
+            <option value="ar">Arabe uniquement</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <button class="btn btn-primary" onclick="genererDescriptionIA()" id="ia-btn-gen">
+          ✨ Générer la description
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="copyIAContent('fr')" id="ia-btn-copy-fr" style="display:none">📋 Copier FR</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyIAContent('ar')" id="ia-btn-copy-ar" style="display:none">📋 Copier AR</button>
+      </div>
+
+      <!-- Zone de génération -->
+      <div id="ia-loading" style="display:none;text-align:center;padding:30px">
+        <div style="font-size:24px;margin-bottom:10px">⚙️</div>
+        <div style="color:var(--text2);font-size:13px">Génération en cours...</div>
+      </div>
+
+      <!-- Résultat FR -->
+      <div id="ia-result-fr" style="display:none;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+          🇫🇷 Version Française
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:16px;font-size:13px;line-height:1.7">
+          <div id="ia-titre-fr" style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--accent-light)"></div>
+          <div id="ia-desc-fr" style="margin-bottom:12px;white-space:pre-wrap"></div>
+          <div id="ia-specs-fr" style="font-size:12px;color:var(--text2);white-space:pre-wrap"></div>
+          <div id="ia-seo-fr" style="margin-top:10px;padding:8px;background:rgba(96,165,250,.08);border-radius:6px;font-size:11px;color:var(--text2)"></div>
+        </div>
+      </div>
+
+      <!-- Résultat AR -->
+      <div id="ia-result-ar" style="display:none">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
+          🇹🇳 النسخة العربية
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:16px;font-size:13px;line-height:1.8;direction:rtl;text-align:right">
+          <div id="ia-titre-ar" style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--accent-light)"></div>
+          <div id="ia-desc-ar" style="margin-bottom:12px;white-space:pre-wrap"></div>
+          <div id="ia-specs-ar" style="font-size:12px;color:var(--text2);white-space:pre-wrap"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cfg-desc-modal-overlay')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Composant -->
 <div class="overlay" id="composant-modal-overlay">
   <div class="modal" style="max-width:680px;width:96vw">
@@ -3484,6 +3573,7 @@ supabase functions deploy send-sms
       <div class="modal-title" id="cfg-modal-title">Nouvelle configuration PC</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-ghost btn-sm" onclick="genererDevisDepuisConfig()" id="cfg-btn-devis" style="display:none">📄 Générer devis</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCfgDescModal()" id="cfg-btn-ia" style="display:none">🤖 Description IA</button>
         <button class="modal-close" onclick="closeModal('cfg-modal-overlay')">✕</button>
       </div>
     </div>
@@ -12306,6 +12396,7 @@ async function openCfgModal(id=null) {
   CFG_QTE.RAM = 1;
   document.getElementById('cfg-modal-title').textContent = id ? 'Modifier configuration' : 'Nouvelle configuration PC';
   document.getElementById('cfg-btn-devis').style.display = id ? 'inline-flex' : 'none';
+  const cfgBtnIA = document.getElementById('cfg-btn-ia'); if(cfgBtnIA) cfgBtnIA.style.display = id ? 'inline-flex' : 'none';
 
   // Charger les composants si pas encore chargés
   if (!ALL_COMPOSANTS.length) {
@@ -12637,6 +12728,167 @@ async function saveInboxMsg() {
     toast(EDIT_INBOX_ID ? 'Message mis à jour ✓' : 'Message enregistré ✓');
     EDIT_INBOX_ID = null;
   } catch(e) { toast(e.message,'error'); }
+}
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DESCRIPTION IA — SEO & GEO (Claude API)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function openCfgDescModal() {
+  const profil = document.getElementById('cfg-profil')?.value || 'Bureau';
+  const profilEl = document.getElementById('ia-profil');
+  if (profilEl) profilEl.value = profil;
+
+  // Reset résultats
+  ['ia-result-fr','ia-result-ar','ia-loading'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display='none';
+  });
+  ['ia-btn-copy-fr','ia-btn-copy-ar'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display='none';
+  });
+
+  openModal('cfg-desc-modal-overlay');
+}
+
+async function genererDescriptionIA() {
+  const nom     = document.getElementById('cfg-nom')?.value.trim() || 'Configuration PC';
+  const profil  = document.getElementById('cfg-profil')?.value || 'Bureau';
+  const url     = document.getElementById('ia-site-url')?.value.trim() || 'https://alltec.tn';
+  const kws     = document.getElementById('ia-keywords')?.value.trim() || '';
+  const pvNum   = document.getElementById('ia-pv')?.value || '1';
+  const langue  = document.getElementById('ia-langue')?.value || 'both';
+
+  // Récupérer le prix
+  const pvTtc = parseFloat(document.getElementById(`cfg-pv${pvNum}-ttc`)?.value)||0;
+  const pvLabel = ['','Standard','Revendeur','Promo/Lot'][parseInt(pvNum)];
+
+  // Récupérer les composants
+  const comps = Object.values(CFG_SELECTION).filter(Boolean);
+  if (!comps.length) { toast('Aucun composant sélectionné','error'); return; }
+
+  const specsText = comps.map(c => {
+    const qte = c.categorie === 'RAM' ? (CFG_QTE.RAM||1) : 1;
+    return `${c.categorie}: ${qte > 1 ? qte+'× ' : ''}${c.designation}`;
+  }).join('\n');
+
+  // Afficher loading
+  document.getElementById('ia-loading').style.display = 'block';
+  document.getElementById('ia-result-fr').style.display = 'none';
+  document.getElementById('ia-result-ar').style.display = 'none';
+  document.getElementById('ia-btn-gen').disabled = true;
+
+  const langueInstr = langue === 'fr'
+    ? 'Réponds UNIQUEMENT en français.'
+    : langue === 'ar'
+    ? 'أجب باللغة العربية فقط.'
+    : 'Réponds avec les deux langues : français ET arabe.';
+
+  const prompt = `Tu es un expert SEO et GEO (Generative Engine Optimization) spécialisé en e-commerce informatique en Tunisie.
+
+Génère une fiche produit complète pour cette configuration PC assemblée par AllTEC Distribution (${url}).
+
+## Configuration
+Nom : ${nom}
+Profil d'usage : ${profil}
+Prix : ${fmtMoney(pvTtc)} DT TTC (${pvLabel})
+
+## Composants
+${specsText}
+
+## Mots-clés cibles
+${kws || 'pc bureau tunisie, ordinateur assemblé tunisie, AllTEC'}
+
+## Instructions
+${langueInstr}
+
+Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le JSON) :
+{
+  "fr": {
+    "titre": "Titre accrocheur SEO 60 caractères max",
+    "description": "Description commerciale 150-200 mots, mettant en avant les avantages pour l'utilisateur ${profil}, avec les mots-clés intégrés naturellement",
+    "specs_resumees": "Liste courte des specs principales (5-6 lignes)",
+    "meta_description": "Meta description SEO 155 caractères max",
+    "tags_seo": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  },
+  "ar": {
+    "titre": "عنوان جذاب بالعربية",
+    "description": "وصف تجاري 100-150 كلمة بالعربية",
+    "specs_resumees": "قائمة المواصفات الرئيسية",
+    "meta_description": "وصف ميتا بالعربية 155 حرف كحد أقصى"
+  }
+}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const raw  = data.content?.[0]?.text || '';
+
+    // Parser le JSON
+    let result;
+    try {
+      const clean = raw.replace(/```json|```/g,'').trim();
+      result = JSON.parse(clean);
+    } catch(e) {
+      toast('Erreur de parsing IA — réessaie','error');
+      return;
+    }
+
+    // Afficher FR
+    if (result.fr && langue !== 'ar') {
+      document.getElementById('ia-titre-fr').textContent  = result.fr.titre || '';
+      document.getElementById('ia-desc-fr').textContent   = result.fr.description || '';
+      document.getElementById('ia-specs-fr').textContent  = result.fr.specs_resumees || '';
+      document.getElementById('ia-seo-fr').innerHTML      =
+        `<strong>Meta :</strong> ${result.fr.meta_description || ''}` +
+        (result.fr.tags_seo?.length ? `<br><strong>Tags :</strong> ${result.fr.tags_seo.join(' · ')}` : '');
+      document.getElementById('ia-result-fr').style.display = 'block';
+      document.getElementById('ia-btn-copy-fr').style.display = 'inline-flex';
+    }
+
+    // Afficher AR
+    if (result.ar && langue !== 'fr') {
+      document.getElementById('ia-titre-ar').textContent = result.ar.titre || '';
+      document.getElementById('ia-desc-ar').textContent  = result.ar.description || '';
+      document.getElementById('ia-specs-ar').textContent = result.ar.specs_resumees || '';
+      document.getElementById('ia-result-ar').style.display = 'block';
+      document.getElementById('ia-btn-copy-ar').style.display = 'inline-flex';
+    }
+
+  } catch(e) {
+    toast('Erreur API : ' + e.message, 'error');
+  } finally {
+    document.getElementById('ia-loading').style.display = 'none';
+    document.getElementById('ia-btn-gen').disabled = false;
+  }
+}
+
+function copyIAContent(lang) {
+  let text = '';
+  if (lang === 'fr') {
+    const titre = document.getElementById('ia-titre-fr')?.textContent || '';
+    const desc  = document.getElementById('ia-desc-fr')?.textContent || '';
+    const specs = document.getElementById('ia-specs-fr')?.textContent || '';
+    const seo   = document.getElementById('ia-seo-fr')?.innerText || '';
+    text = `${titre}\n\n${desc}\n\n${specs}\n\n${seo}`;
+  } else {
+    const titre = document.getElementById('ia-titre-ar')?.textContent || '';
+    const desc  = document.getElementById('ia-desc-ar')?.textContent || '';
+    const specs = document.getElementById('ia-specs-ar')?.textContent || '';
+    text = `${titre}\n\n${desc}\n\n${specs}`;
+  }
+  navigator.clipboard.writeText(text.trim())
+    .then(() => toast(`Contenu ${lang.toUpperCase()} copié ✓`, 'success'))
+    .catch(() => toast('Erreur copie','error'));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
