@@ -11223,7 +11223,7 @@ Tes réponses sont courtes (max 150 mots), directes et utiles. Tu peux utiliser 
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-6',
         max_tokens: 400,
         system: systemPrompt,
         messages: AI_HISTORY.slice(-10), // Garder les 10 derniers messages
@@ -12824,7 +12824,7 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}` },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-6',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
