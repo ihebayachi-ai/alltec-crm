@@ -12332,9 +12332,15 @@ async function openCfgModal(id=null) {
         const el = document.getElementById(`cfg-pv${i+1}-ttc`); if(el) el.value=ttc;
         const elPct = document.getElementById(`cfg-pv${i+1}-pct`); if(elPct) elPct.value=0;
       });
-      const comps = Array.isArray(c.composants) ? c.composants : [];
+      const comps = Array.isArray(c.composants) ? c.composants : 
+                    (typeof c.composants === 'string' ? JSON.parse(c.composants||'[]') : []);
       comps.forEach(sel => {
-        const comp = ALL_COMPOSANTS.find(x=>x.id===sel.id);
+        // Chercher dans ALL_COMPOSANTS d'abord
+        let comp = ALL_COMPOSANTS.find(x=>x.id===sel.id);
+        // Si pas trouvé (catalogue mis à jour), utiliser les données sauvegardées
+        if (!comp && sel.designation) {
+          comp = { id:sel.id, designation:sel.designation, categorie:sel.categorie, prix_achat_ht:sel.prix_achat_ht||0, specs:{} };
+        }
         if (comp) CFG_SELECTION[comp.categorie] = comp;
       });
     } catch(e) { console.error(e); }
