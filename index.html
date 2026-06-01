@@ -12399,17 +12399,49 @@ async function genererDevisDepuisConfig() {
   const comps  = Object.values(CFG_SELECTION).filter(Boolean);
   if (!comps.length) { toast('Aucun composant sélectionné','error'); return; }
 
-  const lignes = comps.map(c=>({
-    designation: c.designation,
+  // Lire les 3 PV TTC sauvegardés
+  const pv1 = parseFloat(document.getElementById('cfg-pv1-ttc')?.value)||0;
+  const pv2 = parseFloat(document.getElementById('cfg-pv2-ttc')?.value)||0;
+  const pv3 = parseFloat(document.getElementById('cfg-pv3-ttc')?.value)||0;
+
+  // Demander quel PV utiliser
+  const pvLabels = [];
+  if (pv1 > 0) pvLabels.push(`PV1 Standard : ${fmtMoney(pv1)} DT TTC`);
+  if (pv2 > 0) pvLabels.push(`PV2 Revendeur : ${fmtMoney(pv2)} DT TTC`);
+  if (pv3 > 0) pvLabels.push(`PV3 Promo/Lot : ${fmtMoney(pv3)} DT TTC`);
+
+  let pvChoix = pv1;
+  if (pvLabels.length > 1) {
+    const choix = prompt(
+      'Choisir le prix de vente pour le devis :\n\n' +
+      pvLabels.map((l,i) => `${i+1}. ${l}`).join('\n') +
+      '\n\nEntrez 1, 2 ou 3 :'
+    );
+    if (!choix) return;
+    if (choix==='2' && pv2>0) pvChoix = pv2;
+    else if (choix==='3' && pv3>0) pvChoix = pv3;
+    else pvChoix = pv1;
+  }
+
+  if (!pvChoix) { toast('Aucun prix de vente défini — saisir les PV d\'abord','error'); return; }
+
+  // Créer une seule ligne "Configuration PC" avec le PV choisi
+  const pvHt = Math.round(pvChoix / (1 + tva/100) * 1000) / 1000;
+  const lignes = [{
+    designation: `Configuration PC — ${nom}`,
     qte: 1,
-    pu_ht: c.prix_vente1_ht||0,
+    pu_ht: pvHt,
     remise: 0,
     tva
-  }));
-  const totalTTC = lignes.reduce((s,l)=>s+l.pu_ht*(1+l.tva/100),0);
-  const year = new Date().getFullYear();
-  const numDevis = await genNumDevis();
+  }];
 
+  // Ajouter le détail des composants en notes
+  const detailComps = comps.map(c => {
+    const qte = c.categorie === 'RAM' ? (CFG_QTE.RAM||1) : 1;
+    return `${qte > 1 ? qte+'× ' : ''}${c.designation}`;
+  }).join(' | ');
+
+  const numDevis = await genNumDevis();
   const body = {
     numero: numDevis,
     client_id: client,
@@ -12418,15 +12450,15 @@ async function genererDevisDepuisConfig() {
     statut: 'Brouillon',
     agence: SESSION?.agences?.[0]||'Charguia',
     commercial: SESSION?.name||'',
-    notes: `Configuration PC : ${nom}`,
+    notes: `Configuration PC : ${nom}\nComposants : ${detailComps}`,
     remise_globale: 0,
-    montant_ttc: totalTTC,
+    montant_ttc: pvChoix,
     lignes: JSON.stringify(lignes),
   };
 
   try {
     await sbPost('devis', body);
-    toast(`Devis ${numDevis} créé depuis la configuration ✓`,'success');
+    toast(`Devis ${numDevis} créé — ${fmtMoney(pvChoix)} DT TTC ✓`,'success');
     closeModal('cfg-modal-overlay');
   } catch(e) { toast(e.message,'error'); }
 }
