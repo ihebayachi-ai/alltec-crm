@@ -4163,7 +4163,7 @@ async function sb(table, options = {}) {
   // Nettoyer les ? traînants
   url = url.replace(/\?$/, '').replace(/\?&/, '?');
   const headers = {
-    'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+    'apikey': SB_KEY, 'apikey': SB_KEY,
     'Content-Type': 'application/json',
     'Prefer': isWrite ? 'return=minimal' : 'return=representation'
   };
