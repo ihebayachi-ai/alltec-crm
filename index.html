@@ -12099,18 +12099,9 @@ function renderCfgRows() {
       </select>
       ${selected ? `
         <div style="display:flex;align-items:center;gap:6px">
-          ${cat === 'RAM' ? `
-          <select style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center"
-            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}">
-            <option value="1" ${(CFG_QTE[cat]||1)===1?'selected':''}>×1</option>
-            <option value="2" ${(CFG_QTE[cat]||1)===2?'selected':''}>×2</option>
-            <option value="4" ${(CFG_QTE[cat]||1)===4?'selected':''}>×4</option>
-          </select>` : `
-          <input type="number" value="${CFG_QTE[cat]||1}" min="1" max="10" style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" 
-            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}" title="Quantité">`}
+          ${cat === 'RAM' ? `<input type="number" value="${CFG_QTE['RAM']||1}" min="1" max="8" style="width:46px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" onchange="onCfgQteChange('RAM',this.value)" title="Quantité RAM">` : ''}
           <div style="font-size:11px;color:var(--accent-light);min-width:80px;text-align:right">
-            ${fmtMoney(selected.prix_achat_ht)} DT × <span id="cfg-qte-display-${cat.replace(/[^a-zA-Z]/g,'')}">1</span>
-            = <strong id="cfg-subtotal-${cat.replace(/[^a-zA-Z]/g,'')}">${fmtMoney(selected.prix_achat_ht)}</strong> DT
+            ${fmtMoney(selected.prix_achat_ht)} DT${cat==='RAM'?` × <span id="cfg-qte-display-RAM">${CFG_QTE['RAM']||1}</span> = <strong id="cfg-subtotal-RAM">${fmtMoney((selected.prix_achat_ht)*(CFG_QTE['RAM']||1))}</strong> DT`:''}
           </div>
         </div>` : '<div style="min-width:140px"></div>'}
       <div style="font-size:16px;min-width:20px">${selected ? checkCompat(cat, selected) : ''}</div>
