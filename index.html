@@ -12820,9 +12820,9 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
 }`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('hhttps://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/claude-proxy', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}` },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
