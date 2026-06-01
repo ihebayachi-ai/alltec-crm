@@ -785,7 +785,7 @@ textarea.form-control{resize:vertical;min-height:80px}
               <option value="">Toutes catégories</option>
               <option>CPU</option><option>Carte mère</option><option>RAM</option><option>Stockage</option>
               <option>GPU</option><option>PSU</option><option>Boîtier</option><option>Refroidissement</option>
-              <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Onduleur</option>
+              <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Casque</option>
             </select>
             <label class="btn btn-ghost btn-sm" style="cursor:pointer">
               📥 Import nouveau
@@ -3430,7 +3430,7 @@ supabase functions deploy send-sms
           <select class="form-control" id="cmp-cat">
             <option>CPU</option><option>Carte mère</option><option>RAM</option><option>Stockage</option>
             <option>GPU</option><option>PSU</option><option>Boîtier</option><option>Refroidissement</option>
-            <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Onduleur</option>
+            <option>Ecran</option><option>Clavier</option><option>Souris</option><option>Casque</option>
           </select></div>
         <div class="form-group"><label class="form-label">Marque</label><input class="form-control" id="cmp-marque" placeholder="Intel, AMD, MSI..."></div>
       </div>
@@ -11567,8 +11567,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // MODULE CONFIGURATEUR PC
 // ═════════════════════════════════════════════════════════════════════════════
 
-const CFG_CATEGORIES = ['CPU','Carte mère','RAM','Stockage','GPU','PSU','Boîtier','Refroidissement','Ecran','Clavier','Souris','Onduleur'];
-const CFG_CAT_ICONS  = { 'CPU':'🧠','Carte mère':'🟩','RAM':'💾','Stockage':'💿','GPU':'🖼','PSU':'⚡','Boîtier':'📦','Refroidissement':'❄️','Ecran':'🖥','Clavier':'⌨️','Souris':'🖱','Onduleur':'🔋' };
+const CFG_CATEGORIES = ['CPU','Carte mère','RAM','Stockage','GPU','PSU','Boîtier','Refroidissement','Ecran','Clavier','Souris','Casque'];
+const CFG_CAT_ICONS  = { 'CPU':'🧠','Carte mère':'🟩','RAM':'💾','Stockage':'💿','GPU':'🖼','PSU':'⚡','Boîtier':'📦','Refroidissement':'❄️','Ecran':'🖥','Clavier':'⌨️','Souris':'🖱','Casque':'🔋' };
 const CFG_CAT_REQUIRED = ['CPU','Carte mère','RAM','Stockage','PSU','Boîtier'];
 
 let EDIT_CMP_ID  = null;
@@ -11881,7 +11881,7 @@ async function importComposants(input) {
       'ecran':'Ecran','écran':'Ecran','monitor':'Ecran',
       'clavier':'Clavier','keyboard':'Clavier',
       'souris':'Souris','mouse':'Souris',
-      'onduleur':'Onduleur','ups':'Onduleur',
+      'onduleur':'Casque','ups':'Casque',
     };
     const catNorm = catMap[categorie.toLowerCase().trim()] || categorie.trim();
       if (!designation.trim()) continue;
