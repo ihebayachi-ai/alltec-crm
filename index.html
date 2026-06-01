@@ -12036,35 +12036,53 @@ function renderCfgRows() {
 
     // Filtrage par compatibilité specs
     let options = ALL_COMPOSANTS.filter(c=>c.categorie===cat);
-    const getSpec = (comp, ...keys) => {
-      const sp = comp.specs || {};
-      for (const k of keys) { if (sp[k]) return String(sp[k]).toUpperCase(); }
-      return '';
+    // Helpers compatibilité
+    const getSocket = (comp) => {
+      const s = comp.specs?.socket;
+      if (!s) return [];
+      return Array.isArray(s) ? s.map(x=>x.trim().toUpperCase()) : [String(s).trim().toUpperCase()];
+    };
+    const getDdr = (comp) => {
+      const d = comp.specs?.ddr || comp.specs?.ram || comp.specs?.type || '';
+      return String(d).toUpperCase();
+    };
+    const socketMatch = (compA, compB) => {
+      const socketsA = getSocket(compA);
+      const socketsB = getSocket(compB);
+      if (!socketsA.length || !socketsB.length) return true;
+      return socketsA.some(s => socketsB.includes(s));
+    };
+    const ddrMatch = (refComp, ramComp) => {
+      const refDdr = getDdr(refComp);
+      const ramDdr = getDdr(ramComp);
+      if (!refDdr || !ramDdr) return true;
+      // DDR4/DDR5 : chaque type séparé par /
+      const refTypes = refDdr.split('/').map(t=>t.trim());
+      const ramTypes = ramDdr.split('/').map(t=>t.trim());
+      return refTypes.some(r => ramTypes.includes(r));
     };
 
     if (cat === 'Carte mère' && cpu) {
-      const cpuSocket = getSpec(cpu, 'socket');
-      if (cpuSocket) {
-        const compatible = options.filter(c => {
-          const mbSocket = getSpec(c, 'socket');
-          return !mbSocket || mbSocket === cpuSocket;
-        });
+      if (getSocket(cpu).length) {
+        const compatible = options.filter(c => socketMatch(cpu, c));
         if (compatible.length > 0) options = compatible;
       }
     }
     if (cat === 'RAM') {
       const ref = mb || cpu;
-      if (ref) {
-        const refRam = mb ? getSpec(mb, 'ram', 'ddr') : getSpec(cpu, 'ddr', 'ram');
-        if (refRam) {
-          const compatible = options.filter(c => {
-            const ramType = getSpec(c, 'type', 'ddr');
-            if (!ramType) return true;
-            // DDR4/DDR5 : vérifier si le type est dans la liste supportée
-            return refRam.includes(ramType) || ramType.split('/').some(t => refRam.includes(t.trim()));
-          });
-          if (compatible.length > 0) options = compatible;
-        }
+      if (ref && getDdr(ref)) {
+        const compatible = options.filter(c => ddrMatch(ref, c));
+        if (compatible.length > 0) options = compatible;
+      }
+    }
+    if (cat === 'Refroidissement' && cpu) {
+      if (getSocket(cpu).length) {
+        const compatible = options.filter(c => {
+          const sockets = getSocket(c);
+          if (!sockets.length) return true;
+          return socketMatch(cpu, c);
+        });
+        if (compatible.length > 0) options = compatible;
       }
     }
     // Badge compatibilité sur le label catégorie
