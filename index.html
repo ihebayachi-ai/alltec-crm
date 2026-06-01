@@ -12099,8 +12099,15 @@ function renderCfgRows() {
       </select>
       ${selected ? `
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" value="1" min="1" style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" 
-            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}" title="Quantité">
+          ${cat === 'RAM' ? `
+          <select style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center"
+            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}">
+            <option value="1" ${(CFG_QTE[cat]||1)===1?'selected':''}>×1</option>
+            <option value="2" ${(CFG_QTE[cat]||1)===2?'selected':''}>×2</option>
+            <option value="4" ${(CFG_QTE[cat]||1)===4?'selected':''}>×4</option>
+          </select>` : `
+          <input type="number" value="${CFG_QTE[cat]||1}" min="1" max="10" style="width:52px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" 
+            onchange="onCfgQteChange('${cat}',this.value)" id="cfg-qte-${cat.replace(/[^a-zA-Z]/g,'')}" title="Quantité">`}
           <div style="font-size:11px;color:var(--accent-light);min-width:80px;text-align:right">
             ${fmtMoney(selected.prix_achat_ht)} DT × <span id="cfg-qte-display-${cat.replace(/[^a-zA-Z]/g,'')}">1</span>
             = <strong id="cfg-subtotal-${cat.replace(/[^a-zA-Z]/g,'')}">${fmtMoney(selected.prix_achat_ht)}</strong> DT
@@ -12116,7 +12123,7 @@ function onCfgSelectComp(cat, id) {
   if (!id) { delete CFG_SELECTION[cat]; }
   else { CFG_SELECTION[cat] = ALL_COMPOSANTS.find(c=>c.id===id); }
   // Reconstruire les listes si CPU ou Carte mère change (pour filtrage)
-  if (cat === 'CPU' || cat === 'Carte mère') renderCfgRows();
+  if (cat === 'CPU' || cat === 'Carte mère' || cat === 'Refroidissement') renderCfgRows();
   else { recalcConfig(); renderCompatAlerts(); }
 }
 
