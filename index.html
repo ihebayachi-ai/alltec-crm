@@ -4163,7 +4163,7 @@ async function sb(table, options = {}) {
   // Nettoyer les ? traînants
   url = url.replace(/\?$/, '').replace(/\?&/, '?');
   const headers = {
-    'apikey': SB_KEY, 'apikey': SB_KEY,
+    'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
     'Content-Type': 'application/json',
     'Prefer': isWrite ? 'return=minimal' : 'return=representation'
   };
@@ -11219,7 +11219,7 @@ ${ctx ? 'Données temps réel: '+ctx : ''}
 Tu réponds en français, de manière concise et professionnelle. Tu connais le Manuel des Procédures AllTEC 2026 (SAV §4.3, Commercial §2.4, Logistique §3.6, RH §6, Maintenance §10, Finances §5, KPIs §9.1).
 Tes réponses sont courtes (max 150 mots), directes et utiles. Tu peux utiliser des emojis avec parcimonie.`;
 
-    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/smooth-action', {
+    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/claude-proxy', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
@@ -12820,11 +12820,7 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
 }`;
 
   try {
-<<<<<<< HEAD
     const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/claude-proxy', {
-=======
-    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/smooth-action', {
->>>>>>> e6939451808a30aa2d74902bc9ecd83a3b8a2a7b
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}` },
       body: JSON.stringify({
