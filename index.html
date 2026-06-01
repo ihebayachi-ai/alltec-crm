@@ -12099,11 +12099,17 @@ function renderCfgRows() {
       </select>
       ${selected ? `
         <div style="display:flex;align-items:center;gap:6px">
-          ${cat === 'RAM' ? `<input type="number" value="${CFG_QTE['RAM']||1}" min="1" max="8" style="width:46px;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center" onchange="onCfgQteChange('RAM',this.value)" title="Quantité RAM">` : ''}
           <div style="font-size:11px;color:var(--accent-light);min-width:80px;text-align:right">
-            ${fmtMoney(selected.prix_achat_ht)} DT${cat==='RAM'?` × <span id="cfg-qte-display-RAM">${CFG_QTE['RAM']||1}</span> = <strong id="cfg-subtotal-RAM">${fmtMoney((selected.prix_achat_ht)*(CFG_QTE['RAM']||1))}</strong> DT`:''}
+            ${fmtMoney(selected.prix_achat_ht)} DT
           </div>
-        </div>` : '<div style="min-width:140px"></div>'}
+        </div>` : '<div style="min-width:80px"></div>'}
+      ${cat === 'RAM' ? `
+        <div style="display:flex;align-items:center;gap:4px;margin-left:4px">
+          <span style="font-size:10px;color:var(--text2)">Qté:</span>
+          <input type="number" id="cfg-ram-qte" value="${CFG_QTE.RAM||1}" min="1" max="8"
+            style="width:46px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);text-align:center"
+            oninput="CFG_QTE.RAM=parseInt(this.value)||1;recalcConfig()" title="Nombre de barrettes">
+        </div>` : ''}
       <div style="font-size:16px;min-width:20px">${selected ? checkCompat(cat, selected) : ''}</div>
     </div>`;
   }).join('');
@@ -12190,7 +12196,7 @@ function getCfgAchatTtc() {
   const tva   = parseInt(document.getElementById('cfg-tva')?.value)||19;
   const comps = Object.values(CFG_SELECTION).filter(Boolean);
   const totalAchat = comps.reduce((s,c)=>{
-    const qte = CFG_QTE[c.categorie]||1;
+    const qte = c.categorie === 'RAM' ? (CFG_QTE.RAM||1) : (CFG_QTE[c.categorie]||1);
     return s+(c.prix_achat_ht||0)*qte;
   },0);
   return { totalAchat, achatTtc: totalAchat*(1+tva/100), tva };
@@ -12256,7 +12262,7 @@ function recalcConfig() {
   const sumDiv = document.getElementById('cfg-summary');
   if (sumDiv) {
     const rows = comps.map(c=>{
-    const qte = CFG_QTE[c.categorie]||1;
+    const qte = c.categorie === 'RAM' ? (CFG_QTE.RAM||1) : (CFG_QTE[c.categorie]||1);
     const sub = (c.prix_achat_ht||0)*qte;
     return `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:0.5px solid var(--border)">
       <span style="color:var(--text2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.designation?.substring(0,25))}${(c.designation||'').length>25?'…':''} ${qte>1?`<strong>×${qte}</strong>`:''}</span>
@@ -12297,6 +12303,7 @@ async function openCfgModal(id=null) {
   EDIT_CFG_ID = id;
   CFG_SELECTION = {};
   Object.keys(CFG_QTE).forEach(k => delete CFG_QTE[k]);
+  CFG_QTE.RAM = 1;
   document.getElementById('cfg-modal-title').textContent = id ? 'Modifier configuration' : 'Nouvelle configuration PC';
   document.getElementById('cfg-btn-devis').style.display = id ? 'inline-flex' : 'none';
 
