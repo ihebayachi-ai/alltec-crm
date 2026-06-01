@@ -11898,7 +11898,20 @@ async function importComposants(input) {
         stock:          parseInt(row['stock'] || row['Stock'] || 0),
         agence:         row['agence'] || row['Agence'] || 'Charguia',
       };
-      try { await sbPost('composants', body); imported++; } catch(e) { errors++; }
+      // Specs : parser le JSON
+      const rawSpecs = row['specs'] || row['Specs'] || row['SPECS'] || '';
+      if (rawSpecs && String(rawSpecs).trim()) {
+        let specsStr = String(rawSpecs).trim();
+        // Corriger JSON incomplet (manque { au début)
+        if (!specsStr.startsWith('{')) specsStr = '{"' + specsStr + '}';
+        try { body.specs = JSON.parse(specsStr); } catch(e) {
+          // Dernier essai sans les guillemets ajoutés
+          try { body.specs = JSON.parse('{' + specsStr.slice(2)); } catch(e2) {
+            console.warn('Specs invalides:', specsStr);
+          }
+        }
+      }
+      try { await sbPost('composants', body); imported++; } catch(e) { errors++; console.error('Import error:', e.message, body.designation); }
     }
     toast(`${imported} composant(s) importé(s)${errors>0?' ('+errors+' erreurs)':''}`, 'success');
     loadComposants();
