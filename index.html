@@ -12115,8 +12115,9 @@ function renderCfgRows() {
 function onCfgSelectComp(cat, id) {
   if (!id) { delete CFG_SELECTION[cat]; }
   else { CFG_SELECTION[cat] = ALL_COMPOSANTS.find(c=>c.id===id); }
-  recalcConfig();
-  renderCompatAlerts();
+  // Reconstruire les listes si CPU ou Carte mère change (pour filtrage)
+  if (cat === 'CPU' || cat === 'Carte mère') renderCfgRows();
+  else { recalcConfig(); renderCompatAlerts(); }
 }
 
 function checkCompat(cat, comp) {
