@@ -13226,7 +13226,13 @@ function copyIAContent(lang) {
       });
       fpsHtmlCopy = `\n<h3 style="font-family:Arial,sans-serif;color:#1e3a5f;margin:20px 0 10px">🎮 Performances Gaming estimées</h3>\n<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">${trs}</table>\n<p style="font-size:12px;color:#94a3b8;margin-top:6px;font-family:Arial,sans-serif">* Estimations basées sur benchmarks publics — varient selon les paramètres graphiques</p>`;
     }
-    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${fpsHtmlCopy}`;
+    // Ajouter bottleneck
+    const btEl = document.getElementById('ia-bottleneck');
+    let btText = '';
+    if (btEl && btEl.style.display !== 'none') {
+      btText = '\n\n⚡ ANALYSE BOTTLENECK\n' + (btEl.innerText || '');
+    }
+    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${btText}${fpsHtmlCopy}`;
   } else {
     const titre = document.getElementById('ia-titre-ar')?.textContent || '';
     const desc  = document.getElementById('ia-desc-ar')?.textContent || '';
