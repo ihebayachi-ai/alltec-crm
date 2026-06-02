@@ -12800,6 +12800,8 @@ ${specsText}
 ${kws || 'pc bureau tunisie, ordinateur assemblé tunisie, AllTEC'}
 
 ## Instructions
+Estime les FPS pour les jeux listés dans fps selon les composants GPU/CPU. Remplace les "?" par les FPS estimés (ex: "~144", "~60", "~30").
+
 ${langueInstr}
 
 Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le JSON) :
@@ -12809,7 +12811,13 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
     "description": "Description commerciale 150-200 mots, mettant en avant les avantages pour l'utilisateur ${profil}, avec les mots-clés intégrés naturellement",
     "specs_resumees": "Liste courte des specs principales (5-6 lignes)",
     "meta_description": "Meta description SEO 155 caractères max",
-    "tags_seo": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+    "tags_seo": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+    "fps": {
+      "note": "Estimations benchmarks publics",
+      "1080p": {"CS2":"?","Valorant":"?","Fortnite":"?","GTA_V":"?","FIFA":"?","Minecraft":"?","LOL":"?","COD_Warzone":"?","Cyberpunk2077":"?","RDR2":"?"},
+      "1440p": {"CS2":"?","Valorant":"?","Fortnite":"?","GTA_V":"?","FIFA":"?","Minecraft":"?","LOL":"?","COD_Warzone":"?","Cyberpunk2077":"?","RDR2":"?"},
+      "4K": {"CS2":"?","Valorant":"?","Fortnite":"?","GTA_V":"?","FIFA":"?","Minecraft":"?","LOL":"?","COD_Warzone":"?","Cyberpunk2077":"?","RDR2":"?"}
+    }
   },
   "ar": {
     "titre": "عنوان جذاب بالعربية",
@@ -12824,8 +12832,8 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}` },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 2000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 3000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -12848,7 +12856,24 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
       document.getElementById('ia-titre-fr').textContent  = result.fr.titre || '';
       document.getElementById('ia-desc-fr').textContent   = result.fr.description || '';
       document.getElementById('ia-specs-fr').textContent  = result.fr.specs_resumees || '';
-      document.getElementById('ia-seo-fr').innerHTML      =
+      const fpsData = result.fr?.fps;
+      let fpsHtml = '';
+      if (fpsData) {
+        const jeux = ['CS2','Valorant','Fortnite','GTA_V','FIFA','Minecraft','LOL','COD_Warzone','Cyberpunk2077','RDR2'];
+        const jeuxLabels = ['CS2','Valorant','Fortnite','GTA V','FIFA','Minecraft','LoL','COD Warzone','Cyberpunk 2077','RDR2'];
+        const rows = jeux.map((j,i) => {
+          const v1 = fpsData['1080p']?.[j]||'—';
+          const v2 = fpsData['1440p']?.[j]||'—';
+          const v4 = fpsData['4K']?.[j]||'—';
+          const col = parseInt(v1)>=144?'var(--success-light)':parseInt(v1)>=60?'var(--warning-light)':'var(--danger-light)';
+          return `<tr style="border-bottom:0.5px solid var(--border)"><td style="padding:3px 6px">${jeuxLabels[i]}</td><td style="padding:3px 6px;text-align:center;color:${col};font-weight:500">${v1}</td><td style="padding:3px 6px;text-align:center">${v2}</td><td style="padding:3px 6px;text-align:center;color:var(--text2)">${v4}</td></tr>`;
+        }).join('');
+        fpsHtml = `<div style="margin-top:10px"><div style="font-size:11px;font-weight:500;margin-bottom:6px">🎮 FPS estimés (Ultra/High)</div><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--surface2)"><th style="padding:4px 6px;text-align:left">Jeu</th><th style="padding:4px 6px;text-align:center">1080p</th><th style="padding:4px 6px;text-align:center">1440p</th><th style="padding:4px 6px;text-align:center">4K</th></tr></thead><tbody>${rows}</tbody></table><div style="font-size:9px;color:var(--text2);margin-top:4px">${fpsData.note||''}</div></div>`;
+      }
+      document.getElementById('ia-seo-fr').innerHTML =
+        `<strong>Meta :</strong> ${result.fr.meta_description || ''}` +
+        (result.fr.tags_seo?.length ? `<br><strong>Tags :</strong> ${result.fr.tags_seo.join(' · ')}` : '') +
+        fpsHtml;
         `<strong>Meta :</strong> ${result.fr.meta_description || ''}` +
         (result.fr.tags_seo?.length ? `<br><strong>Tags :</strong> ${result.fr.tags_seo.join(' · ')}` : '');
       document.getElementById('ia-result-fr').style.display = 'block';
