@@ -818,6 +818,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div><div class="page-title">🖥️ Configurateur PC</div><div class="page-sub">Composez une configuration · Calcul prix et marge · Génération devis</div></div>
           <div class="toolbar">
             <div class="search-bar">🔍 <input type="text" id="cfg-search" placeholder="Nom config, client..." oninput="loadConfigurateur()"></div>
+            <button class="btn btn-ghost btn-sm" id="cfg-btn-devis-groupe" onclick="genererDevisGroupe()" style="display:none">📄 Devis groupé (<span id="cfg-selection-count">0</span>)</button>
             <button class="btn btn-primary" onclick="openCfgModal()">＋ Nouvelle configuration</button>
           </div>
         </div>
@@ -825,6 +826,7 @@ textarea.form-control{resize:vertical;min-height:80px}
         <div class="card">
           <div class="table-wrap"><table>
             <thead><tr>
+              <th style="width:36px"><input type="checkbox" id="cfg-check-all" onchange="toggleAllCfgCheck(this)"></th>
               <th>Nom</th><th>Client</th><th>Profil</th><th>Composants</th>
               <th>Prix achat HT</th><th>PV1 TTC</th><th>Marge PV1</th><th>Statut</th><th>Actions</th>
             </tr></thead>
@@ -12216,6 +12218,7 @@ async function loadConfigurateur() {
       const marge  = pv1ttc > 0 ? pv1ttc - achat*(1+tva/100) : 0;
       const margePct = pv1ttc > 0 && achat > 0 ? Math.round(marge/pv1ttc*100) : 0;
       return `<tr>
+        <td><input type="checkbox" class="cfg-row-check" value="${c.id}" data-nom="${esc(c.nom)}" data-pv1="${c.prix_vente1_total||0}" data-pv2="${c.prix_vente2_total||0}" data-pv3="${c.prix_vente3_total||0}" data-tva="${c.tva||19}" data-achat="${c.prix_achat_total||0}" onchange="onCfgCheckChange()"></td>
         <td><strong>${esc(c.nom)}</strong></td>
         <td style="font-size:12px;color:var(--text2)">${clientName(c.client_id)}</td>
         <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${esc(c.profil||'Bureau')}</span></td>
@@ -12324,6 +12327,80 @@ function renderCfgRows() {
   recalcConfig();
 }
 
+
+
+// ─── DEVIS GROUPÉ MULTI-CONFIGURATIONS ───────────────────────────────────────
+
+function onCfgCheckChange() {
+  const checked = document.querySelectorAll('.cfg-row-check:checked');
+  const btn     = document.getElementById('cfg-btn-devis-groupe');
+  const count   = document.getElementById('cfg-selection-count');
+  if (btn) btn.style.display = checked.length >= 2 ? 'inline-flex' : 'none';
+  if (count) count.textContent = checked.length;
+}
+
+function toggleAllCfgCheck(master) {
+  document.querySelectorAll('.cfg-row-check').forEach(cb => cb.checked = master.checked);
+  onCfgCheckChange();
+}
+
+async function genererDevisGroupe() {
+  const checked = Array.from(document.querySelectorAll('.cfg-row-check:checked'));
+  if (checked.length < 2) { toast('Sélectionne au moins 2 configurations','error'); return; }
+
+  // Demander le PV pour chaque config
+  const lignes = [];
+  for (const cb of checked) {
+    const nom  = cb.dataset.nom;
+    const pv1  = parseFloat(cb.dataset.pv1)||0;
+    const pv2  = parseFloat(cb.dataset.pv2)||0;
+    const pv3  = parseFloat(cb.dataset.pv3)||0;
+    const tva  = parseInt(cb.dataset.tva)||19;
+
+    const pvOptions = [];
+    if (pv1 > 0) pvOptions.push(`1. PV1 Standard : ${fmtMoney(pv1)} DT TTC`);
+    if (pv2 > 0) pvOptions.push(`2. PV2 Revendeur : ${fmtMoney(pv2)} DT TTC`);
+    if (pv3 > 0) pvOptions.push(`3. PV3 Promo/Lot : ${fmtMoney(pv3)} DT TTC`);
+
+    let pvTtc = pv1;
+    if (pvOptions.length > 1) {
+      const choix = prompt(`Config : ${nom}\n\n${pvOptions.join('\n')}\n\nEntrez 1, 2 ou 3 :`);
+      if (!choix) return;
+      if (choix === '2' && pv2 > 0) pvTtc = pv2;
+      else if (choix === '3' && pv3 > 0) pvTtc = pv3;
+      else pvTtc = pv1;
+    }
+
+    if (!pvTtc) { toast(`Aucun prix défini pour : ${nom}`,'error'); return; }
+
+    const pvHt = Math.round(pvTtc / (1 + tva/100) * 1000) / 1000;
+    lignes.push({ designation: `Configuration PC — ${nom}`, qte: 1, pu_ht: pvHt, remise: 0, tva });
+  }
+
+  const totalTTC = lignes.reduce((s,l) => s + l.pu_ht * (1 + l.tva/100), 0);
+  const numDevis = await genNumDevis();
+
+  const body = {
+    numero:        numDevis,
+    date_emission: new Date().toISOString().split('T')[0],
+    date_validite: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
+    statut:        'Brouillon',
+    agence:        SESSION?.agences?.[0]||'Charguia',
+    commercial:    SESSION?.name||'',
+    notes:         `Devis groupé — ${lignes.length} configuration(s) PC`,
+    remise_globale:0,
+    montant_ttc:   Math.round(totalTTC * 1000) / 1000,
+    lignes:        JSON.stringify(lignes),
+  };
+
+  try {
+    await sbPost('devis', body);
+    toast(`Devis ${numDevis} créé — ${lignes.length} configs — ${fmtMoney(totalTTC)} DT TTC ✓`, 'success');
+    // Décocher tout
+    document.querySelectorAll('.cfg-row-check').forEach(cb => cb.checked = false);
+    onCfgCheckChange();
+  } catch(e) { toast(e.message,'error'); }
+}
 
 // ─── CALCUL BOTTLENECK LOCAL ─────────────────────────────────────────────────
 function calcBottleneckLocal() {
