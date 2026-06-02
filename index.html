@@ -11219,7 +11219,7 @@ ${ctx ? 'Données temps réel: '+ctx : ''}
 Tu réponds en français, de manière concise et professionnelle. Tu connais le Manuel des Procédures AllTEC 2026 (SAV §4.3, Commercial §2.4, Logistique §3.6, RH §6, Maintenance §10, Finances §5, KPIs §9.1).
 Tes réponses sont courtes (max 150 mots), directes et utiles. Tu peux utiliser des emojis avec parcimonie.`;
 
-    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/smooth-action', {
+    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/claude-proxy', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
@@ -12828,7 +12828,7 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
 }`;
 
   try {
-    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/smooth-action', {
+    const response = await fetch('https://amojtdnqkvmypjdoitsx.supabase.co/functions/v1/claude-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SB_KEY}` },
       body: JSON.stringify({
@@ -12924,23 +12924,26 @@ function copyIAContent(lang) {
     const tags  = Array.from(document.getElementById('ia-seo-fr')?.querySelectorAll?.('strong')||[]).find(e=>e.textContent==='Tags :')?.nextSibling?.textContent || '';
     // Récupérer les FPS depuis le DOM table
     const fpsTable = document.getElementById('ia-seo-fr')?.querySelector?.('table');
-    let fpsText = '';
+    let fpsHtmlCopy = '';
     if (fpsTable) {
       const rows = Array.from(fpsTable.querySelectorAll('tr'));
-      const col1 = 20, col2 = 8;
-      const sep = `+${'-'.repeat(col1)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+`;
-      fpsText = '\n🎮 FPS estimés (qualité Ultra/High)\n' + sep + '\n';
+      let trs = '';
       rows.forEach((row, i) => {
         const cells = Array.from(row.querySelectorAll('th,td'));
-        if (cells.length >= 4) {
-          const r = `| ${cells[0].textContent.trim().padEnd(col1-2)} | ${cells[1].textContent.trim().padEnd(col2-2)} | ${cells[2].textContent.trim().padEnd(col2-2)} | ${cells[3].textContent.trim().padEnd(col2-2)} |`;
-          fpsText += r + '\n';
-          if (i === 0) fpsText += sep + '\n';
+        if (cells.length < 4) return;
+        const v = cells.map(c => c.textContent.trim());
+        if (i === 0) {
+          trs += `<tr><th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:left;font-family:Arial,sans-serif">Jeu</th><th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center;font-family:Arial,sans-serif">1080p</th><th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center;font-family:Arial,sans-serif">1440p</th><th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center;font-family:Arial,sans-serif">4K</th></tr>`;
+        } else {
+          const fps = parseInt(v[1]);
+          const col = fps >= 144 ? '#16a34a' : fps >= 60 ? '#d97706' : '#dc2626';
+          const bg = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+          trs += `<tr style="background:${bg}"><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-family:Arial,sans-serif">${v[0]}</td><td style="padding:7px 14px;text-align:center;font-weight:700;color:${col};border-bottom:1px solid #e2e8f0;font-family:Arial,sans-serif">${v[1]}</td><td style="padding:7px 14px;text-align:center;border-bottom:1px solid #e2e8f0;font-family:Arial,sans-serif">${v[2]}</td><td style="padding:7px 14px;text-align:center;color:#94a3b8;border-bottom:1px solid #e2e8f0;font-family:Arial,sans-serif">${v[3]}</td></tr>`;
         }
       });
-      fpsText += sep;
+      fpsHtmlCopy = `\n<h3 style="font-family:Arial,sans-serif;color:#1e3a5f;margin:20px 0 10px">🎮 Performances Gaming estimées</h3>\n<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">${trs}</table>\n<p style="font-size:12px;color:#94a3b8;margin-top:6px;font-family:Arial,sans-serif">* Estimations basées sur benchmarks publics — varient selon les paramètres graphiques</p>`;
     }
-    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${fpsText}`;
+    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${fpsHtmlCopy}`;
   } else {
     const titre = document.getElementById('ia-titre-ar')?.textContent || '';
     const desc  = document.getElementById('ia-desc-ar')?.textContent || '';
