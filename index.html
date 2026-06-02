@@ -12897,14 +12897,50 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
   }
 }
 
+function buildFpsTable(fpsData) {
+  if (!fpsData) return '';
+  const jeux = ['CS2','Valorant','Fortnite','GTA_V','FIFA','Minecraft','LOL','COD_Warzone','Cyberpunk2077','RDR2'];
+  const jeuxLabels = ['CS2','Valorant','Fortnite','GTA V','FIFA','Minecraft','LoL','COD Warzone','Cyberpunk 2077','RDR2'];
+  const col1 = 20, col2 = 8;
+  const sep = `+${'-'.repeat(col1)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+`;
+  const header = `| ${'Jeu'.padEnd(col1-2)} | ${'1080p'.padEnd(col2-2)} | ${'1440p'.padEnd(col2-2)} | ${'4K'.padEnd(col2-2)} |`;
+  const rows = jeux.map((j,i) => {
+    const v1 = String(fpsData['1080p']?.[j]||'—').padEnd(col2-2);
+    const v2 = String(fpsData['1440p']?.[j]||'—').padEnd(col2-2);
+    const v4 = String(fpsData['4K']?.[j]||'—').padEnd(col2-2);
+    const label = jeuxLabels[i].padEnd(col1-2);
+    return `| ${label} | ${v1} | ${v2} | ${v4} |`;
+  });
+  return `\n🎮 FPS estimés (qualité Ultra/High)\n${sep}\n${header}\n${sep}\n${rows.join('\n')}\n${sep}\n${fpsData.note||''}`;
+}
+
 function copyIAContent(lang) {
   let text = '';
   if (lang === 'fr') {
     const titre = document.getElementById('ia-titre-fr')?.textContent || '';
     const desc  = document.getElementById('ia-desc-fr')?.textContent || '';
     const specs = document.getElementById('ia-specs-fr')?.textContent || '';
-    const seo   = document.getElementById('ia-seo-fr')?.innerText || '';
-    text = `${titre}\n\n${desc}\n\n${specs}\n\n${seo}`;
+    const meta  = document.getElementById('ia-seo-fr')?.querySelector?.('strong')?.nextSibling?.textContent || '';
+    const tags  = Array.from(document.getElementById('ia-seo-fr')?.querySelectorAll?.('strong')||[]).find(e=>e.textContent==='Tags :')?.nextSibling?.textContent || '';
+    // Récupérer les FPS depuis le DOM table
+    const fpsTable = document.getElementById('ia-seo-fr')?.querySelector?.('table');
+    let fpsText = '';
+    if (fpsTable) {
+      const rows = Array.from(fpsTable.querySelectorAll('tr'));
+      const col1 = 20, col2 = 8;
+      const sep = `+${'-'.repeat(col1)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+${'-'.repeat(col2)}+`;
+      fpsText = '\n🎮 FPS estimés (qualité Ultra/High)\n' + sep + '\n';
+      rows.forEach((row, i) => {
+        const cells = Array.from(row.querySelectorAll('th,td'));
+        if (cells.length >= 4) {
+          const r = `| ${cells[0].textContent.trim().padEnd(col1-2)} | ${cells[1].textContent.trim().padEnd(col2-2)} | ${cells[2].textContent.trim().padEnd(col2-2)} | ${cells[3].textContent.trim().padEnd(col2-2)} |`;
+          fpsText += r + '\n';
+          if (i === 0) fpsText += sep + '\n';
+        }
+      });
+      fpsText += sep;
+    }
+    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${fpsText}`;
   } else {
     const titre = document.getElementById('ia-titre-ar')?.textContent || '';
     const desc  = document.getElementById('ia-desc-ar')?.textContent || '';
