@@ -3577,6 +3577,9 @@ supabase functions deploy send-sms
         <div style="color:var(--text2);font-size:13px">Génération en cours...</div>
       </div>
 
+      <!-- Bottleneck -->
+      <div id="ia-bottleneck" style="display:none;background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px"></div>
+
       <!-- Résultat FR -->
       <div id="ia-result-fr" style="display:none;margin-bottom:16px">
         <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:8px">
@@ -12980,7 +12983,7 @@ function openCfgDescModal() {
   if (profilEl) profilEl.value = profil;
 
   // Reset résultats
-  ['ia-result-fr','ia-result-ar','ia-loading'].forEach(id => {
+  ['ia-result-fr','ia-result-ar','ia-loading','ia-bottleneck'].forEach(id => {
     const el = document.getElementById(id); if(el) el.style.display='none';
   });
   ['ia-btn-copy-fr','ia-btn-copy-ar'].forEach(id => {
@@ -13051,6 +13054,15 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
     "specs_resumees": "Liste courte des specs principales (5-6 lignes)",
     "meta_description": "Meta description SEO 155 caractères max",
     "tags_seo": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+    "bottleneck": {
+      "cpu_score": 0,
+      "gpu_score": 0,
+      "bottleneck_pct": 0,
+      "bottleneck_type": "CPU ou GPU",
+      "niveau": "Faible/Moyen/Élevé",
+      "explication": "Explication courte en français",
+      "recommandation": "Composant à upgrader si bottleneck > 15%"
+    },
     "fps": {
       "note": "Estimations benchmarks publics",
       "1080p": {"CS2":"?","Valorant":"?","Fortnite":"?","GTA_V":"?","FIFA":"?","Minecraft":"?","LOL":"?","COD_Warzone":"?","Cyberpunk2077":"?","RDR2":"?"},
@@ -13092,6 +13104,38 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
 
     // Afficher FR
     if (result.fr && langue !== 'ar') {
+      // Afficher le bottleneck
+      const bt = result.fr?.bottleneck;
+      if (bt) {
+        const btColor = bt.niveau === 'Faible' ? 'var(--success-light)' : bt.niveau === 'Moyen' ? 'var(--warning-light)' : 'var(--danger-light)';
+        const btType  = bt.bottleneck_type || '—';
+        const btEl = document.getElementById('ia-bottleneck');
+        if (btEl) {
+          btEl.style.display = 'block';
+          btEl.innerHTML = `
+            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚡ Analyse Bottleneck</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+                <div style="font-size:10px;color:var(--text2)">Score CPU</div>
+                <div style="font-size:18px;font-weight:600;color:var(--accent-light)">${bt.cpu_score}/100</div>
+              </div>
+              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+                <div style="font-size:10px;color:var(--text2)">Score GPU</div>
+                <div style="font-size:18px;font-weight:600;color:var(--accent-light)">${bt.gpu_score}/100</div>
+              </div>
+              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+                <div style="font-size:10px;color:var(--text2)">Bottleneck</div>
+                <div style="font-size:18px;font-weight:600;color:${btColor}">${bt.bottleneck_pct}%</div>
+              </div>
+            </div>
+            <div style="font-size:12px;margin-bottom:4px">
+              <span style="background:${btColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">${btType} — ${bt.niveau}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-top:6px">${bt.explication || ''}</div>
+            ${bt.recommandation ? `<div style="font-size:11px;color:var(--warning-light);margin-top:4px">💡 ${bt.recommandation}</div>` : ''}
+          `;
+        }
+      }
       document.getElementById('ia-titre-fr').textContent  = result.fr.titre || '';
       document.getElementById('ia-desc-fr').textContent   = result.fr.description || '';
       document.getElementById('ia-specs-fr').textContent  = result.fr.specs_resumees || '';
