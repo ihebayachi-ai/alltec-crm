@@ -805,7 +805,7 @@ textarea.form-control{resize:vertical;min-height:80px}
           <div class="table-wrap"><table>
             <thead><tr>
               <th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Marque</th>
-              <th>Prix achat HT</th><th>TVA</th><th>Stock</th><th>Actions</th>
+              <th>Prix achat HT</th><th>Score</th><th>TVA</th><th>Stock</th><th>Actions</th>
             </tr></thead>
             <tbody id="comp-tbody"></tbody>
           </table></div>
@@ -3647,6 +3647,10 @@ supabase functions deploy send-sms
               </select></div>
             <div class="form-group"><label class="form-label">Stock</label>
               <input class="form-control" type="number" id="cmp-stock" value="0" min="0"></div>
+          <div class="form-group"><label class="form-label">Score benchmark</label>
+              <input class="form-control" type="number" id="cmp-score" value="0" min="0" placeholder="Ex: 17500">
+              <div style="font-size:10px;color:var(--text2);margin-top:2px">Score PassMark — cpubenchmark.net / videocardbenchmark.net</div>
+          </div>
           </div>
           <div class="form-group">
             <label class="form-label">Agence</label>
@@ -3707,6 +3711,7 @@ supabase functions deploy send-sms
           <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Sélection des composants</div>
           <div id="cfg-composants-rows"></div>
           <div id="cfg-compat-alerts" style="margin-top:8px"></div>
+          <div id="cfg-bottleneck-local" style="display:none;margin-top:10px;background:var(--surface2);border-radius:8px;padding:12px 16px;font-size:12px"></div>
         </div>
 
         <!-- Récapitulatif prix -->
@@ -11821,6 +11826,7 @@ async function loadComposants() {
         <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface2)">${CFG_CAT_ICONS[c.categorie]||''} ${esc(c.categorie)}</span></td>
         <td style="font-size:12px;color:var(--text2)">${esc(c.marque||'—')}</td>
         <td style="font-weight:500">${fmtMoney(achat)} DT</td>
+        <td style="font-size:12px;font-weight:500;color:${(c.score||0)>0?'var(--accent-light)':'var(--text2)'}">${c.score||0}</td>
         <td style="font-size:12px">${c.tva||19}%</td>
         <td style="font-weight:500;color:${stockColor}">${c.stock||0}</td>
         <td>
@@ -11847,6 +11853,7 @@ async function openComposantModal(id=null) {
       document.getElementById('cmp-specs').value      = c.specs ? JSON.stringify(c.specs,null,2) : '';
       document.getElementById('cmp-tva').value        = c.tva||19;
       document.getElementById('cmp-stock').value      = c.stock||0;
+      document.getElementById('cmp-score').value      = c.score||0;
       document.getElementById('cmp-agence').value     = c.agence||'Charguia';
       document.getElementById('cmp-achat').value      = c.prix_achat_ht||0;
       document.getElementById('cmp-pv1').value        = c.prix_vente1_ht||0;
@@ -11878,6 +11885,7 @@ async function saveComposant() {
     stock:          parseInt(document.getElementById('cmp-stock').value)||0,
     agence:         document.getElementById('cmp-agence').value,
     prix_achat_ht:  parseFloat(document.getElementById('cmp-achat').value)||0,
+    score:          parseInt(document.getElementById('cmp-score')?.value)||0,
     prix_vente1_ht: parseFloat(document.getElementById('cmp-pv1').value)||0,
     prix_vente2_ht: parseFloat(document.getElementById('cmp-pv2').value)||0,
     prix_vente3_ht: parseFloat(document.getElementById('cmp-pv3').value)||0,
@@ -12090,6 +12098,7 @@ async function importComposants(input) {
         categorie:      catNorm,
         marque:         row['marque'] || row['Marque'] || null,
         prix_achat_ht:  parseFloat(row['prix_achat_ht'] || row['Prix achat HT'] || row['ACHAT'] || 0),
+        score:          parseInt(row['score'] || row['Score'] || row['SCORE'] || 0),
         prix_vente1_ht: parseFloat(row['prix_vente1_ht'] || row['PV1'] || row['Prix vente 1'] || 0),
         prix_vente2_ht: parseFloat(row['prix_vente2_ht'] || row['PV2'] || row['Prix vente 2'] || 0),
         prix_vente3_ht: parseFloat(row['prix_vente3_ht'] || row['PV3'] || row['Prix vente 3'] || 0),
@@ -12315,12 +12324,68 @@ function renderCfgRows() {
   recalcConfig();
 }
 
+
+// ─── CALCUL BOTTLENECK LOCAL ─────────────────────────────────────────────────
+function calcBottleneckLocal() {
+  const cpu = CFG_SELECTION['CPU'];
+  const gpu = CFG_SELECTION['GPU'];
+  const div = document.getElementById('cfg-bottleneck-local');
+  if (!div) return;
+
+  if (!cpu || !gpu) { div.style.display = 'none'; window._btLocal = null; return; }
+
+  const cpuScore = cpu.score || 0;
+  const gpuScore = gpu.score || 0;
+
+  if (!cpuScore || !gpuScore) {
+    div.style.display = 'block';
+    div.innerHTML = '<span style="color:var(--text2)">⚡ Bottleneck : scores manquants — ajoutez les scores dans le catalogue</span>';
+    window._btLocal = null;
+    return;
+  }
+
+  const maxScore = Math.max(cpuScore, gpuScore);
+  const btPct    = Math.round(Math.abs(cpuScore - gpuScore) / maxScore * 100);
+  const btType   = cpuScore < gpuScore ? 'CPU' : 'GPU';
+  const niveauLabel = btPct <= 10 ? 'Faible ✅' : btPct <= 20 ? 'Moyen ⚠️' : 'Élevé ❌';
+  const color    = btPct <= 10 ? 'var(--success-light)' : btPct <= 20 ? 'var(--warning-light)' : 'var(--danger-light)';
+  const fmtScore = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+
+  div.style.display = 'block';
+  div.innerHTML = `
+    <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚡ Analyse Bottleneck</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+      <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+        <div style="font-size:10px;color:var(--text2)">CPU PassMark</div>
+        <div style="font-size:16px;font-weight:600;color:var(--accent-light)">${fmtScore(cpuScore)}</div>
+      </div>
+      <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+        <div style="font-size:10px;color:var(--text2)">GPU PassMark</div>
+        <div style="font-size:16px;font-weight:600;color:var(--accent-light)">${fmtScore(gpuScore)}</div>
+      </div>
+      <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+        <div style="font-size:10px;color:var(--text2)">Bottleneck</div>
+        <div style="font-size:16px;font-weight:600;color:${color}">${btPct}%</div>
+      </div>
+      <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
+        <div style="font-size:10px;color:var(--text2)">Type</div>
+        <div style="font-size:13px;font-weight:600;color:${color}">${btType}</div>
+      </div>
+    </div>
+    <div style="font-size:11px"><span style="background:${color};color:#fff;padding:2px 8px;border-radius:4px">${btType} Bottleneck — ${niveauLabel}</span></div>
+    ${btPct > 15 ? `<div style="font-size:11px;color:var(--warning-light);margin-top:6px">💡 Upgrader le ${btType} pour réduire le bottleneck</div>` : ''}
+  `;
+
+  window._btLocal = { cpuScore, gpuScore, btPct, btType, niveau: niveauLabel.replace(/[✅⚠️❌]/g,'').trim() };
+}
+
 function onCfgSelectComp(cat, id) {
   if (!id) { delete CFG_SELECTION[cat]; }
   else { CFG_SELECTION[cat] = ALL_COMPOSANTS.find(c=>c.id===id); }
   // Reconstruire les listes si CPU ou Carte mère change (pour filtrage)
   if (cat === 'CPU' || cat === 'Carte mère' || cat === 'Refroidissement') renderCfgRows();
   else { recalcConfig(); renderCompatAlerts(); }
+  if (cat === 'CPU' || cat === 'GPU') calcBottleneckLocal();
 }
 
 function checkCompat(cat, comp) {
@@ -13054,15 +13119,7 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
     "specs_resumees": "Liste courte des specs principales (5-6 lignes)",
     "meta_description": "Meta description SEO 155 caractères max",
     "tags_seo": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-    "bottleneck": {
-      "cpu_score": 0,
-      "gpu_score": 0,
-      "bottleneck_pct": 0,
-      "bottleneck_type": "CPU ou GPU",
-      "niveau": "Faible/Moyen/Élevé",
-      "explication": "Explication courte en français",
-      "recommandation": "Composant à upgrader si bottleneck > 15%"
-    },
+
     "fps": {
       "note": "Estimations benchmarks publics",
       "1080p": {"CS2":"?","Valorant":"?","Fortnite":"?","GTA_V":"?","FIFA":"?","Minecraft":"?","LOL":"?","COD_Warzone":"?","Cyberpunk2077":"?","RDR2":"?"},
@@ -13104,38 +13161,6 @@ Génère une réponse JSON avec cette structure EXACTE (sans markdown, juste le 
 
     // Afficher FR
     if (result.fr && langue !== 'ar') {
-      // Afficher le bottleneck
-      const bt = result.fr?.bottleneck;
-      if (bt) {
-        const btColor = bt.niveau === 'Faible' ? 'var(--success-light)' : bt.niveau === 'Moyen' ? 'var(--warning-light)' : 'var(--danger-light)';
-        const btType  = bt.bottleneck_type || '—';
-        const btEl = document.getElementById('ia-bottleneck');
-        if (btEl) {
-          btEl.style.display = 'block';
-          btEl.innerHTML = `
-            <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⚡ Analyse Bottleneck</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
-                <div style="font-size:10px;color:var(--text2)">Score CPU</div>
-                <div style="font-size:18px;font-weight:600;color:var(--accent-light)">${bt.cpu_score}/100</div>
-              </div>
-              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
-                <div style="font-size:10px;color:var(--text2)">Score GPU</div>
-                <div style="font-size:18px;font-weight:600;color:var(--accent-light)">${bt.gpu_score}/100</div>
-              </div>
-              <div style="text-align:center;background:var(--bg);border-radius:6px;padding:8px">
-                <div style="font-size:10px;color:var(--text2)">Bottleneck</div>
-                <div style="font-size:18px;font-weight:600;color:${btColor}">${bt.bottleneck_pct}%</div>
-              </div>
-            </div>
-            <div style="font-size:12px;margin-bottom:4px">
-              <span style="background:${btColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">${btType} — ${bt.niveau}</span>
-            </div>
-            <div style="font-size:12px;color:var(--text2);margin-top:6px">${bt.explication || ''}</div>
-            ${bt.recommandation ? `<div style="font-size:11px;color:var(--warning-light);margin-top:4px">💡 ${bt.recommandation}</div>` : ''}
-          `;
-        }
-      }
       document.getElementById('ia-titre-fr').textContent  = result.fr.titre || '';
       document.getElementById('ia-desc-fr').textContent   = result.fr.description || '';
       document.getElementById('ia-specs-fr').textContent  = result.fr.specs_resumees || '';
@@ -13226,38 +13251,25 @@ function copyIAContent(lang) {
       });
       fpsHtmlCopy = `\n<h3 style="font-family:Arial,sans-serif;color:#1e3a5f;margin:20px 0 10px">🎮 Performances Gaming estimées</h3>\n<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">${trs}</table>\n<p style="font-size:12px;color:#94a3b8;margin-top:6px;font-family:Arial,sans-serif">* Estimations basées sur benchmarks publics — varient selon les paramètres graphiques</p>`;
     }
-    // Ajouter bottleneck — texte + HTML
-    const btEl = document.getElementById('ia-bottleneck');
+    // Bottleneck calculé localement
     let btTextPart = '';
     let btHtmlPart = '';
-    if (btEl && btEl.style.display !== 'none') {
-      // Récupérer les données depuis le DOM
-      const scores = Array.from(btEl.querySelectorAll('[style*="font-size:18px"]')).map(e => e.textContent.trim());
-      const niveau = btEl.querySelector('[style*="border-radius:4px"]')?.textContent?.trim() || '';
-      const expl   = btEl.querySelectorAll('[style*="color:var(--text2)"]')[0]?.textContent?.trim() || '';
-      const reco   = btEl.querySelectorAll('[style*="warning"]')[0]?.textContent?.trim() || '';
-
-      // Texte simple
-      btTextPart = `\n\n⚡ ANALYSE BOTTLENECK\n` +
-        `CPU : ${scores[0]||'—'} | GPU : ${scores[1]||'—'} | Bottleneck : ${scores[2]||'—'}\n` +
-        `${niveau}\n${expl}\n${reco ? '💡 '+reco : ''}`;
-
-      // HTML stylé
+    const btLocal = window._btLocal;
+    if (btLocal) {
+      btTextPart = `\n\n⚡ ANALYSE BOTTLENECK\nCPU : ${btLocal.cpuScore}/100 | GPU : ${btLocal.gpuScore}/100 | Bottleneck : ${btLocal.btPct}%\n${btLocal.btType} — ${btLocal.niveau}`;
       btHtmlPart = `\n<h3 style="font-family:Arial,sans-serif;color:#1e3a5f;margin:20px 0 10px">⚡ Analyse Bottleneck</h3>` +
-        `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden">` +
+        `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;border:1px solid #cbd5e1;overflow:hidden">` +
         `<tr><th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center">Score CPU</th>` +
         `<th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center">Score GPU</th>` +
         `<th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center">Bottleneck %</th>` +
         `<th style="background:#1e3a5f;color:#fff;padding:8px 14px;text-align:center">Niveau</th></tr>` +
         `<tr style="background:#f8fafc;text-align:center">` +
-        `<td style="padding:8px 14px;font-weight:700">${scores[0]||'—'}</td>` +
-        `<td style="padding:8px 14px;font-weight:700">${scores[1]||'—'}</td>` +
-        `<td style="padding:8px 14px;font-weight:700;color:#d97706">${scores[2]||'—'}</td>` +
-        `<td style="padding:8px 14px">${niveau}</td></tr></table>` +
-        `${expl ? `<p style="font-family:Arial,sans-serif;font-size:13px;color:#475569;margin-top:8px">${expl}</p>` : ''}` +
-        `${reco ? `<p style="font-family:Arial,sans-serif;font-size:12px;color:#d97706;margin-top:4px">💡 ${reco}</p>` : ''}`;
+        `<td style="padding:8px 14px;font-weight:700">${btLocal.cpuScore}/100</td>` +
+        `<td style="padding:8px 14px;font-weight:700">${btLocal.gpuScore}/100</td>` +
+        `<td style="padding:8px 14px;font-weight:700;color:#d97706">${btLocal.btPct}%</td>` +
+        `<td style="padding:8px 14px">${btLocal.niveau}</td></tr></table>`;
     }
-    text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${btTextPart}\n\n---HTML---\n${btHtmlPart}${fpsHtmlCopy}`;
+        text = `${titre}\n\n${desc}\n\n${specs}\n\nMeta : ${meta}\nTags : ${tags}${btTextPart}\n\n---HTML---\n${btHtmlPart}${fpsHtmlCopy}`;
   } else {
     const titre = document.getElementById('ia-titre-ar')?.textContent || '';
     const desc  = document.getElementById('ia-desc-ar')?.textContent || '';
