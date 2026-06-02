@@ -11888,9 +11888,6 @@ async function saveComposant() {
     agence:         document.getElementById('cmp-agence').value,
     prix_achat_ht:  parseFloat(document.getElementById('cmp-achat').value)||0,
     score:          parseInt(document.getElementById('cmp-score')?.value)||0,
-    prix_vente1_ht: parseFloat(document.getElementById('cmp-pv1').value)||0,
-    prix_vente2_ht: parseFloat(document.getElementById('cmp-pv2').value)||0,
-    prix_vente3_ht: parseFloat(document.getElementById('cmp-pv3').value)||0,
   };
   try {
     if (EDIT_CMP_ID) await sbPatch('composants', EDIT_CMP_ID, body);
