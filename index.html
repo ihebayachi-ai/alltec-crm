@@ -12682,14 +12682,12 @@ async function openCfgModal(id=null) {
   document.getElementById('cfg-btn-devis').style.display = id ? 'inline-flex' : 'none';
   const cfgBtnIA = document.getElementById('cfg-btn-ia'); if(cfgBtnIA) cfgBtnIA.style.display = id ? 'inline-flex' : 'none';
 
-  // Charger les composants si pas encore chargés
-  if (!ALL_COMPOSANTS.length) {
-    const data = await sb('composants', { order:'categorie.asc,designation.asc' });
-    ALL_COMPOSANTS = (data || []).map(c => ({
-      ...c,
-      specs: typeof c.specs === 'string' ? (() => { try { return JSON.parse(c.specs); } catch(e) { return {}; } })() : (c.specs || {})
-    }));
-  }
+  // Toujours charger TOUS les composants sans filtre pour le configurateur
+  const allData = await sb('composants', { order:'categorie.asc,designation.asc' });
+  ALL_COMPOSANTS = (allData || []).map(c => ({
+    ...c,
+    specs: typeof c.specs === 'string' ? (() => { try { return JSON.parse(c.specs); } catch(e) { return {}; } })() : (c.specs || {})
+  }));
   await fillClientSelect('cfg-client');
 
   if (id) {
