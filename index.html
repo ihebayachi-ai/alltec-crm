@@ -12348,14 +12348,38 @@ async function genererDevisGroupe() {
   const checked = Array.from(document.querySelectorAll('.cfg-row-check:checked'));
   if (checked.length < 2) { toast('Sélectionne au moins 2 configurations','error'); return; }
 
-  // Demander le PV pour chaque config
+  // Demander le client
+  let clientId = null;
+  const clients = await sb('clients', { order:'nom.asc' });
+  const clientOptions = clients.map((c,i) => `${i+1}. ${c.nom}`).join('\n');
+  const clientChoix = prompt(`Sélectionner le client :\n\n${clientOptions}\n\n0. Aucun client\n\nEntrez le numéro :`);
+  if (clientChoix === null) return;
+  const clientIdx = parseInt(clientChoix) - 1;
+  if (clientIdx >= 0 && clientIdx < clients.length) clientId = clients[clientIdx].id;
+
+  // Pour chaque config : charger les composants + choisir le PV
   const lignes = [];
+  const notesLines = [`Devis groupé — ${checked.length} configuration(s) PC\n`];
+
   for (const cb of checked) {
     const nom  = cb.dataset.nom;
     const pv1  = parseFloat(cb.dataset.pv1)||0;
     const pv2  = parseFloat(cb.dataset.pv2)||0;
     const pv3  = parseFloat(cb.dataset.pv3)||0;
     const tva  = parseInt(cb.dataset.tva)||19;
+    const id   = cb.value;
+
+    // Charger les composants depuis Supabase
+    let compsDetail = '';
+    try {
+      const [cfg] = await sb('configurations_pc', { filter:`id=eq.${id}` });
+      const comps = Array.isArray(cfg?.composants) ? cfg.composants :
+                    (typeof cfg?.composants === 'string' ? JSON.parse(cfg.composants||'[]') : []);
+      compsDetail = comps.map(c => {
+        const qte = c.categorie === 'RAM' ? (c.qte||1) : 1;
+        return `  • ${qte>1?qte+'× ':''}${c.designation}`;
+      }).join('\n');
+    } catch(e) { compsDetail = '  • Composants non disponibles'; }
 
     const pvOptions = [];
     if (pv1 > 0) pvOptions.push(`1. PV1 Standard : ${fmtMoney(pv1)} DT TTC`);
@@ -12375,6 +12399,7 @@ async function genererDevisGroupe() {
 
     const pvHt = Math.round(pvTtc / (1 + tva/100) * 1000) / 1000;
     lignes.push({ designation: `Configuration PC — ${nom}`, qte: 1, pu_ht: pvHt, remise: 0, tva });
+    notesLines.push(`▶ ${nom} — ${fmtMoney(pvTtc)} DT TTC\n${compsDetail}`);
   }
 
   const totalTTC = lignes.reduce((s,l) => s + l.pu_ht * (1 + l.tva/100), 0);
@@ -12382,12 +12407,13 @@ async function genererDevisGroupe() {
 
   const body = {
     numero:        numDevis,
+    client_id:     clientId,
     date_emission: new Date().toISOString().split('T')[0],
     date_validite: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
     statut:        'Brouillon',
     agence:        SESSION?.agences?.[0]||'Charguia',
     commercial:    SESSION?.name||'',
-    notes:         `Devis groupé — ${lignes.length} configuration(s) PC`,
+    notes:         notesLines.join('\n\n'),
     remise_globale:0,
     montant_ttc:   Math.round(totalTTC * 1000) / 1000,
     lignes:        JSON.stringify(lignes),
@@ -12396,7 +12422,6 @@ async function genererDevisGroupe() {
   try {
     await sbPost('devis', body);
     toast(`Devis ${numDevis} créé — ${lignes.length} configs — ${fmtMoney(totalTTC)} DT TTC ✓`, 'success');
-    // Décocher tout
     document.querySelectorAll('.cfg-row-check').forEach(cb => cb.checked = false);
     onCfgCheckChange();
   } catch(e) { toast(e.message,'error'); }
