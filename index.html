@@ -12348,6 +12348,17 @@ async function genererDevisGroupe() {
   const checked = Array.from(document.querySelectorAll('.cfg-row-check:checked'));
   if (checked.length < 2) { toast('Sélectionne au moins 2 configurations','error'); return; }
 
+  // Lire les configs cochées EN PREMIER (avant tout prompt)
+  const configsData = checked.map(cb => ({
+    id:   cb.value,
+    nom:  cb.dataset.nom,
+    pv1:  parseFloat(cb.dataset.pv1)||0,
+    pv2:  parseFloat(cb.dataset.pv2)||0,
+    pv3:  parseFloat(cb.dataset.pv3)||0,
+    tva:  parseInt(cb.dataset.tva)||19,
+    achat:parseFloat(cb.dataset.achat)||0,
+  }));
+
   // Demander le client
   let clientId = null;
   const clients = await sb('clients', { order:'nom.asc' });
@@ -12361,13 +12372,13 @@ async function genererDevisGroupe() {
   const lignes = [];
   const notesLines = [`Devis groupé — ${checked.length} configuration(s) PC\n`];
 
-  for (const cb of checked) {
-    const nom  = cb.dataset.nom;
-    const pv1  = parseFloat(cb.dataset.pv1)||0;
-    const pv2  = parseFloat(cb.dataset.pv2)||0;
-    const pv3  = parseFloat(cb.dataset.pv3)||0;
-    const tva  = parseInt(cb.dataset.tva)||19;
-    const id   = cb.value;
+  for (const cfg of configsData) {
+    const nom  = cfg.nom;
+    const pv1  = cfg.pv1;
+    const pv2  = cfg.pv2;
+    const pv3  = cfg.pv3;
+    const tva  = cfg.tva;
+    const id   = cfg.id;
 
     // Charger les composants depuis Supabase
     let compsDetail = '';
