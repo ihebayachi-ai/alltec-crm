@@ -1593,6 +1593,51 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+      <!-- ═══════════ RAPPORT ACTIVITÉ ═══════════ -->
+      <div class="page" id="page-rapportActivite">
+        <div class="page-header">
+          <div>
+            <div class="page-title">📈 Rapport Activité</div>
+            <div class="page-sub">Suivi & évaluation des commerciaux — classement par score</div>
+          </div>
+          <div class="toolbar">
+            <select class="form-control" id="ra-f-type" onchange="loadRapportActivite()" style="width:130px">
+              <option value="">Type : tous</option>
+              <option value="hebdo">Hebdomadaire</option>
+              <option value="mensuel">Mensuel</option>
+            </select>
+            <select class="form-control" id="ra-f-agence" onchange="loadRapportActivite()" style="width:130px">
+              <option value="">Toutes agences</option>
+              <option>Charguia</option><option>Kairouan</option><option>Sousse</option>
+            </select>
+            <select class="form-control" id="ra-f-mois" onchange="loadRapportActivite()" style="width:100px">
+              <option value="">Mois : tous</option>
+              <option value="1">Jan</option><option value="2">Fév</option><option value="3">Mar</option>
+              <option value="4">Avr</option><option value="5">Mai</option><option value="6">Juin</option>
+              <option value="7">Juil</option><option value="8">Août</option><option value="9">Sep</option>
+              <option value="10">Oct</option><option value="11">Nov</option><option value="12">Déc</option>
+            </select>
+            <input class="form-control" id="ra-f-annee" type="number" placeholder="Année" style="width:90px" oninput="loadRapportActivite()">
+            <button class="btn btn-primary" onclick="openRapportModal()">+ Nouveau rapport</button>
+          </div>
+        </div>
+        <div class="stats-grid" id="ra-stats"></div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr>
+            <th style="text-align:center">#</th>
+            <th>Commercial</th>
+            <th>Période</th>
+            <th style="text-align:right">CA réalisé</th>
+            <th style="text-align:right">% réal.</th>
+            <th style="text-align:center">Conv.</th>
+            <th style="text-align:center">Score</th>
+            <th>Statut / alertes</th>
+            <th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="ra-tbody"></tbody>
+        </table></div></div>
+      </div>
+
       <!-- ═══════════ ZONE QUARANTAINE ═══════════ -->
       <div class="page" id="page-quarantaine">
         <div class="page-header">
@@ -4256,6 +4301,85 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- ═══ MODAL RAPPORT ACTIVITÉ ═══ -->
+<div class="overlay" id="ra-modal-overlay"><div class="modal" style="max-width:820px">
+  <div class="card-header"><div class="card-title">📈 Rapport d'activité</div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Type</label>
+      <select class="form-control" id="ra-type" onchange="raToggleType()">
+        <option value="hebdo">Hebdomadaire</option><option value="mensuel">Mensuel</option>
+      </select></div>
+    <div><label class="page-sub">Commercial *</label><input class="form-control" id="ra-nom"></div>
+    <div><label class="page-sub">Agence</label>
+      <select class="form-control" id="ra-agence"><option>Charguia</option><option>Kairouan</option><option>Sousse</option></select></div>
+    <div class="ra-mensuel"><label class="page-sub">Profil</label>
+      <select class="form-control" id="ra-profil"><option>Junior</option><option>Confirmé</option><option>Senior</option></select></div>
+    <div><label class="page-sub">Année</label><input class="form-control" id="ra-annee" type="number"></div>
+    <div class="ra-mensuel"><label class="page-sub">Mois (1-12)</label><input class="form-control" id="ra-mois" type="number" min="1" max="12"></div>
+    <div class="ra-hebdo"><label class="page-sub">Semaine</label><input class="form-control" id="ra-semaine" type="number" min="1" max="53"></div>
+  </div>
+  <div class="card-title" style="margin:.4rem 0">Chiffres</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">CA réalisé</label><input class="form-control" id="ra-ca-realise" type="number" step="0.001"></div>
+    <div><label class="page-sub">Objectif CA *</label><input class="form-control" id="ra-ca-objectif" type="number" step="0.001"></div>
+    <div><label class="page-sub">Nb ventes</label><input class="form-control" id="ra-nb-ventes" type="number"></div>
+    <div><label class="page-sub">dont CA B2B</label><input class="form-control" id="ra-ca-b2b" type="number" step="0.001"></div>
+  </div>
+  <div class="card-title" style="margin:.4rem 0">Pipeline & acquisition</div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Devis envoyés</label><input class="form-control" id="ra-devis-env" type="number"></div>
+    <div><label class="page-sub">Devis transformés</label><input class="form-control" id="ra-devis-tr" type="number"></div>
+    <div><label class="page-sub">Appels/visites</label><input class="form-control" id="ra-appels" type="number"></div>
+    <div><label class="page-sub">Nouv. clients B2C</label><input class="form-control" id="ra-b2c" type="number"></div>
+    <div><label class="page-sub">Nouv. comptes B2B</label><input class="form-control" id="ra-b2b" type="number"></div>
+  </div>
+  <div class="card-title" style="margin:.4rem 0">Répartition CA par famille</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Gaming / PC Gamer</label><input class="form-control" id="ra-fam-gaming" type="number" step="0.001"></div>
+    <div><label class="page-sub">Vidéosurveillance</label><input class="form-control" id="ra-fam-surveillance" type="number" step="0.001"></div>
+    <div><label class="page-sub">Réseau & Sécurité</label><input class="form-control" id="ra-fam-reseau" type="number" step="0.001"></div>
+    <div><label class="page-sub">Composants / Info</label><input class="form-control" id="ra-fam-composants" type="number" step="0.001"></div>
+    <div><label class="page-sub">Accessoires & Tél.</label><input class="form-control" id="ra-fam-accessoires" type="number" step="0.001"></div>
+    <div><label class="page-sub">Autres</label><input class="form-control" id="ra-fam-autres" type="number" step="0.001"></div>
+  </div>
+  <div class="card-title" style="margin:.4rem 0">Observations terrain</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.6rem">
+    <div><label class="page-sub">Produits absents / ruptures</label><textarea class="form-control" id="ra-obs-absents" rows="2"></textarea></div>
+    <div><label class="page-sub">Réclamations clients</label><textarea class="form-control" id="ra-obs-reclam" rows="2"></textarea></div>
+    <div><label class="page-sub">Concurrence (prix, offres)</label><textarea class="form-control" id="ra-obs-concur" rows="2"></textarea></div>
+  </div>
+  <div style="margin-bottom:.8rem"><label class="page-sub">Engagements semaine prochaine (1 par ligne)</label>
+    <textarea class="form-control" id="ra-engagements" rows="2"></textarea></div>
+  <div class="ra-mensuel">
+    <div class="card-title" style="margin:.4rem 0">Rémunération (mensuel)</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+      <div><label class="page-sub">Fixe</label><input class="form-control" id="ra-rem-fixe" type="number" step="0.001"></div>
+      <div><label class="page-sub">Commission</label><input class="form-control" id="ra-rem-commission" type="number" step="0.001"></div>
+      <div><label class="page-sub">Prime présence</label><input class="form-control" id="ra-rem-presence" type="number" step="0.001"></div>
+      <div><label class="page-sub">Primes spéciales</label><input class="form-control" id="ra-rem-speciales" type="number" step="0.001"></div>
+    </div>
+    <div class="card-title" style="margin:.4rem 0">Bilan qualitatif & plan d'action</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+      <div><label class="page-sub">Ce qui a bien fonctionné</label><textarea class="form-control" id="ra-bien" rows="2"></textarea></div>
+      <div><label class="page-sub">À améliorer</label><textarea class="form-control" id="ra-ameliorer" rows="2"></textarea></div>
+    </div>
+    <div style="margin-bottom:.8rem"><label class="page-sub">Plan d'action — format : action | échéance | résultat (1 par ligne)</label>
+      <textarea class="form-control" id="ra-plan" rows="3"></textarea></div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:.5rem">
+    <button class="btn btn-ghost" onclick="closeModal('ra-modal-overlay')">Annuler</button>
+    <button class="btn btn-primary" onclick="saveRapport()">💾 Enregistrer</button>
+  </div>
+</div></div>
+
+<!-- ═══ FICHE COMMERCIALE (drill-down) ═══ -->
+<div class="overlay" id="ra-fiche-overlay"><div class="modal" style="max-width:760px">
+  <div id="ra-fiche-body"></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+    <button class="btn btn-ghost" onclick="closeModal('ra-fiche-overlay')">Fermer</button>
+  </div>
+</div></div>
+
 <!-- ══════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════ -->
@@ -4306,6 +4430,7 @@ const MODULES = [
   { id:'quarantaine', name:'Quarantaine', icon:'🚧', desc:'Zone E — Gestion quarantaine stock' },
   { id:'rh', name:'Ressources Humaines', icon:'👤', desc:'Employés, paie, congés, sanctions' },
   { id:'sms', name:'SMS', icon:'📱', desc:'Notifications SMS automatiques' },
+  { id:'rapportActivite', name:'Rapport Activité', icon:'📈', desc:'Suivi & évaluation des commerciaux' },
 ];
 
 function mergeRolePerms(roleStr) {
@@ -4321,10 +4446,10 @@ function mergeRolePerms(roleStr) {
 }
 
 const ROLE_PRESETS = {
-  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw' },
-  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r' },
-  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r' },
-  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r' },
+  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw', rapportActivite:'rw' },
+  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'' },
+  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'rw' },
+  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r', rapportActivite:'' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4461,6 +4586,7 @@ function buildSidebar() {
       { id:'commandes', icon:'📦', name:'Commandes', perm:'commandes' },
       { id:'sav', icon:'🔧', name:'SAV', perm:'sav' },
       { id:'commercial', icon:'🎯', name:'Pipeline', perm:'commercial' },
+      { id:'rapportActivite', icon:'📈', name:'Rapport Activité', perm:'rapportActivite' },
     ]},
     { title: 'Logistique & Sécurité', items: [
       { id:'quarantaine', icon:'🚧', name:'Zone Quarantaine', perm:'quarantaine' },
@@ -4532,6 +4658,7 @@ function showPage(id) {
     descIA: () => { document.getElementById('desc-ia-standalone').style.display='block'; },
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
+    rapportActivite: loadRapportActivite,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
   };
   if (loaders[id]) loaders[id]();
@@ -11001,6 +11128,304 @@ async function deleteMaint(id) {
   try { await sbDelete('registre_maintenance', id); toast('Supprimé'); loadMaintenance(); }
   catch(e) { toast('Erreur: '+e.message,'error'); }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RAPPORT ACTIVITÉ — Suivi & évaluation des commerciaux
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* ============================================================
+   MODULE : RAPPORT D'ACTIVITÉ COMMERCIAL
+   id module : rapportActivite   |   table : rapports_activite   |   perm : rapportActivite
+   Suivi & évaluation par commercial — vision direction
+   Dépend des helpers existants : sb, sbPost, sbPatch, esc, fmtMoney,
+   toast, openModal, closeModal, canWrite, SESSION, loadingRow,
+   emptyRow, errorRow, deleteRecord
+   ============================================================ */
+
+/* ---------- Paramètres métier (ajustables) ---------- */
+const RA_FAMILLES = [
+  { key:'gaming',       label:'Gaming / PC Gamer' },
+  { key:'surveillance', label:'Vidéosurveillance' },
+  { key:'reseau',       label:'Réseau & Sécurité' },
+  { key:'composants',   label:'Composants / Info' },
+  { key:'accessoires',  label:'Accessoires & Tél.' },
+  { key:'autres',       label:'Autres' },
+];
+
+// Cibles de référence servant à normaliser le scoring (modifiables)
+const RA_TARGETS = {
+  convCible: 40,      // % conversion devis->commande = note pleine
+  b2bCible: 3,        // nouveaux comptes B2B / période = note pleine
+  devisCible: 15,     // devis envoyés / période = note pleine (effort)
+  partB2BCible: 50,   // % de CA B2B visé
+};
+
+// Pondération du score global /100 (somme = 100)
+const RA_SCORE_WEIGHTS = {
+  realisation: 40, conversion: 20, acquisition: 15,
+  valeur: 10, activite: 10, ponctualite: 5,
+};
+
+const RA_ZONES = [
+  { min:110, label:'Dépassement',      color:'var(--purple-light)',  bg:'var(--purple)'  },
+  { min:90,  label:'Objectif atteint', color:'var(--success-light)', bg:'var(--success)' },
+  { min:70,  label:'À améliorer',      color:'var(--warning-light)', bg:'var(--warning)' },
+  { min:0,   label:'Insuffisant',      color:'var(--danger-light)',  bg:'var(--danger)'  },
+];
+
+let RA_CACHE = [];
+let RA_EDIT_ID = null;
+
+/* ---------- Petit chip auto-stylé (pas de dépendance CSS) ---------- */
+function raChip(text, color, bg){
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;background:${bg};color:${color};border:1px solid ${color}55">${esc(text)}</span>`;
+}
+
+/* ---------- Calculs KPI ---------- */
+function raNum(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function raPct(r){ return raNum(r.ca_objectif) > 0 ? (raNum(r.ca_realise) / raNum(r.ca_objectif)) * 100 : 0; }
+function raEcart(r){ return raNum(r.ca_realise) - raNum(r.ca_objectif); }
+function raConv(r){ return raNum(r.nb_devis_envoyes) > 0 ? (raNum(r.nb_devis_transformes) / raNum(r.nb_devis_envoyes)) * 100 : 0; }
+function raPanier(r){
+  if (raNum(r.panier_moyen) > 0) return raNum(r.panier_moyen);
+  return raNum(r.nb_ventes) > 0 ? raNum(r.ca_realise) / raNum(r.nb_ventes) : 0;
+}
+function raPartB2B(r){ return raNum(r.ca_realise) > 0 ? (raNum(r.ca_b2b) / raNum(r.ca_realise)) * 100 : 0; }
+function raZone(pct){ for (const z of RA_ZONES){ if (pct >= z.min) return z; } return RA_ZONES[RA_ZONES.length-1]; }
+
+// Score global /100 — la "note" d'évaluation
+function raScore(r){
+  const w = RA_SCORE_WEIGHTS, t = RA_TARGETS;
+  const cap = (x, max) => Math.min(x, max) / max;
+  const sReal = cap(raPct(r), 120) * w.realisation;
+  const sConv = cap(raConv(r), t.convCible) * w.conversion;
+  const sAcq  = cap(raNum(r.nb_nouveaux_b2b), t.b2bCible) * w.acquisition;
+  const sVal  = cap(raPartB2B(r), t.partB2BCible) * w.valeur;
+  const sAct  = cap(raNum(r.nb_devis_envoyes), t.devisCible) * w.activite;
+  const sPonc = (r.statut === 'Validé') ? w.ponctualite : (r.statut === 'Soumis' ? w.ponctualite*0.5 : 0);
+  return Math.round(sReal + sConv + sAcq + sVal + sAct + sPonc);
+}
+function raNote20(r){ return (raScore(r) / 5).toFixed(1); }
+
+function raAlerts(r){
+  const a = [];
+  if (raPct(r) < 70) a.push({ t:'CA < 70%', c:'var(--danger-light)' });
+  if (raNum(r.nb_devis_envoyes) >= 3 && raConv(r) < 25) a.push({ t:'Conversion faible', c:'var(--warning-light)' });
+  if (r.type === 'mensuel' && raNum(r.nb_nouveaux_b2b) === 0) a.push({ t:'0 nouveau B2B', c:'var(--warning-light)' });
+  return a;
+}
+
+/* ---------- Chargement & rendu (vue équipe / direction) ---------- */
+async function loadRapportActivite(){
+  const tb = document.getElementById('ra-tbody');
+  if (tb) tb.innerHTML = loadingRow(9);
+  const conds = [];
+  const fType  = document.getElementById('ra-f-type')?.value || '';
+  const fAg    = document.getElementById('ra-f-agence')?.value || '';
+  const fMois  = document.getElementById('ra-f-mois')?.value || '';
+  const fAnnee = document.getElementById('ra-f-annee')?.value || '';
+  if (fType)  conds.push('type=eq.' + fType);
+  if (fAg)    conds.push('agence=eq.' + encodeURIComponent(fAg));
+  if (fMois)  conds.push('mois=eq.' + fMois);
+  if (fAnnee) conds.push('annee=eq.' + fAnnee);
+  try {
+    const rows = await sb('rapports_activite', { order:'created_at.desc', filter: conds.join('&') });
+    RA_CACHE = rows || [];
+    raRenderStats(RA_CACHE);
+    raRenderTable(RA_CACHE);
+  } catch(e){ if (tb) tb.innerHTML = errorRow(9, e.message); }
+}
+
+function raRenderStats(rows){
+  const host = document.getElementById('ra-stats');
+  if (!host) return;
+  const n = rows.length;
+  const caTotal  = rows.reduce((s,r)=> s + raNum(r.ca_realise), 0);
+  const objTotal = rows.reduce((s,r)=> s + raNum(r.ca_objectif), 0);
+  const pctMoy   = objTotal > 0 ? (caTotal/objTotal)*100 : 0;
+  let best = null;
+  rows.forEach(r => { if (!best || raScore(r) > raScore(best)) best = r; });
+  const aValider = rows.filter(r => r.statut !== 'Validé').length;
+  host.innerHTML = `
+    <div class="card"><div class="card-title">Rapports (période)</div><div style="font-size:1.6rem;font-weight:700">${n}</div></div>
+    <div class="card"><div class="card-title">CA équipe</div><div style="font-size:1.4rem;font-weight:700">${fmtMoney(caTotal)}</div></div>
+    <div class="card"><div class="card-title">% réalisation moyen</div><div style="font-size:1.6rem;font-weight:700;color:${raZone(pctMoy).color}">${pctMoy.toFixed(0)}%</div></div>
+    <div class="card"><div class="card-title">Meilleur vendeur</div><div style="font-size:1.05rem;font-weight:700">${best ? esc(best.commercial_nom||'—') : '—'}</div><div class="page-sub">${best ? 'Score '+raScore(best)+'/100' : ''}</div></div>
+    <div class="card"><div class="card-title">À valider</div><div style="font-size:1.6rem;font-weight:700;color:${aValider?'var(--warning-light)':'var(--success-light)'}">${aValider}</div></div>`;
+}
+
+function raRenderTable(rows){
+  const tb = document.getElementById('ra-tbody');
+  if (!tb) return;
+  if (!rows.length){ tb.innerHTML = emptyRow(9, 'Aucun rapport sur cette période'); return; }
+  const sorted = rows.slice().sort((a,b)=> raScore(b) - raScore(a));
+  tb.innerHTML = sorted.map((r, i) => {
+    const pct = raPct(r), z = raZone(pct);
+    const chips = [ raChip(z.label, z.color, z.bg) ]
+      .concat(raAlerts(r).map(a => raChip(a.t, a.c, 'transparent'))).join(' ');
+    const period = r.type === 'mensuel'
+      ? `Mois ${esc(String(r.mois||''))}/${esc(String(r.annee||''))}`
+      : `Sem. ${esc(String(r.semaine||''))} ${esc(String(r.annee||''))}`;
+    const w = canWrite('rapportActivite');
+    return `<tr>
+      <td style="text-align:center;font-weight:700;color:var(--text2)">${i+1}</td>
+      <td><strong>${esc(r.commercial_nom||'—')}</strong><div class="page-sub">${esc(r.agence||'')} · ${esc(r.type||'')}</div></td>
+      <td>${period}</td>
+      <td style="text-align:right">${fmtMoney(raNum(r.ca_realise))}</td>
+      <td style="text-align:right;color:${z.color};font-weight:700">${pct.toFixed(0)}%</td>
+      <td style="text-align:center">${raConv(r).toFixed(0)}%</td>
+      <td style="text-align:center;font-weight:700">${raScore(r)}<span class="page-sub">/100</span></td>
+      <td>${chips}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-sm btn-ghost" onclick="raViewFiche('${esc(r.commercial_nom||'')}')">Fiche</button>
+        ${w ? `<button class="btn btn-sm btn-ghost" onclick="openRapportModal('${r.id}')">✏️</button>` : ''}
+        ${w && r.statut!=='Validé' ? `<button class="btn btn-sm btn-primary" onclick="raValidate('${r.id}')">Valider</button>` : ''}
+        ${w ? `<button class="btn btn-sm btn-ghost" onclick="deleteRecord('rapports_activite','${r.id}',loadRapportActivite)">🗑️</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- Fiche individuelle (drill-down commercial) ---------- */
+function raViewFiche(nom){
+  const rows = RA_CACHE.filter(r => (r.commercial_nom||'') === nom);
+  const host = document.getElementById('ra-fiche-body');
+  if (!host) return;
+  if (!rows.length){ host.innerHTML = '<p>Aucune donnée.</p>'; openModal('ra-fiche-overlay'); return; }
+  const last = rows[0];
+  const avgScore = Math.round(rows.reduce((s,r)=> s+raScore(r),0)/rows.length);
+  const caCumul  = rows.reduce((s,r)=> s+raNum(r.ca_realise),0);
+  const z = raZone(raPct(last));
+  const fam = (typeof last.familles === 'string') ? JSON.parse(last.familles||'{}') : (last.familles||{});
+  const famMax = Math.max(1, ...RA_FAMILLES.map(f => raNum(fam[f.key])));
+  const famBars = RA_FAMILLES.map(f => {
+    const v = raNum(fam[f.key]);
+    return `<div style="margin:.35rem 0">
+      <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${f.label}</span><span>${fmtMoney(v)}</span></div>
+      <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${(v/famMax)*100}%;background:var(--accent)"></div></div></div>`;
+  }).join('');
+  const histo = rows.slice(0,8).map(r => {
+    const p = raPct(r);
+    return `<div style="display:flex;align-items:center;gap:.5rem;margin:.25rem 0;font-size:.82rem">
+      <span style="width:90px;color:var(--text2)">${r.type==='mensuel'?('M'+(r.mois||'')):('S'+(r.semaine||''))}/${r.annee||''}</span>
+      <div style="flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden"><div style="height:100%;width:${Math.min(p,120)/1.2}%;background:${raZone(p).bg}"></div></div>
+      <span style="width:48px;text-align:right;color:${raZone(p).color}">${p.toFixed(0)}%</span>
+      <span style="width:64px;text-align:right">Score ${raScore(r)}</span></div>`;
+  }).join('');
+  host.innerHTML = `
+    <div class="page-header"><div>
+      <div class="page-title">${esc(nom)}</div>
+      <div class="page-sub">${esc(last.agence||'')} · ${esc(last.profil||'')} · ${rows.length} rapport(s)</div>
+    </div>${raChip(z.label, z.color, z.bg)}</div>
+    <div class="stats-grid" style="margin:1rem 0">
+      <div class="card"><div class="card-title">Score moyen</div><div style="font-size:1.5rem;font-weight:700">${avgScore}/100</div></div>
+      <div class="card"><div class="card-title">% réal. (dernier)</div><div style="font-size:1.5rem;font-weight:700;color:${z.color}">${raPct(last).toFixed(0)}%</div></div>
+      <div class="card"><div class="card-title">CA cumulé</div><div style="font-size:1.25rem;font-weight:700">${fmtMoney(caCumul)}</div></div>
+      <div class="card"><div class="card-title">Conversion</div><div style="font-size:1.5rem;font-weight:700">${raConv(last).toFixed(0)}%</div></div>
+      <div class="card"><div class="card-title">Panier moyen</div><div style="font-size:1.25rem;font-weight:700">${fmtMoney(raPanier(last))}</div></div>
+      <div class="card"><div class="card-title">Part B2B</div><div style="font-size:1.5rem;font-weight:700">${raPartB2B(last).toFixed(0)}%</div></div>
+    </div>
+    <div class="card"><div class="card-title">Mix par famille (dernier rapport)</div>${famBars}</div>
+    <div class="card" style="margin-top:1rem"><div class="card-title">Évolution % réalisation & score</div>${histo}</div>`;
+  openModal('ra-fiche-overlay');
+}
+
+/* ---------- Création / édition ---------- */
+function raJSON(v, fallback){ try { return (typeof v==='string') ? (JSON.parse(v||'null')||fallback) : (v||fallback); } catch(e){ return fallback; } }
+
+function openRapportModal(id){
+  RA_EDIT_ID = id || null;
+  const g = sel => document.getElementById(sel);
+  const r = id ? RA_CACHE.find(x => x.id === id) : null;
+  const set = (sel, val) => { const el = g(sel); if (el) el.value = (val ?? ''); };
+  set('ra-type', r?.type || 'hebdo');
+  set('ra-nom', r?.commercial_nom);
+  set('ra-agence', r?.agence || 'Charguia');
+  set('ra-profil', r?.profil || 'Junior');
+  set('ra-annee', r?.annee || new Date().getFullYear());
+  set('ra-mois', r?.mois || (new Date().getMonth()+1));
+  set('ra-semaine', r?.semaine);
+  set('ra-ca-realise', r?.ca_realise);
+  set('ra-ca-objectif', r?.ca_objectif);
+  set('ra-nb-ventes', r?.nb_ventes);
+  set('ra-ca-b2b', r?.ca_b2b);
+  set('ra-b2c', r?.nb_nouveaux_b2c);
+  set('ra-b2b', r?.nb_nouveaux_b2b);
+  set('ra-devis-env', r?.nb_devis_envoyes);
+  set('ra-devis-tr', r?.nb_devis_transformes);
+  set('ra-appels', r?.nb_appels);
+  const fam = raJSON(r?.familles, {});
+  RA_FAMILLES.forEach(f => set('ra-fam-'+f.key, fam[f.key]));
+  set('ra-obs-absents', r?.obs_produits_absents);
+  set('ra-obs-reclam', r?.obs_reclamations);
+  set('ra-obs-concur', r?.obs_concurrence);
+  set('ra-engagements', (raJSON(r?.engagements, [])||[]).join('\n'));
+  set('ra-rem-commission', r?.rem_commission);
+  set('ra-rem-presence', r?.rem_prime_presence);
+  set('ra-rem-speciales', r?.rem_primes_speciales);
+  set('ra-rem-fixe', r?.rem_fixe);
+  set('ra-bien', r?.bien_fonctionne);
+  set('ra-ameliorer', r?.a_ameliorer);
+  set('ra-plan', (raJSON(r?.plan_action, [])||[]).map(p=> `${p.action||''} | ${p.echeance||''} | ${p.resultat||''}`).join('\n'));
+  raToggleType();
+  openModal('ra-modal-overlay');
+}
+
+function raToggleType(){
+  const t = document.getElementById('ra-type')?.value;
+  document.querySelectorAll('.ra-mensuel').forEach(el => el.style.display = (t==='mensuel') ? '' : 'none');
+  document.querySelectorAll('.ra-hebdo').forEach(el => el.style.display = (t==='hebdo') ? '' : 'none');
+}
+
+function raCollect(){
+  const v = sel => { const el = document.getElementById(sel); return el ? el.value.trim() : ''; };
+  const num = sel => raNum(v(sel));
+  const fam = {};
+  RA_FAMILLES.forEach(f => { fam[f.key] = num('ra-fam-'+f.key); });
+  const engagements = v('ra-engagements').split('\n').map(s=>s.trim()).filter(Boolean);
+  const plan = v('ra-plan').split('\n').map(s=>s.trim()).filter(Boolean).map(line => {
+    const parts = line.split('|').map(x => (x||'').trim());
+    return { action: parts[0]||'', echeance: parts[1]||'', resultat: parts[2]||'' };
+  });
+  return {
+    type: v('ra-type'), commercial_nom: v('ra-nom'), agence: v('ra-agence'), profil: v('ra-profil'),
+    annee: num('ra-annee'), mois: num('ra-mois'), semaine: num('ra-semaine') || null,
+    ca_realise: num('ra-ca-realise'), ca_objectif: num('ra-ca-objectif'),
+    nb_ventes: num('ra-nb-ventes'), ca_b2b: num('ra-ca-b2b'),
+    nb_nouveaux_b2c: num('ra-b2c'), nb_nouveaux_b2b: num('ra-b2b'),
+    nb_devis_envoyes: num('ra-devis-env'), nb_devis_transformes: num('ra-devis-tr'), nb_appels: num('ra-appels'),
+    familles: fam,
+    obs_produits_absents: v('ra-obs-absents'), obs_reclamations: v('ra-obs-reclam'), obs_concurrence: v('ra-obs-concur'),
+    engagements: engagements,
+    rem_commission: num('ra-rem-commission'), rem_prime_presence: num('ra-rem-presence'),
+    rem_primes_speciales: num('ra-rem-speciales'), rem_fixe: num('ra-rem-fixe'),
+    bien_fonctionne: v('ra-bien'), a_ameliorer: v('ra-ameliorer'), plan_action: plan,
+  };
+}
+
+async function saveRapport(){
+  const body = raCollect();
+  if (!body.commercial_nom){ toast('Nom du commercial obligatoire','error'); return; }
+  if (!body.ca_objectif){ toast('Objectif CA obligatoire pour le scoring','error'); return; }
+  try {
+    if (RA_EDIT_ID) await sbPatch('rapports_activite', RA_EDIT_ID, body);
+    else { body.statut = 'Soumis'; await sbPost('rapports_activite', body); }
+    closeModal('ra-modal-overlay'); loadRapportActivite(); toast('Rapport enregistré');
+  } catch(e){ toast('Erreur: '+e.message, 'error'); }
+}
+
+async function raValidate(id){
+  if (!confirm('Valider ce rapport ? Il sera verrouillé côté commercial.')) return;
+  try {
+    await sbPatch('rapports_activite', id, {
+      statut: 'Validé',
+      valide_par: (SESSION && (SESSION.name || SESSION.login)) || '',
+      valide_le: new Date().toISOString(),
+    });
+    loadRapportActivite(); toast('Rapport validé');
+  } catch(e){ toast('Erreur: '+e.message, 'error'); }
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CHATBOT INTERNE — Communication équipe + Assistant IA
