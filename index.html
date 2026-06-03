@@ -4301,10 +4301,13 @@ supabase functions deploy send-sms
   </div>
 </div>
 
-<!-- ═══ MODAL RAPPORT ACTIVITÉ ═══ -->
-<div class="overlay" id="ra-modal-overlay"><div class="modal" style="max-width:820px">
-  <div class="card-header"><div class="card-title">📈 Rapport d'activité</div></div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+<!-- ═══ MODAL RAPPORT ACTIVITÉ (onglets) ═══ -->
+<div class="overlay" id="ra-modal-overlay"><div class="modal" style="max-width:900px;max-height:88vh;overflow-y:auto">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card-title">📈 Rapport d'activité</div>
+  </div>
+  <!-- En-tête commun (toujours visible) -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.6rem">
     <div><label class="page-sub">Type</label>
       <select class="form-control" id="ra-type" onchange="raToggleType()">
         <option value="hebdo">Hebdomadaire</option><option value="mensuel">Mensuel</option>
@@ -4318,40 +4321,61 @@ supabase functions deploy send-sms
     <div class="ra-mensuel"><label class="page-sub">Mois (1-12)</label><input class="form-control" id="ra-mois" type="number" min="1" max="12"></div>
     <div class="ra-hebdo"><label class="page-sub">Semaine</label><input class="form-control" id="ra-semaine" type="number" min="1" max="53"></div>
   </div>
-  <div class="card-title" style="margin:.4rem 0">Chiffres</div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
-    <div><label class="page-sub">CA réalisé</label><input class="form-control" id="ra-ca-realise" type="number" step="0.001"></div>
-    <div><label class="page-sub">Objectif CA *</label><input class="form-control" id="ra-ca-objectif" type="number" step="0.001"></div>
-    <div><label class="page-sub">Nb ventes</label><input class="form-control" id="ra-nb-ventes" type="number"></div>
-    <div><label class="page-sub">dont CA B2B</label><input class="form-control" id="ra-ca-b2b" type="number" step="0.001"></div>
+  <!-- Barre d'onglets -->
+  <div style="display:flex;gap:0;margin-bottom:.8rem;border-bottom:2px solid var(--border)">
+    <button class="btn btn-ghost" id="ra-tab-btn-infos" onclick="raSelectTab('infos')" style="border-radius:8px 8px 0 0;border-bottom:2px solid var(--accent);color:var(--accent-light)">📋 Chiffres</button>
+    <button class="btn btn-ghost" id="ra-tab-btn-journal" onclick="raSelectTab('journal')" style="border-radius:8px 8px 0 0;color:var(--text2)">📅 Journal semaine</button>
+    <button class="btn btn-ghost" id="ra-tab-btn-terrain" onclick="raSelectTab('terrain')" style="border-radius:8px 8px 0 0;color:var(--text2)">🔍 Terrain</button>
+    <button class="btn btn-ghost ra-mensuel" id="ra-tab-btn-bilan" onclick="raSelectTab('bilan')" style="border-radius:8px 8px 0 0;color:var(--text2)">📊 Bilan mensuel</button>
   </div>
-  <div class="card-title" style="margin:.4rem 0">Pipeline & acquisition</div>
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:.8rem">
-    <div><label class="page-sub">Devis envoyés</label><input class="form-control" id="ra-devis-env" type="number"></div>
-    <div><label class="page-sub">Devis transformés</label><input class="form-control" id="ra-devis-tr" type="number"></div>
-    <div><label class="page-sub">Appels/visites</label><input class="form-control" id="ra-appels" type="number"></div>
-    <div><label class="page-sub">Nouv. clients B2C</label><input class="form-control" id="ra-b2c" type="number"></div>
-    <div><label class="page-sub">Nouv. comptes B2B</label><input class="form-control" id="ra-b2b" type="number"></div>
+  <!-- TAB: Chiffres -->
+  <div id="ra-tab-infos">
+    <div class="card-title" style="margin:.4rem 0">Chiffres</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+      <div><label class="page-sub">CA réalisé</label><input class="form-control" id="ra-ca-realise" type="number" step="0.001"></div>
+      <div><label class="page-sub">Objectif CA *</label><input class="form-control" id="ra-ca-objectif" type="number" step="0.001"></div>
+      <div><label class="page-sub">Nb ventes</label><input class="form-control" id="ra-nb-ventes" type="number"></div>
+      <div><label class="page-sub">dont CA B2B</label><input class="form-control" id="ra-ca-b2b" type="number" step="0.001"></div>
+    </div>
+    <div class="card-title" style="margin:.4rem 0">Pipeline & acquisition</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:.8rem">
+      <div><label class="page-sub">Devis envoyés</label><input class="form-control" id="ra-devis-env" type="number"></div>
+      <div><label class="page-sub">Devis transformés</label><input class="form-control" id="ra-devis-tr" type="number"></div>
+      <div><label class="page-sub">Appels/visites</label><input class="form-control" id="ra-appels" type="number"></div>
+      <div><label class="page-sub">Nouv. clients B2C</label><input class="form-control" id="ra-b2c" type="number"></div>
+      <div><label class="page-sub">Nouv. comptes B2B</label><input class="form-control" id="ra-b2b" type="number"></div>
+    </div>
+    <div class="card-title" style="margin:.4rem 0">Répartition CA par famille</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.8rem">
+      <div><label class="page-sub">Gaming / PC Gamer</label><input class="form-control" id="ra-fam-gaming" type="number" step="0.001"></div>
+      <div><label class="page-sub">Vidéosurveillance</label><input class="form-control" id="ra-fam-surveillance" type="number" step="0.001"></div>
+      <div><label class="page-sub">Réseau & Sécurité</label><input class="form-control" id="ra-fam-reseau" type="number" step="0.001"></div>
+      <div><label class="page-sub">Composants / Info</label><input class="form-control" id="ra-fam-composants" type="number" step="0.001"></div>
+      <div><label class="page-sub">Accessoires & Tél.</label><input class="form-control" id="ra-fam-accessoires" type="number" step="0.001"></div>
+      <div><label class="page-sub">Autres</label><input class="form-control" id="ra-fam-autres" type="number" step="0.001"></div>
+    </div>
   </div>
-  <div class="card-title" style="margin:.4rem 0">Répartition CA par famille</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.8rem">
-    <div><label class="page-sub">Gaming / PC Gamer</label><input class="form-control" id="ra-fam-gaming" type="number" step="0.001"></div>
-    <div><label class="page-sub">Vidéosurveillance</label><input class="form-control" id="ra-fam-surveillance" type="number" step="0.001"></div>
-    <div><label class="page-sub">Réseau & Sécurité</label><input class="form-control" id="ra-fam-reseau" type="number" step="0.001"></div>
-    <div><label class="page-sub">Composants / Info</label><input class="form-control" id="ra-fam-composants" type="number" step="0.001"></div>
-    <div><label class="page-sub">Accessoires & Tél.</label><input class="form-control" id="ra-fam-accessoires" type="number" step="0.001"></div>
-    <div><label class="page-sub">Autres</label><input class="form-control" id="ra-fam-autres" type="number" step="0.001"></div>
+  <!-- TAB: Journal semaine -->
+  <div id="ra-tab-journal" style="display:none">
+    <div id="ra-journal-body"></div>
+    <div style="margin-top:.8rem"><label class="page-sub">Bilan global de la semaine</label>
+      <textarea class="form-control" id="ra-bilan-semaine" rows="3" placeholder="Résumé de votre semaine : faits marquants, difficultés, opportunités détectées…"></textarea>
+    </div>
   </div>
-  <div class="card-title" style="margin:.4rem 0">Observations terrain</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.6rem">
-    <div><label class="page-sub">Produits absents / ruptures</label><textarea class="form-control" id="ra-obs-absents" rows="2"></textarea></div>
-    <div><label class="page-sub">Réclamations clients</label><textarea class="form-control" id="ra-obs-reclam" rows="2"></textarea></div>
-    <div><label class="page-sub">Concurrence (prix, offres)</label><textarea class="form-control" id="ra-obs-concur" rows="2"></textarea></div>
+  <!-- TAB: Terrain -->
+  <div id="ra-tab-terrain" style="display:none">
+    <div class="card-title" style="margin:.4rem 0">Observations terrain</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:.6rem">
+      <div><label class="page-sub">Produits absents / ruptures</label><textarea class="form-control" id="ra-obs-absents" rows="3"></textarea></div>
+      <div><label class="page-sub">Réclamations clients</label><textarea class="form-control" id="ra-obs-reclam" rows="3"></textarea></div>
+      <div><label class="page-sub">Concurrence (prix, offres)</label><textarea class="form-control" id="ra-obs-concur" rows="3"></textarea></div>
+    </div>
+    <div style="margin-bottom:.8rem"><label class="page-sub">Engagements semaine prochaine (1 par ligne)</label>
+      <textarea class="form-control" id="ra-engagements" rows="3"></textarea></div>
   </div>
-  <div style="margin-bottom:.8rem"><label class="page-sub">Engagements semaine prochaine (1 par ligne)</label>
-    <textarea class="form-control" id="ra-engagements" rows="2"></textarea></div>
-  <div class="ra-mensuel">
-    <div class="card-title" style="margin:.4rem 0">Rémunération (mensuel)</div>
+  <!-- TAB: Bilan mensuel -->
+  <div id="ra-tab-bilan" style="display:none" class="ra-mensuel">
+    <div class="card-title" style="margin:.4rem 0">Rémunération</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
       <div><label class="page-sub">Fixe</label><input class="form-control" id="ra-rem-fixe" type="number" step="0.001"></div>
       <div><label class="page-sub">Commission</label><input class="form-control" id="ra-rem-commission" type="number" step="0.001"></div>
@@ -4360,13 +4384,14 @@ supabase functions deploy send-sms
     </div>
     <div class="card-title" style="margin:.4rem 0">Bilan qualitatif & plan d'action</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
-      <div><label class="page-sub">Ce qui a bien fonctionné</label><textarea class="form-control" id="ra-bien" rows="2"></textarea></div>
-      <div><label class="page-sub">À améliorer</label><textarea class="form-control" id="ra-ameliorer" rows="2"></textarea></div>
+      <div><label class="page-sub">Ce qui a bien fonctionné</label><textarea class="form-control" id="ra-bien" rows="3"></textarea></div>
+      <div><label class="page-sub">À améliorer</label><textarea class="form-control" id="ra-ameliorer" rows="3"></textarea></div>
     </div>
     <div style="margin-bottom:.8rem"><label class="page-sub">Plan d'action — format : action | échéance | résultat (1 par ligne)</label>
       <textarea class="form-control" id="ra-plan" rows="3"></textarea></div>
   </div>
-  <div style="display:flex;justify-content:flex-end;gap:.5rem">
+  <!-- Footer -->
+  <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)">
     <button class="btn btn-ghost" onclick="closeModal('ra-modal-overlay')">Annuler</button>
     <button class="btn btn-primary" onclick="saveRapport()">💾 Enregistrer</button>
   </div>
@@ -11130,19 +11155,14 @@ async function deleteMaint(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RAPPORT ACTIVITÉ — Suivi & évaluation des commerciaux
+// RAPPORT ACTIVITÉ — Suivi & évaluation des commerciaux (v2 + Journal)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /* ============================================================
-   MODULE : RAPPORT D'ACTIVITÉ COMMERCIAL
-   id module : rapportActivite   |   table : rapports_activite   |   perm : rapportActivite
-   Suivi & évaluation par commercial — vision direction
-   Dépend des helpers existants : sb, sbPost, sbPatch, esc, fmtMoney,
-   toast, openModal, closeModal, canWrite, SESSION, loadingRow,
-   emptyRow, errorRow, deleteRecord
+   MODULE : RAPPORT D'ACTIVITÉ COMMERCIAL — v2 avec Journal
+   id : rapportActivite  |  table : rapports_activite  |  perm : rapportActivite
    ============================================================ */
 
-/* ---------- Paramètres métier (ajustables) ---------- */
 const RA_FAMILLES = [
   { key:'gaming',       label:'Gaming / PC Gamer' },
   { key:'surveillance', label:'Vidéosurveillance' },
@@ -11152,20 +11172,23 @@ const RA_FAMILLES = [
   { key:'autres',       label:'Autres' },
 ];
 
-// Cibles de référence servant à normaliser le scoring (modifiables)
-const RA_TARGETS = {
-  convCible: 40,      // % conversion devis->commande = note pleine
-  b2bCible: 3,        // nouveaux comptes B2B / période = note pleine
-  devisCible: 15,     // devis envoyés / période = note pleine (effort)
-  partB2BCible: 50,   // % de CA B2B visé
-};
+const RA_JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const RA_JOURS_LABELS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const RA_JOURS_COURTS = ['Lun','Mar','Mer','Jeu','Ven','Sam'];
 
-// Pondération du score global /100 (somme = 100)
-const RA_SCORE_WEIGHTS = {
-  realisation: 40, conversion: 20, acquisition: 15,
-  valeur: 10, activite: 10, ponctualite: 5,
-};
+const RA_TYPES_ACTIVITE = [
+  'Visite client','Appel téléphonique','Prospection terrain','Réunion interne',
+  'Réunion client','Livraison/suivi','Réclamation/SAV','Rédaction devis',
+  'Relance','Formation','Administratif','Autre'
+];
+const RA_RESULTATS = [
+  'Devis envoyé','Commande signée','Relance planifiée','En négociation',
+  'Démonstration faite','Information donnée','Livré','Problème résolu',
+  'Sans suite','En attente'
+];
 
+const RA_TARGETS = { convCible:40, b2bCible:3, devisCible:15, partB2BCible:50 };
+const RA_SCORE_WEIGHTS = { realisation:40, conversion:20, acquisition:15, valeur:10, activite:10, ponctualite:5 };
 const RA_ZONES = [
   { min:110, label:'Dépassement',      color:'var(--purple-light)',  bg:'var(--purple)'  },
   { min:90,  label:'Objectif atteint', color:'var(--success-light)', bg:'var(--success)' },
@@ -11175,44 +11198,171 @@ const RA_ZONES = [
 
 let RA_CACHE = [];
 let RA_EDIT_ID = null;
+let RA_CURRENT_DAY = 'lundi';
+let RA_JOURNAL = {};  // { lundi:{activites:[...],resume:''}, ... }
 
-/* ---------- Petit chip auto-stylé (pas de dépendance CSS) ---------- */
+/* ---------- Helpers visuels ---------- */
 function raChip(text, color, bg){
   return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;background:${bg};color:${color};border:1px solid ${color}55">${esc(text)}</span>`;
 }
 
 /* ---------- Calculs KPI ---------- */
 function raNum(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
-function raPct(r){ return raNum(r.ca_objectif) > 0 ? (raNum(r.ca_realise) / raNum(r.ca_objectif)) * 100 : 0; }
-function raEcart(r){ return raNum(r.ca_realise) - raNum(r.ca_objectif); }
-function raConv(r){ return raNum(r.nb_devis_envoyes) > 0 ? (raNum(r.nb_devis_transformes) / raNum(r.nb_devis_envoyes)) * 100 : 0; }
-function raPanier(r){
-  if (raNum(r.panier_moyen) > 0) return raNum(r.panier_moyen);
-  return raNum(r.nb_ventes) > 0 ? raNum(r.ca_realise) / raNum(r.nb_ventes) : 0;
-}
-function raPartB2B(r){ return raNum(r.ca_realise) > 0 ? (raNum(r.ca_b2b) / raNum(r.ca_realise)) * 100 : 0; }
+function raPct(r){ return raNum(r.ca_objectif) > 0 ? (raNum(r.ca_realise)/raNum(r.ca_objectif))*100 : 0; }
+function raConv(r){ return raNum(r.nb_devis_envoyes) > 0 ? (raNum(r.nb_devis_transformes)/raNum(r.nb_devis_envoyes))*100 : 0; }
+function raPanier(r){ return raNum(r.panier_moyen)>0 ? raNum(r.panier_moyen) : (raNum(r.nb_ventes)>0 ? raNum(r.ca_realise)/raNum(r.nb_ventes) : 0); }
+function raPartB2B(r){ return raNum(r.ca_realise)>0 ? (raNum(r.ca_b2b)/raNum(r.ca_realise))*100 : 0; }
 function raZone(pct){ for (const z of RA_ZONES){ if (pct >= z.min) return z; } return RA_ZONES[RA_ZONES.length-1]; }
 
-// Score global /100 — la "note" d'évaluation
 function raScore(r){
   const w = RA_SCORE_WEIGHTS, t = RA_TARGETS;
-  const cap = (x, max) => Math.min(x, max) / max;
-  const sReal = cap(raPct(r), 120) * w.realisation;
-  const sConv = cap(raConv(r), t.convCible) * w.conversion;
-  const sAcq  = cap(raNum(r.nb_nouveaux_b2b), t.b2bCible) * w.acquisition;
-  const sVal  = cap(raPartB2B(r), t.partB2BCible) * w.valeur;
-  const sAct  = cap(raNum(r.nb_devis_envoyes), t.devisCible) * w.activite;
-  const sPonc = (r.statut === 'Validé') ? w.ponctualite : (r.statut === 'Soumis' ? w.ponctualite*0.5 : 0);
-  return Math.round(sReal + sConv + sAcq + sVal + sAct + sPonc);
+  const cap = (x, max) => Math.min(x, max)/max;
+  return Math.round(
+    cap(raPct(r),120)*w.realisation + cap(raConv(r),t.convCible)*w.conversion +
+    cap(raNum(r.nb_nouveaux_b2b),t.b2bCible)*w.acquisition + cap(raPartB2B(r),t.partB2BCible)*w.valeur +
+    cap(raNum(r.nb_devis_envoyes),t.devisCible)*w.activite +
+    (r.statut==='Validé' ? w.ponctualite : r.statut==='Soumis' ? w.ponctualite*0.5 : 0)
+  );
 }
-function raNote20(r){ return (raScore(r) / 5).toFixed(1); }
 
 function raAlerts(r){
   const a = [];
   if (raPct(r) < 70) a.push({ t:'CA < 70%', c:'var(--danger-light)' });
   if (raNum(r.nb_devis_envoyes) >= 3 && raConv(r) < 25) a.push({ t:'Conversion faible', c:'var(--warning-light)' });
-  if (r.type === 'mensuel' && raNum(r.nb_nouveaux_b2b) === 0) a.push({ t:'0 nouveau B2B', c:'var(--warning-light)' });
+  if (r.type==='mensuel' && raNum(r.nb_nouveaux_b2b)===0) a.push({ t:'0 nouveau B2B', c:'var(--warning-light)' });
   return a;
+}
+
+/* ---------- Journal — helpers ---------- */
+function raInitJournal(){
+  RA_JOURNAL = {};
+  RA_JOURS.forEach(j => { RA_JOURNAL[j] = { activites:[], resume:'' }; });
+}
+
+function raCountActivites(r){
+  const j = raJSON(r.journal_semaine, {});
+  let n = 0;
+  RA_JOURS.forEach(d => { n += (j[d]?.activites || []).length; });
+  return n;
+}
+
+function raJournalStats(r){
+  const j = raJSON(r.journal_semaine, {});
+  const types = {};
+  let total = 0;
+  RA_JOURS.forEach(d => {
+    (j[d]?.activites || []).forEach(a => {
+      types[a.type] = (types[a.type]||0) + 1;
+      total++;
+    });
+  });
+  return { types, total };
+}
+
+/* ---------- Onglets du formulaire ---------- */
+function raSelectTab(tab){
+  ['infos','journal','terrain','bilan'].forEach(t => {
+    const panel = document.getElementById('ra-tab-'+t);
+    const btn   = document.getElementById('ra-tab-btn-'+t);
+    if (panel) panel.style.display = (t===tab) ? '' : 'none';
+    if (btn){
+      btn.style.borderBottom = (t===tab) ? '2px solid var(--accent)' : 'none';
+      btn.style.color = (t===tab) ? 'var(--accent-light)' : 'var(--text2)';
+    }
+  });
+}
+
+/* ---------- Journal — gestion des jours & activités ---------- */
+function raSelectDay(day){
+  // Sauvegarder le résumé du jour courant
+  const oldRes = document.getElementById('ra-jour-resume');
+  if (oldRes) RA_JOURNAL[RA_CURRENT_DAY].resume = oldRes.value;
+  RA_CURRENT_DAY = day;
+  raRenderJournal();
+}
+
+function raAddActivite(){
+  if (!RA_JOURNAL[RA_CURRENT_DAY]) RA_JOURNAL[RA_CURRENT_DAY] = { activites:[], resume:'' };
+  RA_JOURNAL[RA_CURRENT_DAY].activites.push({
+    heure:'09:00', type:'Visite client', client:'', description:'', resultat:'En attente', montant:0
+  });
+  raRenderJournal();
+}
+
+function raRemoveActivite(idx){
+  RA_JOURNAL[RA_CURRENT_DAY].activites.splice(idx, 1);
+  raRenderJournal();
+}
+
+function raSaveCurrentActivites(){
+  // Lire les valeurs du DOM dans RA_JOURNAL
+  const day = RA_JOURNAL[RA_CURRENT_DAY];
+  if (!day) return;
+  day.activites.forEach((a, i) => {
+    const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    a.heure = g('ra-act-h-'+i);
+    a.type = g('ra-act-t-'+i);
+    a.client = g('ra-act-c-'+i);
+    a.description = g('ra-act-d-'+i);
+    a.resultat = g('ra-act-r-'+i);
+    a.montant = raNum(g('ra-act-m-'+i));
+  });
+  const res = document.getElementById('ra-jour-resume');
+  if (res) day.resume = res.value;
+}
+
+function raRenderJournal(){
+  const host = document.getElementById('ra-journal-body');
+  if (!host) return;
+  // Sauvegarder le jour précédent si déjà rendu
+  const day = RA_JOURNAL[RA_CURRENT_DAY] || { activites:[], resume:'' };
+  const acts = day.activites;
+
+  // Onglets jours
+  const dayTabs = RA_JOURS.map((j, i) => {
+    const cnt = (RA_JOURNAL[j]?.activites || []).length;
+    const isActive = j === RA_CURRENT_DAY;
+    const bg = isActive ? 'var(--accent)' : 'var(--surface2)';
+    const clr = isActive ? '#fff' : 'var(--text2)';
+    return `<button onclick="raSaveCurrentActivites();raSelectDay('${j}')" style="padding:6px 12px;border-radius:6px;border:none;cursor:pointer;background:${bg};color:${clr};font-size:.82rem;font-weight:${isActive?700:400}">
+      ${RA_JOURS_COURTS[i]}${cnt ? ` <span style="background:var(--accent-light);color:#000;border-radius:99px;padding:0 5px;font-size:.7rem;margin-left:3px">${cnt}</span>` : ''}
+    </button>`;
+  }).join('');
+
+  // Options types
+  const typeOpts = RA_TYPES_ACTIVITE.map(t => `<option value="${t}">${t}</option>`).join('');
+  const resOpts  = RA_RESULTATS.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  // Lignes activités
+  const rows = acts.map((a, i) => `
+    <div style="display:grid;grid-template-columns:70px 1fr 1fr 1fr 1fr 80px 32px;gap:.4rem;align-items:start;padding:.4rem 0;border-bottom:1px solid var(--border)">
+      <input class="form-control" id="ra-act-h-${i}" type="time" value="${esc(a.heure||'09:00')}" style="font-size:.78rem;padding:4px">
+      <select class="form-control" id="ra-act-t-${i}" style="font-size:.78rem;padding:4px">${typeOpts.replace(`value="${esc(a.type)}"`, `value="${esc(a.type)}" selected`)}</select>
+      <input class="form-control" id="ra-act-c-${i}" value="${esc(a.client||'')}" placeholder="Client / prospect" style="font-size:.78rem;padding:4px">
+      <input class="form-control" id="ra-act-d-${i}" value="${esc(a.description||'')}" placeholder="Description" style="font-size:.78rem;padding:4px">
+      <select class="form-control" id="ra-act-r-${i}" style="font-size:.78rem;padding:4px">${resOpts.replace(`value="${esc(a.resultat)}"`, `value="${esc(a.resultat)}" selected`)}</select>
+      <input class="form-control" id="ra-act-m-${i}" type="number" value="${a.montant||''}" placeholder="DT" step="0.001" style="font-size:.78rem;padding:4px">
+      <button class="btn btn-ghost btn-sm" onclick="raSaveCurrentActivites();raRemoveActivite(${i})" style="color:var(--danger-light);padding:2px" title="Supprimer">✕</button>
+    </div>`).join('');
+
+  host.innerHTML = `
+    <div style="display:flex;gap:4px;margin-bottom:.8rem;flex-wrap:wrap">${dayTabs}</div>
+    <div style="font-size:.78rem;color:var(--text2);display:grid;grid-template-columns:70px 1fr 1fr 1fr 1fr 80px 32px;gap:.4rem;padding:0 0 .3rem;border-bottom:2px solid var(--border)">
+      <span>Heure</span><span>Type</span><span>Client</span><span>Description</span><span>Résultat</span><span>Montant</span><span></span>
+    </div>
+    ${rows || '<div style="padding:1rem;color:var(--text2);text-align:center">Aucune activité — cliquez + Ajouter</div>'}
+    <div style="margin-top:.5rem">
+      <button class="btn btn-ghost btn-sm" onclick="raSaveCurrentActivites();raAddActivite()" style="color:var(--accent-light)">+ Ajouter une activité</button>
+    </div>
+    <div style="margin-top:.8rem">
+      <label class="page-sub">Résumé / commentaire du ${RA_JOURS_LABELS[RA_JOURS.indexOf(RA_CURRENT_DAY)]}</label>
+      <textarea class="form-control" id="ra-jour-resume" rows="2" placeholder="Ce qui s'est passé, ressenti, contexte…">${esc(day.resume||'')}</textarea>
+    </div>`;
+}
+
+function raCollectJournal(){
+  raSaveCurrentActivites();
+  return JSON.parse(JSON.stringify(RA_JOURNAL));
 }
 
 /* ---------- Chargement & rendu (vue équipe / direction) ---------- */
@@ -11224,10 +11374,10 @@ async function loadRapportActivite(){
   const fAg    = document.getElementById('ra-f-agence')?.value || '';
   const fMois  = document.getElementById('ra-f-mois')?.value || '';
   const fAnnee = document.getElementById('ra-f-annee')?.value || '';
-  if (fType)  conds.push('type=eq.' + fType);
-  if (fAg)    conds.push('agence=eq.' + encodeURIComponent(fAg));
-  if (fMois)  conds.push('mois=eq.' + fMois);
-  if (fAnnee) conds.push('annee=eq.' + fAnnee);
+  if (fType)  conds.push('type=eq.'+fType);
+  if (fAg)    conds.push('agence=eq.'+encodeURIComponent(fAg));
+  if (fMois)  conds.push('mois=eq.'+fMois);
+  if (fAnnee) conds.push('annee=eq.'+fAnnee);
   try {
     const rows = await sb('rapports_activite', { order:'created_at.desc', filter: conds.join('&') });
     RA_CACHE = rows || [];
@@ -11240,17 +11390,19 @@ function raRenderStats(rows){
   const host = document.getElementById('ra-stats');
   if (!host) return;
   const n = rows.length;
-  const caTotal  = rows.reduce((s,r)=> s + raNum(r.ca_realise), 0);
-  const objTotal = rows.reduce((s,r)=> s + raNum(r.ca_objectif), 0);
-  const pctMoy   = objTotal > 0 ? (caTotal/objTotal)*100 : 0;
+  const caTotal  = rows.reduce((s,r)=> s+raNum(r.ca_realise), 0);
+  const objTotal = rows.reduce((s,r)=> s+raNum(r.ca_objectif), 0);
+  const pctMoy   = objTotal>0 ? (caTotal/objTotal)*100 : 0;
+  const totalActs = rows.reduce((s,r)=> s+raCountActivites(r), 0);
   let best = null;
   rows.forEach(r => { if (!best || raScore(r) > raScore(best)) best = r; });
   const aValider = rows.filter(r => r.statut !== 'Validé').length;
   host.innerHTML = `
-    <div class="card"><div class="card-title">Rapports (période)</div><div style="font-size:1.6rem;font-weight:700">${n}</div></div>
-    <div class="card"><div class="card-title">CA équipe</div><div style="font-size:1.4rem;font-weight:700">${fmtMoney(caTotal)}</div></div>
-    <div class="card"><div class="card-title">% réalisation moyen</div><div style="font-size:1.6rem;font-weight:700;color:${raZone(pctMoy).color}">${pctMoy.toFixed(0)}%</div></div>
-    <div class="card"><div class="card-title">Meilleur vendeur</div><div style="font-size:1.05rem;font-weight:700">${best ? esc(best.commercial_nom||'—') : '—'}</div><div class="page-sub">${best ? 'Score '+raScore(best)+'/100' : ''}</div></div>
+    <div class="card"><div class="card-title">Rapports</div><div style="font-size:1.6rem;font-weight:700">${n}</div></div>
+    <div class="card"><div class="card-title">CA équipe</div><div style="font-size:1.3rem;font-weight:700">${fmtMoney(caTotal)}</div></div>
+    <div class="card"><div class="card-title">% réalisation moy.</div><div style="font-size:1.6rem;font-weight:700;color:${raZone(pctMoy).color}">${pctMoy.toFixed(0)}%</div></div>
+    <div class="card"><div class="card-title">Activités terrain</div><div style="font-size:1.6rem;font-weight:700">${totalActs}</div></div>
+    <div class="card"><div class="card-title">Top vendeur</div><div style="font-size:1rem;font-weight:700">${best ? esc(best.commercial_nom||'—') : '—'}</div><div class="page-sub">${best ? 'Score '+raScore(best)+'/100' : ''}</div></div>
     <div class="card"><div class="card-title">À valider</div><div style="font-size:1.6rem;font-weight:700;color:${aValider?'var(--warning-light)':'var(--success-light)'}">${aValider}</div></div>`;
 }
 
@@ -11258,19 +11410,20 @@ function raRenderTable(rows){
   const tb = document.getElementById('ra-tbody');
   if (!tb) return;
   if (!rows.length){ tb.innerHTML = emptyRow(9, 'Aucun rapport sur cette période'); return; }
-  const sorted = rows.slice().sort((a,b)=> raScore(b) - raScore(a));
+  const sorted = rows.slice().sort((a,b)=> raScore(b)-raScore(a));
   tb.innerHTML = sorted.map((r, i) => {
     const pct = raPct(r), z = raZone(pct);
-    const chips = [ raChip(z.label, z.color, z.bg) ]
+    const chips = [raChip(z.label, z.color, z.bg)]
       .concat(raAlerts(r).map(a => raChip(a.t, a.c, 'transparent'))).join(' ');
-    const period = r.type === 'mensuel'
+    const period = r.type==='mensuel'
       ? `Mois ${esc(String(r.mois||''))}/${esc(String(r.annee||''))}`
       : `Sem. ${esc(String(r.semaine||''))} ${esc(String(r.annee||''))}`;
+    const nbActs = raCountActivites(r);
     const w = canWrite('rapportActivite');
     return `<tr>
       <td style="text-align:center;font-weight:700;color:var(--text2)">${i+1}</td>
       <td><strong>${esc(r.commercial_nom||'—')}</strong><div class="page-sub">${esc(r.agence||'')} · ${esc(r.type||'')}</div></td>
-      <td>${period}</td>
+      <td>${period}<div class="page-sub">${nbActs} activité${nbActs>1?'s':''}</div></td>
       <td style="text-align:right">${fmtMoney(raNum(r.ca_realise))}</td>
       <td style="text-align:right;color:${z.color};font-weight:700">${pct.toFixed(0)}%</td>
       <td style="text-align:center">${raConv(r).toFixed(0)}%</td>
@@ -11278,6 +11431,7 @@ function raRenderTable(rows){
       <td>${chips}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-sm btn-ghost" onclick="raViewFiche('${esc(r.commercial_nom||'')}')">Fiche</button>
+        ${w ? `<button class="btn btn-sm btn-ghost" onclick="raViewJournal('${r.id}')">📅</button>` : ''}
         ${w ? `<button class="btn btn-sm btn-ghost" onclick="openRapportModal('${r.id}')">✏️</button>` : ''}
         ${w && r.statut!=='Validé' ? `<button class="btn btn-sm btn-primary" onclick="raValidate('${r.id}')">Valider</button>` : ''}
         ${w ? `<button class="btn btn-sm btn-ghost" onclick="deleteRecord('rapports_activite','${r.id}',loadRapportActivite)">🗑️</button>` : ''}
@@ -11286,22 +11440,72 @@ function raRenderTable(rows){
   }).join('');
 }
 
+/* ---------- Vue journal en lecture seule (direction) ---------- */
+function raViewJournal(id){
+  const r = RA_CACHE.find(x => x.id === id);
+  if (!r) return;
+  const j = raJSON(r.journal_semaine, {});
+  const host = document.getElementById('ra-fiche-body');
+  if (!host) return;
+  let html = `<div class="page-header"><div>
+    <div class="page-title">📅 Journal — ${esc(r.commercial_nom||'')}</div>
+    <div class="page-sub">${r.type==='mensuel'?'Mois':'Semaine'} ${esc(String(r.semaine||r.mois||''))}/${esc(String(r.annee||''))} · ${esc(r.agence||'')}</div>
+  </div></div>`;
+  RA_JOURS.forEach((d, di) => {
+    const day = j[d] || { activites:[], resume:'' };
+    if (!day.activites.length && !day.resume) return;
+    html += `<div class="card" style="margin-top:.6rem">
+      <div class="card-title">${RA_JOURS_LABELS[di]} — ${day.activites.length} activité(s)</div>`;
+    if (day.activites.length){
+      html += `<div style="overflow-x:auto"><table style="width:100%;font-size:.8rem">
+        <thead><tr style="color:var(--text2)"><th>Heure</th><th>Type</th><th>Client</th><th>Description</th><th>Résultat</th><th style="text-align:right">Montant</th></tr></thead><tbody>`;
+      day.activites.forEach(a => {
+        const rc = a.resultat === 'Commande signée' ? 'var(--success-light)' :
+                   a.resultat === 'Devis envoyé' ? 'var(--accent-light)' :
+                   a.resultat === 'Sans suite' ? 'var(--danger-light)' : 'var(--text)';
+        html += `<tr>
+          <td>${esc(a.heure||'')}</td><td>${esc(a.type||'')}</td><td><strong>${esc(a.client||'')}</strong></td>
+          <td>${esc(a.description||'')}</td><td style="color:${rc}">${esc(a.resultat||'')}</td>
+          <td style="text-align:right">${a.montant ? fmtMoney(raNum(a.montant)) : '—'}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+    if (day.resume) html += `<div style="margin-top:.4rem;padding:.4rem .6rem;background:var(--surface2);border-radius:6px;font-size:.82rem;color:var(--text3)"><strong>Résumé :</strong> ${esc(day.resume)}</div>`;
+    html += '</div>';
+  });
+  // Stats activités
+  const stats = raJournalStats(r);
+  if (stats.total > 0){
+    const maxT = Math.max(1, ...Object.values(stats.types));
+    html += '<div class="card" style="margin-top:.6rem"><div class="card-title">Répartition des activités</div>';
+    Object.entries(stats.types).sort((a,b)=>b[1]-a[1]).forEach(([t,c]) => {
+      html += `<div style="margin:.3rem 0"><div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${t}</span><span>${c}</span></div>
+        <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${(c/maxT)*100}%;background:var(--accent)"></div></div></div>`;
+    });
+    html += '</div>';
+  }
+  host.innerHTML = html;
+  openModal('ra-fiche-overlay');
+}
+
 /* ---------- Fiche individuelle (drill-down commercial) ---------- */
+function raJSON(v, fallback){ try { return (typeof v==='string') ? (JSON.parse(v||'null')||fallback) : (v||fallback); } catch(e){ return fallback; } }
+
 function raViewFiche(nom){
-  const rows = RA_CACHE.filter(r => (r.commercial_nom||'') === nom);
+  const rows = RA_CACHE.filter(r => (r.commercial_nom||'')===nom);
   const host = document.getElementById('ra-fiche-body');
   if (!host) return;
   if (!rows.length){ host.innerHTML = '<p>Aucune donnée.</p>'; openModal('ra-fiche-overlay'); return; }
   const last = rows[0];
   const avgScore = Math.round(rows.reduce((s,r)=> s+raScore(r),0)/rows.length);
   const caCumul  = rows.reduce((s,r)=> s+raNum(r.ca_realise),0);
+  const totalActs = rows.reduce((s,r)=> s+raCountActivites(r),0);
   const z = raZone(raPct(last));
-  const fam = (typeof last.familles === 'string') ? JSON.parse(last.familles||'{}') : (last.familles||{});
+  const fam = raJSON(last.familles, {});
   const famMax = Math.max(1, ...RA_FAMILLES.map(f => raNum(fam[f.key])));
   const famBars = RA_FAMILLES.map(f => {
     const v = raNum(fam[f.key]);
-    return `<div style="margin:.35rem 0">
-      <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${f.label}</span><span>${fmtMoney(v)}</span></div>
+    return `<div style="margin:.35rem 0"><div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${f.label}</span><span>${fmtMoney(v)}</span></div>
       <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${(v/famMax)*100}%;background:var(--accent)"></div></div></div>`;
   }).join('');
   const histo = rows.slice(0,8).map(r => {
@@ -11312,6 +11516,17 @@ function raViewFiche(nom){
       <span style="width:48px;text-align:right;color:${raZone(p).color}">${p.toFixed(0)}%</span>
       <span style="width:64px;text-align:right">Score ${raScore(r)}</span></div>`;
   }).join('');
+  // Journal résumé : top types d'activité agrégés sur tous les rapports
+  let actAgg = {};
+  rows.forEach(r => {
+    const s = raJournalStats(r);
+    Object.entries(s.types).forEach(([t,c]) => { actAgg[t] = (actAgg[t]||0)+c; });
+  });
+  const actMax = Math.max(1, ...Object.values(actAgg));
+  const actBars = Object.entries(actAgg).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([t,c]) =>
+    `<div style="margin:.3rem 0"><div style="display:flex;justify-content:space-between;font-size:.8rem"><span>${t}</span><span>${c}</span></div>
+      <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${(c/actMax)*100}%;background:var(--purple)"></div></div></div>`
+  ).join('');
   host.innerHTML = `
     <div class="page-header"><div>
       <div class="page-title">${esc(nom)}</div>
@@ -11320,24 +11535,22 @@ function raViewFiche(nom){
     <div class="stats-grid" style="margin:1rem 0">
       <div class="card"><div class="card-title">Score moyen</div><div style="font-size:1.5rem;font-weight:700">${avgScore}/100</div></div>
       <div class="card"><div class="card-title">% réal. (dernier)</div><div style="font-size:1.5rem;font-weight:700;color:${z.color}">${raPct(last).toFixed(0)}%</div></div>
-      <div class="card"><div class="card-title">CA cumulé</div><div style="font-size:1.25rem;font-weight:700">${fmtMoney(caCumul)}</div></div>
+      <div class="card"><div class="card-title">CA cumulé</div><div style="font-size:1.2rem;font-weight:700">${fmtMoney(caCumul)}</div></div>
       <div class="card"><div class="card-title">Conversion</div><div style="font-size:1.5rem;font-weight:700">${raConv(last).toFixed(0)}%</div></div>
-      <div class="card"><div class="card-title">Panier moyen</div><div style="font-size:1.25rem;font-weight:700">${fmtMoney(raPanier(last))}</div></div>
+      <div class="card"><div class="card-title">Activités total</div><div style="font-size:1.5rem;font-weight:700">${totalActs}</div></div>
       <div class="card"><div class="card-title">Part B2B</div><div style="font-size:1.5rem;font-weight:700">${raPartB2B(last).toFixed(0)}%</div></div>
     </div>
     <div class="card"><div class="card-title">Mix par famille (dernier rapport)</div>${famBars}</div>
-    <div class="card" style="margin-top:1rem"><div class="card-title">Évolution % réalisation & score</div>${histo}</div>`;
+    ${actBars ? '<div class="card" style="margin-top:.6rem"><div class="card-title">Profil d\'activité (tous rapports)</div>'+actBars+'</div>' : ''}
+    <div class="card" style="margin-top:.6rem"><div class="card-title">Évolution % réalisation & score</div>${histo}</div>`;
   openModal('ra-fiche-overlay');
 }
 
 /* ---------- Création / édition ---------- */
-function raJSON(v, fallback){ try { return (typeof v==='string') ? (JSON.parse(v||'null')||fallback) : (v||fallback); } catch(e){ return fallback; } }
-
 function openRapportModal(id){
   RA_EDIT_ID = id || null;
-  const g = sel => document.getElementById(sel);
   const r = id ? RA_CACHE.find(x => x.id === id) : null;
-  const set = (sel, val) => { const el = g(sel); if (el) el.value = (val ?? ''); };
+  const set = (sel, val) => { const el = document.getElementById(sel); if (el) el.value = (val ?? ''); };
   set('ra-type', r?.type || 'hebdo');
   set('ra-nom', r?.commercial_nom);
   set('ra-agence', r?.agence || 'Charguia');
@@ -11359,16 +11572,28 @@ function openRapportModal(id){
   set('ra-obs-absents', r?.obs_produits_absents);
   set('ra-obs-reclam', r?.obs_reclamations);
   set('ra-obs-concur', r?.obs_concurrence);
-  set('ra-engagements', (raJSON(r?.engagements, [])||[]).join('\n'));
+  set('ra-engagements', (raJSON(r?.engagements,[])||[]).join('\n'));
+  set('ra-bilan-semaine', r?.bilan_semaine);
   set('ra-rem-commission', r?.rem_commission);
   set('ra-rem-presence', r?.rem_prime_presence);
   set('ra-rem-speciales', r?.rem_primes_speciales);
   set('ra-rem-fixe', r?.rem_fixe);
   set('ra-bien', r?.bien_fonctionne);
   set('ra-ameliorer', r?.a_ameliorer);
-  set('ra-plan', (raJSON(r?.plan_action, [])||[]).map(p=> `${p.action||''} | ${p.echeance||''} | ${p.resultat||''}`).join('\n'));
+  set('ra-plan', (raJSON(r?.plan_action,[])||[]).map(p=> `${p.action||''} | ${p.echeance||''} | ${p.resultat||''}`).join('\n'));
+  // Journal
+  const saved = raJSON(r?.journal_semaine, null);
+  if (saved && typeof saved === 'object'){
+    RA_JOURNAL = {};
+    RA_JOURS.forEach(j => { RA_JOURNAL[j] = saved[j] || { activites:[], resume:'' }; });
+  } else {
+    raInitJournal();
+  }
+  RA_CURRENT_DAY = 'lundi';
   raToggleType();
+  raSelectTab('infos');
   openModal('ra-modal-overlay');
+  setTimeout(() => raRenderJournal(), 50);
 }
 
 function raToggleType(){
@@ -11395,6 +11620,8 @@ function raCollect(){
     nb_nouveaux_b2c: num('ra-b2c'), nb_nouveaux_b2b: num('ra-b2b'),
     nb_devis_envoyes: num('ra-devis-env'), nb_devis_transformes: num('ra-devis-tr'), nb_appels: num('ra-appels'),
     familles: fam,
+    journal_semaine: raCollectJournal(),
+    bilan_semaine: v('ra-bilan-semaine'),
     obs_produits_absents: v('ra-obs-absents'), obs_reclamations: v('ra-obs-reclam'), obs_concurrence: v('ra-obs-concur'),
     engagements: engagements,
     rem_commission: num('ra-rem-commission'), rem_prime_presence: num('ra-rem-presence'),
@@ -11415,7 +11642,7 @@ async function saveRapport(){
 }
 
 async function raValidate(id){
-  if (!confirm('Valider ce rapport ? Il sera verrouillé côté commercial.')) return;
+  if (!confirm('Valider ce rapport ? Il sera verrouillé.')) return;
   try {
     await sbPatch('rapports_activite', id, {
       statut: 'Validé',
