@@ -3026,18 +3026,6 @@ supabase functions deploy send-sms
                   <label class="form-label">Site web</label>
                   <input type="text" class="form-control" id="soc-site" placeholder="alltecdist.com" oninput="updateDocPreview()">
                 </div>
-                <div class="form-group">
-                  <label class="form-label">RIB bancaire</label>
-                  <input type="text" class="form-control" id="soc-rib" placeholder="00 000 0000000000 00">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Banque</label>
-                  <input type="text" class="form-control" id="soc-banque" placeholder="AL BARAKA BANK">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Signataire (traites)</label>
-                  <input type="text" class="form-control" id="soc-signataire" placeholder="Nom du signataire">
-                </div>
               </div>
               <div class="form-grid full" style="margin-top:10px">
                 <div class="form-group">
@@ -3049,6 +3037,31 @@ supabase functions deploy send-sms
                   <input type="text" class="form-control" id="soc-mention" placeholder="Capital : xxx DT — Forme juridique : SARL">
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Informations bancaires & Lettre de change -->
+          <div class="card" style="margin-top:20px">
+            <div class="card-header">
+              <span class="card-title">🏦 Informations bancaires & Lettre de change</span>
+              <button class="btn btn-primary btn-sm" onclick="saveSociete()">💾 Enregistrer</button>
+            </div>
+            <div class="card-body">
+              <div class="form-grid cols-3">
+                <div class="form-group">
+                  <label class="form-label">RIB bancaire</label>
+                  <input type="text" class="form-control" id="soc-rib" placeholder="Ex: 32014788101073884178">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Banque (domiciliation)</label>
+                  <input type="text" class="form-control" id="soc-banque" placeholder="Ex: AL BARAKA BANK">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Signataire des traites</label>
+                  <input type="text" class="form-control" id="soc-signataire" placeholder="Ex: Ayachi Iheb">
+                </div>
+              </div>
+              <p style="font-size:11px;color:var(--text2);margin-top:8px">Ces informations sont utilisées automatiquement lors de l'impression des lettres de change (traites) depuis le module Dettes.</p>
             </div>
           </div>
 
@@ -11713,7 +11726,7 @@ const LC_POS = {
   echeance2:      { top:69, left:80 },    // Échéance — espacé
   rib2:           { top:76, left:10 },    // RIB tiré (sans clé)
   cle:            { top:76, left:65 },    // Clé RIB
-  tirenom:        { top:82, left:75 },    // Nom du tiré (ALLTEC)
+  tirenom:        { top:82, left:75 },    // Nom du tiré
   tireadresse:    { top:87, left:75 },    // Adresse du tiré
   domicil:        { top:81, left:125 },   // Domiciliation — case DROITE (banque)
   signataire:     { top:93, left:10 },    // Nom signataire — BAS GAUCHE
@@ -11777,8 +11790,8 @@ ${f(P.dateCreation2, emission, '9pt')}
 ${f(P.echeance2, ech, '9pt', true)}
 ${f(P.rib2, ribSansCle, '8.5pt')}
 ${f(P.cle, ribCle, '8.5pt')}
-${f(P.tirenom, socNom, '10pt', true)}
-${f(P.tireadresse, esc(socAdresse), '7.5pt', false, 45)}
+${f(P.tirenom, socNom, '8.5pt', true, 42)}
+${f(P.tireadresse, esc(socAdresse), '6.5pt', false, 42)}
 ${f(P.domicil, socBanque, '9pt', true, 40)}
 ${f(P.signataire, socSignataire, '9pt')}
 <script>window.onload=()=>window.print();<\/script>
