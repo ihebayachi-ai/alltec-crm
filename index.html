@@ -3057,6 +3057,10 @@ supabase functions deploy send-sms
                   <input type="text" class="form-control" id="soc-banque" placeholder="Ex: AL BARAKA BANK">
                 </div>
                 <div class="form-group">
+                  <label class="form-label">Adresse agence bancaire</label>
+                  <input type="text" class="form-control" id="soc-banque-adresse" placeholder="Ex: Agence Charguia, Tunis">
+                </div>
+                <div class="form-group">
                   <label class="form-label">Signataire des traites</label>
                   <input type="text" class="form-control" id="soc-signataire" placeholder="Ex: Ayachi Iheb">
                 </div>
@@ -10827,6 +10831,7 @@ function saveSociete() {
     site:      document.getElementById('soc-site').value.trim(),
     rib:        document.getElementById('soc-rib').value.trim(),
     banque:     document.getElementById('soc-banque')?.value.trim() || '',
+    banque_adresse: document.getElementById('soc-banque-adresse')?.value.trim() || '',
     signataire: document.getElementById('soc-signataire')?.value.trim() || '',
     adresse:   document.getElementById('soc-adresse').value.trim(),
     mention:   document.getElementById('soc-mention').value.trim(),
@@ -10855,6 +10860,7 @@ function loadSocieteForm() {
   set('soc-site',    p.site   || 'alltecdist.com');
   set('soc-rib',        p.rib);
   set('soc-banque',     p.banque);
+  set('soc-banque-adresse', p.banque_adresse);
   set('soc-signataire', p.signataire);
   set('soc-adresse', p.adresse|| 'Rue 22 Janvier 1952, Immeuble Essâada 1er Étage, Charguia');
   set('soc-mention', p.mention);
@@ -11696,40 +11702,46 @@ async function dtMarquerPaye(id){
 }
 
 /* ---------- Impression Lettre de Change tunisienne ---------- */
-/* --- Positions en mm — traite tunisienne 177×115mm (réf: logiciel traites) ---
-   AJUSTEZ ±1-2mm après le 1er test d'impression sur papier blanc.
-   Rappel layout traite tunisienne (vue comptable) :
-     HAUT-GAUCHE : Échéance        HAUT-CENTRE : "À [ville]" / "Le [date]"
-     CENTRE      : RIB             DROITE       : Montant (2 cases)
-     GAUCHE      : Bénéficiaire    CENTRE       : À l'ordre de
-     LARGE       : Montant en toutes lettres
-     ── séparation souche ──
-     GAUCHE      : Lieu · Date création · Échéance (espacés)
-     GAUCHE      : RIB + clé
-     CENTRE      : Nom + adresse tiré    DROITE : Domiciliation (banque)
-     GAUCHE      : Signataire             DROITE : Signature
+/* --- Positions en mm — traite tunisienne 177×115mm (réf: image template Boxylab) ---
+   Calé sur l'image template uploadée. Ajustez ±1mm après test papier blanc.
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ [Timbre]  Échéance        À [Ville]    Le [Date]    [C.N° skip]   │
+   │ [Accep.]  [date]          RIB: CB  CA  N°Compte  Clé  [Montant1] │
+   │  Tireur (vendeur/frs)     payer à l'ordre de           [Montant2] │
+   │  [Montant en lettres ────────────────────── Bénéficiaire]         │
+   ├───────────────────────── souche ──────────────────────────────────┤
+   │  Lieu      Date création      Échéance                            │
+   │  RIB: CB  CA  N°Compte  Clé    Valeur     Domiciliation          │
+   │  [Accepté]  [Aval]  Nom+adresse tiré    Signature tireur         │
+   └─────────────────────────────────────────────────────────────────────┘
    -------------------------------------------------------------------- */
 const LC_POS = {
   /* ══ PARTIE HAUTE : Lettre de Change ══ */
-  echeance1:      { top:20, left:28 },    // Échéance — GAUCHE
-  ville1:         { top:17, left:78 },    // "À [ville]" — CENTRE
-  dateCreation1:  { top:23, left:78 },    // "Le [date]" — sous la ville
-  rib1:           { top:33, left:55 },    // RIB complet — CENTRE
-  montantChif1:   { top:28, left:136 },   // # montant TND # case 1 — DROITE
-  montantChif2:   { top:42, left:136 },   // # montant TND # case 2 — DROITE
-  beneficiaire1:  { top:45, left:12 },    // Tireur / Montant de — GAUCHE
-  beneficiaire2:  { top:45, left:62 },    // Payer à l'ordre de — CENTRE
-  montantLettres: { top:55, left:25 },    // Montant en lettres — toute largeur
+  echeance1:      { top:18, left:33 },    // Échéance date — GAUCHE
+  ville1:         { top:14, left:72 },    // "À [ville]" — CENTRE
+  dateCreation1:  { top:19, left:72 },    // "Le [date]" — EN DESSOUS de ville
+  ribBanque1:     { top:28, left:33 },    // Code Banque (2 chiffres)
+  ribAgence1:     { top:28, left:48 },    // Code Agence (3 chiffres)
+  ribCompte1:     { top:28, left:62 },    // N° de Compte
+  ribCle1:        { top:28, left:100 },   // Clé RIB (2 chiffres)
+  montantChif1:   { top:25, left:138 },   // # montant DT # case 1 — DROITE
+  tireur:         { top:42, left:8 },     // Tireur (vendeur) = fournisseur — GAUCHE
+  beneficiaire:   { top:46, left:58 },    // Payer à l'ordre de — CENTRE
+  montantChif2:   { top:40, left:138 },   // # montant # case 2 — DROITE
+  montantLettres: { top:54, left:8 },     // Montant en toutes lettres — large
   /* ══ PARTIE BASSE : Souche ══ */
-  lieu2:          { top:69, left:8  },    // Lieu de création — GAUCHE
-  dateCreation2:  { top:69, left:42 },    // Date de création — espacé
-  echeance2:      { top:69, left:80 },    // Échéance — espacé
-  rib2:           { top:76, left:10 },    // RIB tiré (sans clé)
-  cle:            { top:76, left:65 },    // Clé RIB
-  tirenom:        { top:82, left:75 },    // Nom du tiré
-  tireadresse:    { top:87, left:75 },    // Adresse du tiré
-  domicil:        { top:81, left:125 },   // Domiciliation — case DROITE (banque)
-  signataire:     { top:93, left:10 },    // Nom signataire — BAS GAUCHE
+  lieu2:          { top:65, left:8 },     // Lieu de création — GAUCHE
+  dateCreation2:  { top:65, left:38 },    // Date de création — espacé
+  echeance2:      { top:65, left:76 },    // Échéance — espacé
+  ribBanque2:     { top:73, left:8 },     // Code Banque
+  ribAgence2:     { top:73, left:22 },    // Code Agence
+  ribCompte2:     { top:73, left:38 },    // N° de Compte
+  ribCle2:        { top:73, left:62 },    // Clé RIB
+  valeur:         { top:73, left:88 },    // "Dinars"
+  domicil:        { top:70, left:122 },   // Domiciliation (banque) — case DROITE
+  tirenom:        { top:85, left:70 },    // Nom du tiré (acheteur = ALLTEC) — CENTRE
+  tireadresse:    { top:90, left:70 },    // Adresse du tiré — sous le nom
+  signataire:     { top:96, left:125 },   // Signature du tireur (vendeur) — BAS DROITE
 };
 
 function dtFmtDateLC(d){
@@ -11746,30 +11758,34 @@ function dtFmtMontantLC(m){
 function dtPrintLC(id){
   const r = DT_CACHE.find(x=>x.id===id);
   if (!r) return;
-  // Lecture depuis Profil Société (Administration → Profil Société)
+  // Lecture depuis Profil Société
   const p = (typeof getSocieteProfile === 'function') ? getSocieteProfile() : {};
   const socNom  = (p.nom || 'ALLTEC').toUpperCase();
-  const socRib  = p.rib || '';
+  const socRib  = (p.rib || '').replace(/\s/g, '');   // nettoyé sans espaces
   const socBanque = (p.banque || '').toUpperCase();
+  const socBanqueAdr = p.banque_adresse || '';
   const socAdresse = p.adresse || '';
   const socSignataire = p.signataire || '';
   const lieu = 'Tunis';
+
+  // Décomposer le RIB tunisien : BB AAA NNNNNNNNNNNNN CC (20 car.)
+  const ribCB = socRib.slice(0,2);                    // Code Banque
+  const ribCA = socRib.slice(2,5);                    // Code Agence
+  const ribNC = socRib.slice(5, socRib.length - 2);   // N° Compte
+  const ribCle = socRib.slice(-2);                    // Clé
 
   const montant = dtNum(r.montant);
   const lettres = dtEnLettres(montant);
   const ech = dtFmtDateLC(r.date_echeance);
   const emission = dtFmtDateLC(r.date_emission) || dtFmtDateLC(new Date().toISOString());
   const montantFmt = dtFmtMontantLC(montant);
-  const beneficiaire = (r.fournisseur||'').toUpperCase();
-  const ribCle = socRib.slice(-2);
-  const ribSansCle = socRib.slice(0,-2);
+  const fournisseur = (r.fournisseur||'').toUpperCase();
   const P = LC_POS;
 
-  // Champ positionné — pos:{top,left}, texte, taille, gras, largeur max (mm)
   const f = (pos, text, size, bold, maxW) =>
     `<div style="position:absolute;top:${pos.top}mm;left:${pos.left}mm;font-size:${size||'9pt'};${bold?'font-weight:bold;':''}${maxW?'width:'+maxW+'mm;':''}">${text}</div>`;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Traite ${beneficiaire}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Traite ${fournisseur}</title>
 <style>
   @page { size:177mm 115mm; margin:0; }
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -11778,22 +11794,28 @@ function dtPrintLC(id){
 </style></head><body>
 ${f(P.echeance1, ech, '10pt', true)}
 ${f(P.ville1, lieu, '10pt', true)}
-${f(P.dateCreation1, emission, '9.5pt')}
-${f(P.rib1, socRib, '9pt', true)}
+${f(P.dateCreation1, emission, '10pt')}
+${f(P.ribBanque1, ribCB, '10pt', true)}
+${f(P.ribAgence1, ribCA, '10pt', true)}
+${f(P.ribCompte1, ribNC, '10pt', true)}
+${f(P.ribCle1, ribCle, '10pt', true)}
 ${f(P.montantChif1, montantFmt, '10pt', true)}
 ${f(P.montantChif2, montantFmt, '10pt', true)}
-${f(P.beneficiaire1, beneficiaire, '10pt', true)}
-${f(P.beneficiaire2, beneficiaire, '10pt', true)}
-${f(P.montantLettres, esc(lettres), '8.5pt', false, 110)}
+${f(P.tireur, fournisseur, '10pt', true)}
+${f(P.beneficiaire, fournisseur, '10pt', true)}
+${f(P.montantLettres, esc(lettres), '8pt', false, 120)}
 ${f(P.lieu2, lieu, '9pt', true)}
 ${f(P.dateCreation2, emission, '9pt')}
 ${f(P.echeance2, ech, '9pt', true)}
-${f(P.rib2, ribSansCle, '8.5pt')}
-${f(P.cle, ribCle, '8.5pt')}
-${f(P.tirenom, socNom, '8.5pt', true, 42)}
-${f(P.tireadresse, esc(socAdresse), '6.5pt', false, 42)}
-${f(P.domicil, socBanque, '9pt', true, 40)}
-${f(P.signataire, socSignataire, '9pt')}
+${f(P.ribBanque2, ribCB, '9pt')}
+${f(P.ribAgence2, ribCA, '9pt')}
+${f(P.ribCompte2, ribNC, '8pt')}
+${f(P.ribCle2, ribCle, '9pt')}
+${f(P.valeur, 'Dinars', '8pt')}
+${f(P.domicil, socBanque+'<br>'+esc(socBanqueAdr), '8pt', true, 42)}
+${f(P.tirenom, socNom, '8pt', true, 40)}
+${f(P.tireadresse, esc(socAdresse), '6pt', false, 40)}
+${f(P.signataire, socSignataire, '8pt')}
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
   const w = window.open('','_blank','width=700,height=500');
