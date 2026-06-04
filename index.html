@@ -1633,6 +1633,32 @@ textarea.form-control{resize:vertical;min-height:80px}
         </table></div></div>
       </div>
 
+
+      <!-- ═══════════ TIERS ═══════════ -->
+      <div class="page" id="page-tiers">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🤝 Tiers</div>
+            <div class="page-sub">Fournisseurs · Locataires · Administration · Banques</div>
+          </div>
+          <div class="toolbar">
+            <select class="form-control" id="ti-f-type" onchange="loadTiers()" style="width:130px">
+              <option value="">Tous types</option>
+              <option>Fournisseur</option><option>Locataire</option><option>Administration</option><option>Banque</option><option>Autre</option>
+            </select>
+            <input class="form-control" id="ti-f-search" placeholder="Rechercher…" oninput="loadTiers()" style="width:150px">
+            <button class="btn btn-primary" onclick="openTiersModal()">+ Nouveau tiers</button>
+          </div>
+        </div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr>
+            <th>Nom</th><th>Type</th><th>Ville</th><th>Téléphone</th><th>Contact</th>
+            <th>Banque</th><th>RIB</th><th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="ti-tbody"></tbody>
+        </table></div></div>
+      </div>
+
       <!-- ═══════════ RAPPORT ACTIVITÉ ═══════════ -->
       <div class="page" id="page-rapportActivite">
         <div class="page-header">
@@ -3001,8 +3027,16 @@ supabase functions deploy send-sms
                   <input type="text" class="form-control" id="soc-site" placeholder="alltecdist.com" oninput="updateDocPreview()">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">RIB / Banque</label>
-                  <input type="text" class="form-control" id="soc-rib" placeholder="Ex: BNA — 00 000 0000000000 00">
+                  <label class="form-label">RIB bancaire</label>
+                  <input type="text" class="form-control" id="soc-rib" placeholder="00 000 0000000000 00">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Banque</label>
+                  <input type="text" class="form-control" id="soc-banque" placeholder="AL BARAKA BANK">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Signataire (traites)</label>
+                  <input type="text" class="form-control" id="soc-signataire" placeholder="Nom du signataire">
                 </div>
               </div>
               <div class="form-grid full" style="margin-top:10px">
@@ -4341,9 +4375,40 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- ═══ MODAL TIERS ═══ -->
+<div class="overlay" id="ti-modal-overlay"><div class="modal" style="max-width:700px">
+  <div class="card-header"><div class="card-title">🤝 Tiers</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Type</label>
+      <select class="form-control" id="ti-type"><option>Fournisseur</option><option>Locataire</option><option>Administration</option><option>Banque</option><option>Autre</option></select></div>
+    <div><label class="page-sub">Nom / Raison sociale *</label><input class="form-control" id="ti-nom"></div>
+    <div><label class="page-sub">Contact</label><input class="form-control" id="ti-contact" placeholder="Nom du contact"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Téléphone</label><input class="form-control" id="ti-tel"></div>
+    <div><label class="page-sub">Email</label><input class="form-control" id="ti-email" type="email"></div>
+    <div><label class="page-sub">Ville</label><input class="form-control" id="ti-ville"></div>
+  </div>
+  <div style="margin-bottom:.8rem"><label class="page-sub">Adresse</label><input class="form-control" id="ti-adresse"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Banque</label><input class="form-control" id="ti-banque"></div>
+    <div><label class="page-sub">RIB</label><input class="form-control" id="ti-rib" placeholder="00 000 0000000000 00"></div>
+    <div><label class="page-sub">Matricule fiscal</label><input class="form-control" id="ti-mf"></div>
+  </div>
+  <div style="margin-bottom:.8rem"><label class="page-sub">Observation</label><textarea class="form-control" id="ti-obs" rows="2"></textarea></div>
+  <div style="display:flex;justify-content:flex-end;gap:.5rem">
+    <button class="btn btn-ghost" onclick="closeModal('ti-modal-overlay')">Annuler</button>
+    <button class="btn btn-primary" onclick="saveTiers()">💾 Enregistrer</button>
+  </div>
+</div></div>
+
 <!-- ═══ MODAL DETTE ═══ -->
 <div class="overlay" id="dt-modal-overlay"><div class="modal" style="max-width:780px">
   <div class="card-header"><div class="card-title">🏦 Dette / Engagement</div></div>
+  <div style="margin-bottom:.6rem"><label class="page-sub">Sélectionner un tiers existant</label>
+    <select class="form-control" id="dt-tiers-select" onchange="dtOnTiersSelect()" onfocus="dtLoadTiersDropdown()" style="max-width:350px">
+      <option value="">— Saisie manuelle —</option>
+    </select></div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
     <div><label class="page-sub">Catégorie</label>
       <select class="form-control" id="dt-categorie" onchange="dtToggleSousCat()">
@@ -4547,6 +4612,7 @@ const MODULES = [
   { id:'sms', name:'SMS', icon:'📱', desc:'Notifications SMS automatiques' },
   { id:'rapportActivite', name:'Rapport Activité', icon:'📈', desc:'Suivi & évaluation des commerciaux' },
   { id:'dettes', name:'Dettes', icon:'🏦', desc:'Suivi des engagements financiers' },
+  { id:'tiers', name:'Tiers', icon:'🤝', desc:'Fournisseurs, locataires, administration' },
 ];
 
 function mergeRolePerms(roleStr) {
@@ -4562,10 +4628,10 @@ function mergeRolePerms(roleStr) {
 }
 
 const ROLE_PRESETS = {
-  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw', rapportActivite:'rw', dettes:'rw' },
-  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'', dettes:'' },
-  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'rw', dettes:'r' },
-  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r', rapportActivite:'', dettes:'r' },
+  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw', rapportActivite:'rw', dettes:'rw', tiers:'rw' },
+  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'', dettes:'', tiers:'' },
+  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'rw', dettes:'r', tiers:'r' },
+  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r', rapportActivite:'', dettes:'r', tiers:'r' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4730,6 +4796,7 @@ function buildSidebar() {
       { id:'rapports', icon:'📊', name:'Rapports', perm:'rapports' },
       { id:'analyse', icon:'📈', name:'Analyse', perm:'analyse' },
       { id:'dettes', icon:'🏦', name:'Dettes', perm:'dettes' },
+      { id:'tiers', icon:'🤝', name:'Tiers', perm:'tiers' },
     ]},
   ];
 
@@ -4777,6 +4844,7 @@ function showPage(id) {
     rh: loadRH, sms: loadSMS,
     rapportActivite: loadRapportActivite,
     dettes: loadDettes,
+    tiers: loadTiers,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
   };
   if (loaders[id]) loaders[id]();
@@ -10744,7 +10812,9 @@ function saveSociete() {
     tel2:      document.getElementById('soc-tel2').value.trim(),
     email:     document.getElementById('soc-email').value.trim(),
     site:      document.getElementById('soc-site').value.trim(),
-    rib:       document.getElementById('soc-rib').value.trim(),
+    rib:        document.getElementById('soc-rib').value.trim(),
+    banque:     document.getElementById('soc-banque')?.value.trim() || '',
+    signataire: document.getElementById('soc-signataire')?.value.trim() || '',
     adresse:   document.getElementById('soc-adresse').value.trim(),
     mention:   document.getElementById('soc-mention').value.trim(),
     agences: {
@@ -10770,7 +10840,9 @@ function loadSocieteForm() {
   set('soc-tel2',    p.tel2);
   set('soc-email',   p.email  || 'contact@alltecdist.com');
   set('soc-site',    p.site   || 'alltecdist.com');
-  set('soc-rib',     p.rib);
+  set('soc-rib',        p.rib);
+  set('soc-banque',     p.banque);
+  set('soc-signataire', p.signataire);
   set('soc-adresse', p.adresse|| 'Rue 22 Janvier 1952, Immeuble Essâada 1er Étage, Charguia');
   set('soc-mention', p.mention);
   if (p.agences) {
@@ -11248,6 +11320,117 @@ async function deleteMaint(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TIERS — Fournisseurs, locataires, administration
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* ============================================================
+   MODULE : TIERS — Fournisseurs, locataires, administration
+   id : tiers  |  table : tiers  |  perm : tiers
+   ============================================================ */
+const TIERS_TYPES = ['Fournisseur','Locataire','Administration','Banque','Autre'];
+let TIERS_CACHE = [];
+let TIERS_EDIT_ID = null;
+
+async function loadTiers(){
+  const tb = document.getElementById('ti-tbody');
+  if (tb) tb.innerHTML = loadingRow(8);
+  const conds = [];
+  const fType = document.getElementById('ti-f-type')?.value||'';
+  const fSearch = document.getElementById('ti-f-search')?.value||'';
+  if (fType) conds.push('type=eq.'+encodeURIComponent(fType));
+  if (fSearch) conds.push('nom=ilike.*'+encodeURIComponent(fSearch)+'*');
+  try {
+    const rows = await sb('tiers', { order:'nom.asc', filter:conds.join('&') });
+    TIERS_CACHE = rows||[];
+    tiRenderTable(TIERS_CACHE);
+  } catch(e){ if (tb) tb.innerHTML = errorRow(8, e.message); }
+}
+
+function tiRenderTable(rows){
+  const tb = document.getElementById('ti-tbody');
+  if (!tb) return;
+  if (!rows.length){ tb.innerHTML = emptyRow(8,'Aucun tiers enregistré'); return; }
+  const w = canWrite('tiers');
+  tb.innerHTML = rows.map(r => {
+    const actif = r.actif !== false;
+    return `<tr style="${actif?'':'opacity:.5'}">
+      <td><strong>${esc(r.nom||'')}</strong></td>
+      <td>${esc(r.type||'')}</td>
+      <td>${esc(r.ville||'')}</td>
+      <td>${esc(r.telephone||'')}</td>
+      <td>${esc(r.contact||'')}</td>
+      <td>${esc(r.banque||'')}</td>
+      <td style="font-family:monospace;font-size:.8rem">${esc(r.rib||'')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        ${w?`<button class="btn btn-sm btn-ghost" onclick="openTiersModal('${r.id}')">✏️</button>`:''}
+        ${w?`<button class="btn btn-sm btn-ghost" onclick="deleteRecord('tiers','${r.id}',loadTiers)">🗑️</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openTiersModal(id){
+  TIERS_EDIT_ID = id||null;
+  const r = id ? TIERS_CACHE.find(x=>x.id===id) : null;
+  const set = (sel,val) => { const el=document.getElementById(sel); if(el) el.value=(val??''); };
+  set('ti-type', r?.type||'Fournisseur');
+  set('ti-nom', r?.nom);
+  set('ti-adresse', r?.adresse);
+  set('ti-ville', r?.ville);
+  set('ti-tel', r?.telephone);
+  set('ti-email', r?.email);
+  set('ti-contact', r?.contact);
+  set('ti-banque', r?.banque);
+  set('ti-rib', r?.rib);
+  set('ti-mf', r?.matricule_fiscal);
+  set('ti-obs', r?.observation);
+  openModal('ti-modal-overlay');
+}
+
+async function saveTiers(){
+  const v = sel => { const el=document.getElementById(sel); return el?el.value.trim():''; };
+  const body = {
+    type: v('ti-type'), nom: v('ti-nom'), adresse: v('ti-adresse'), ville: v('ti-ville'),
+    telephone: v('ti-tel'), email: v('ti-email'), contact: v('ti-contact'),
+    banque: v('ti-banque'), rib: v('ti-rib'), matricule_fiscal: v('ti-mf'),
+    observation: v('ti-obs'), actif: true,
+  };
+  if (!body.nom){ toast('Nom du tiers obligatoire','error'); return; }
+  try {
+    if (TIERS_EDIT_ID) await sbPatch('tiers', TIERS_EDIT_ID, body);
+    else await sbPost('tiers', body);
+    closeModal('ti-modal-overlay'); loadTiers(); toast('Tiers enregistré');
+    // Rafraîchir dropdown dettes si visible
+    if (typeof dtLoadTiersDropdown === 'function') dtLoadTiersDropdown();
+  } catch(e){ toast('Erreur: '+e.message,'error'); }
+}
+
+/* ---------- Dropdown tiers pour le module Dettes ---------- */
+async function dtLoadTiersDropdown(){
+  const sel = document.getElementById('dt-tiers-select');
+  if (!sel) return;
+  let list = TIERS_CACHE;
+  if (!list.length){
+    try { list = await sb('tiers', { order:'nom.asc', filter:'actif=eq.true' }); TIERS_CACHE = list; } catch(e){}
+  }
+  sel.innerHTML = '<option value="">— Sélectionner un tiers —</option>' +
+    list.map(t => `<option value="${t.id}">${esc(t.nom)} (${esc(t.type||'')})</option>`).join('');
+}
+
+function dtOnTiersSelect(){
+  const sel = document.getElementById('dt-tiers-select');
+  if (!sel || !sel.value) return;
+  const t = TIERS_CACHE.find(x => x.id === sel.value);
+  if (!t) return;
+  const set = (id,v) => { const el=document.getElementById(id); if(el&&v) el.value=v; };
+  set('dt-frs', t.nom);
+  set('dt-banque', t.banque);
+  set('dt-categorie', t.type === 'Locataire' ? 'Loyer' : t.type === 'Administration' ? 'Administration' : 'Fournisseur');
+  dtToggleSousCat();
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DETTES — Suivi des engagements financiers
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11500,24 +11683,12 @@ async function dtMarquerPaye(id){
 }
 
 /* ---------- Impression Lettre de Change tunisienne ---------- */
-/* --- Infos fixes AllTEC (modifiez ici si changement de banque/signataire) --- */
-const LC_ALLTEC = {
-  nom: 'ALLTEC',
-  adresse: 'Rue 22 Janvier 1958 Imm. Essaâda 1er Ét.',
-  banque: 'AL BARAKA BANK',
-  rib: '32014788101073884178',
-  cn: '011268075034',
-  signataire: 'Ayachi Iheb',
-  lieu: 'Tunis',
-};
-
-/* --- Positions en mm sur la traite vierge (ajustez ±1-2mm après 1er test) --- */
+/* --- Positions en mm sur la traite vierge 177×115mm (ajustez après 1er test) --- */
 const LC_POS = {
   /* ══ PARTIE HAUTE : Lettre de Change ══ */
-  echeance1:      { top:20, left:30 },    // date échéance haut
-  ville1:         { top:17, left:83 },    // "Le ... à [ville]"
-  dateCreation1:  { top:17, left:105 },   // date de création
-  cn:             { top:10, left:143 },   // code paiement C.N°
+  ville1:         { top:17, left:83 },    // "À [ville]"
+  echeance1:      { top:17, left:115 },   // échéance (même ligne que ville)
+  dateCreation1:  { top:22, left:83 },    // "Le [date]" (SOUS la ville)
   rib1:           { top:32, left:58 },    // RIB complet
   montantChif1:   { top:27, left:136 },   // # montant TND # (box 1)
   montantChif2:   { top:41, left:136 },   // # montant TND # (box 2)
@@ -11528,23 +11699,20 @@ const LC_POS = {
   lieu2:          { top:70, left:10 },    // lieu de création (bas)
   dateCreation2:  { top:70, left:46 },    // date (bas)
   echeance2:      { top:70, left:84 },    // échéance (bas)
-  rib2:           { top:77, left:16 },    // RIB du tiré (bas)
+  rib2:           { top:77, left:16 },    // RIB du tiré (bas, sans clé)
   cle:            { top:77, left:68 },    // clé RIB
-  tirenom:        { top:82, left:80 },    // nom du tiré (ALLTEC)
+  tirenom:        { top:82, left:80 },    // nom du tiré
   domicil1:       { top:80, left:130 },   // domiciliation ligne 1
-  domicil2:       { top:85, left:130 },   // domiciliation ligne 2
-  domicil3:       { top:90, left:130 },   // domiciliation ligne 3
+  domicil2:       { top:85, left:130 },   // ligne 2
+  domicil3:       { top:90, left:130 },   // ligne 3
   signataire:     { top:91, left:16 },    // nom signataire
 };
 
 function dtFmtDateLC(d){
   if (!d) return '';
   const dt = new Date(d);
-  const dd = String(dt.getDate()).padStart(2,'0');
-  const mm = String(dt.getMonth()+1).padStart(2,'0');
-  return dd+'/'+mm+'/'+dt.getFullYear();
+  return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
 }
-
 function dtFmtMontantLC(m){
   const parts = m.toFixed(3).split('.');
   const entier = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -11554,17 +11722,30 @@ function dtFmtMontantLC(m){
 function dtPrintLC(id){
   const r = DT_CACHE.find(x=>x.id===id);
   if (!r) return;
+  // Lire depuis Profil Société (pas hardcodé)
+  const p = (typeof getSocieteProfile === 'function') ? getSocieteProfile() : {};
+  const socNom  = p.nom || 'ALLTEC';
+  const socRib  = p.rib || '';
+  const socBanque = p.banque || '';
+  const socAdresse = p.adresse || '';
+  const socSignataire = p.signataire || '';
+  const lieu = 'Tunis';
+
   const montant = dtNum(r.montant);
   const lettres = dtEnLettres(montant);
   const ech = dtFmtDateLC(r.date_echeance);
   const emission = dtFmtDateLC(r.date_emission) || dtFmtDateLC(new Date().toISOString());
   const montantFmt = dtFmtMontantLC(montant);
   const beneficiaire = (r.fournisseur||'').toUpperCase();
-  const A = LC_ALLTEC, P = LC_POS;
-  const rib = A.rib;
-  const ribCle = rib.slice(-2);
+  const ribCle = socRib.slice(-2);
+  const P = LC_POS;
 
-  // Génère un champ positionné
+  // Découper le nom de la banque en max 3 lignes
+  const banqueParts = socBanque.split(/\s+/);
+  const bLines = ['','',''];
+  if (banqueParts.length <= 3){ banqueParts.forEach((w,i)=> bLines[i]=w); }
+  else { bLines[0]=banqueParts.slice(0,1).join(' '); bLines[1]=banqueParts.slice(1,2).join(' '); bLines[2]=banqueParts.slice(2).join(' '); }
+
   const f = (pos, text, size, bold) =>
     `<div style="position:absolute;top:${pos.top}mm;left:${pos.left}mm;font-size:${size||'9pt'};${bold?'font-weight:bold;':''}">${text}</div>`;
 
@@ -11575,26 +11756,25 @@ function dtPrintLC(id){
   body { width:177mm; height:115mm; position:relative; font-family:Arial,Helvetica,sans-serif; color:#000; }
   @media print { body { -webkit-print-color-adjust:exact; } }
 </style></head><body>
+${f(P.ville1, lieu, '10pt', true)}
 ${f(P.echeance1, ech, '10pt', true)}
-${f(P.ville1, A.lieu, '10pt', true)}
 ${f(P.dateCreation1, emission, '10pt')}
-${f(P.cn, A.cn, '9pt')}
-${f(P.rib1, rib, '9pt', true)}
+${f(P.rib1, socRib, '9pt', true)}
 ${f(P.montantChif1, montantFmt, '10pt', true)}
 ${f(P.montantChif2, montantFmt, '10pt', true)}
 ${f(P.beneficiaire1, beneficiaire, '10pt', true)}
 ${f(P.beneficiaire2, beneficiaire, '10pt', true)}
 ${f(P.montantLettres, esc(lettres), '8.5pt')}
-${f(P.lieu2, A.lieu, '9pt', true)}
+${f(P.lieu2, lieu, '9pt', true)}
 ${f(P.dateCreation2, emission, '9pt')}
 ${f(P.echeance2, ech, '9pt', true)}
-${f(P.rib2, rib.slice(0,-2), '9pt')}
-${f(P.cle, ribCle, '9pt')}
-${f(P.tirenom, A.nom, '10pt', true)}
-${f(P.domicil1, 'AL', '9pt', true)}
-${f(P.domicil2, 'BARAKA', '9pt', true)}
-${f(P.domicil3, 'BANK', '9pt', true)}
-${f(P.signataire, A.signataire, '9pt')}
+${f(P.rib2, socRib.slice(0,-2), '8.5pt')}
+${f(P.cle, ribCle, '8.5pt')}
+${f(P.tirenom, socNom.toUpperCase(), '10pt', true)}
+${f(P.domicil1, bLines[0], '9pt', true)}
+${f(P.domicil2, bLines[1], '9pt', true)}
+${f(P.domicil3, bLines[2], '9pt', true)}
+${f(P.signataire, socSignataire, '9pt')}
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
   const w = window.open('','_blank','width=700,height=500');
