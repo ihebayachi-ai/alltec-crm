@@ -11500,60 +11500,104 @@ async function dtMarquerPaye(id){
 }
 
 /* ---------- Impression Lettre de Change tunisienne ---------- */
+/* --- Infos fixes AllTEC (modifiez ici si changement de banque/signataire) --- */
+const LC_ALLTEC = {
+  nom: 'ALLTEC',
+  adresse: 'Rue 22 Janvier 1958 Imm. Essaâda 1er Ét.',
+  banque: 'AL BARAKA BANK',
+  rib: '32014788101073884178',
+  cn: '011268075034',
+  signataire: 'Ayachi Iheb',
+  lieu: 'Tunis',
+};
+
+/* --- Positions en mm sur la traite vierge (ajustez ±1-2mm après 1er test) --- */
+const LC_POS = {
+  /* ══ PARTIE HAUTE : Lettre de Change ══ */
+  echeance1:      { top:20, left:30 },    // date échéance haut
+  ville1:         { top:17, left:83 },    // "Le ... à [ville]"
+  dateCreation1:  { top:17, left:105 },   // date de création
+  cn:             { top:10, left:143 },   // code paiement C.N°
+  rib1:           { top:32, left:58 },    // RIB complet
+  montantChif1:   { top:27, left:136 },   // # montant TND # (box 1)
+  montantChif2:   { top:41, left:136 },   // # montant TND # (box 2)
+  beneficiaire1:  { top:46, left:14 },    // tireur / montant de
+  beneficiaire2:  { top:46, left:63 },    // payer à l'ordre de
+  montantLettres: { top:54, left:28 },    // montant en lettres
+  /* ══ PARTIE BASSE : Souche ══ */
+  lieu2:          { top:70, left:10 },    // lieu de création (bas)
+  dateCreation2:  { top:70, left:46 },    // date (bas)
+  echeance2:      { top:70, left:84 },    // échéance (bas)
+  rib2:           { top:77, left:16 },    // RIB du tiré (bas)
+  cle:            { top:77, left:68 },    // clé RIB
+  tirenom:        { top:82, left:80 },    // nom du tiré (ALLTEC)
+  domicil1:       { top:80, left:130 },   // domiciliation ligne 1
+  domicil2:       { top:85, left:130 },   // domiciliation ligne 2
+  domicil3:       { top:90, left:130 },   // domiciliation ligne 3
+  signataire:     { top:91, left:16 },    // nom signataire
+};
+
+function dtFmtDateLC(d){
+  if (!d) return '';
+  const dt = new Date(d);
+  const dd = String(dt.getDate()).padStart(2,'0');
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  return dd+'/'+mm+'/'+dt.getFullYear();
+}
+
+function dtFmtMontantLC(m){
+  const parts = m.toFixed(3).split('.');
+  const entier = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return '# '+entier+','+parts[1]+' TND #';
+}
+
 function dtPrintLC(id){
   const r = DT_CACHE.find(x=>x.id===id);
   if (!r) return;
   const montant = dtNum(r.montant);
   const lettres = dtEnLettres(montant);
-  const ech = r.date_echeance ? new Date(r.date_echeance).toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'}) : '___________';
-  const emission = r.date_emission ? new Date(r.date_emission).toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'}) : new Date().toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'});
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lettre de Change</title>
+  const ech = dtFmtDateLC(r.date_echeance);
+  const emission = dtFmtDateLC(r.date_emission) || dtFmtDateLC(new Date().toISOString());
+  const montantFmt = dtFmtMontantLC(montant);
+  const beneficiaire = (r.fournisseur||'').toUpperCase();
+  const A = LC_ALLTEC, P = LC_POS;
+  const rib = A.rib;
+  const ribCle = rib.slice(-2);
+
+  // Génère un champ positionné
+  const f = (pos, text, size, bold) =>
+    `<div style="position:absolute;top:${pos.top}mm;left:${pos.left}mm;font-size:${size||'9pt'};${bold?'font-weight:bold;':''}">${text}</div>`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Traite ${beneficiaire}</title>
 <style>
-  @page{size:A5 landscape;margin:10mm}
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;padding:8mm}
-  .lc-border{border:2px solid #000;padding:6mm;position:relative;min-height:140mm}
-  .lc-header{text-align:center;font-size:16pt;font-weight:bold;letter-spacing:3px;border-bottom:2px solid #000;padding-bottom:4mm;margin-bottom:4mm}
-  .lc-row{display:flex;justify-content:space-between;margin:3mm 0;font-size:10pt}
-  .lc-field{border-bottom:1px dotted #000;min-width:50mm;display:inline-block;padding:1mm 2mm}
-  .lc-montant{font-size:14pt;font-weight:bold;text-align:center;border:2px solid #000;padding:3mm;margin:4mm 0}
-  .lc-lettres{font-style:italic;font-size:10pt;text-align:center;margin:2mm 0;min-height:12mm;border:1px solid #ccc;padding:2mm}
-  .lc-box{border:1px solid #000;padding:3mm;margin:3mm 0;min-height:20mm}
-  .lc-box-title{font-weight:bold;font-size:9pt;margin-bottom:2mm}
-  .lc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
-  .lc-sig{text-align:center;margin-top:6mm;min-height:25mm}
-  .lc-sig-label{font-size:9pt;color:#555;border-top:1px solid #000;padding-top:2mm;margin-top:15mm}
+  @page { size:177mm 115mm; margin:0; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:177mm; height:115mm; position:relative; font-family:Arial,Helvetica,sans-serif; color:#000; }
+  @media print { body { -webkit-print-color-adjust:exact; } }
 </style></head><body>
-<div class="lc-border">
-  <div class="lc-header">LETTRE DE CHANGE</div>
-  <div class="lc-row">
-    <div>N° <span class="lc-field">${esc(r.numero_piece||'________')}</span></div>
-    <div>Lieu : <span class="lc-field">Tunis</span></div>
-    <div>Date : <span class="lc-field">${emission}</span></div>
-  </div>
-  <div class="lc-row"><div>Échéance : <span class="lc-field" style="font-weight:bold">${ech}</span></div></div>
-  <div class="lc-montant">${fmtMoney(montant)} TND</div>
-  <div class="lc-lettres">${esc(lettres)}</div>
-  <div class="lc-grid">
-    <div class="lc-box">
-      <div class="lc-box-title">TIRÉ (débiteur)</div>
-      <div>Nom : <span class="lc-field">${esc(r.fournisseur||'')}</span></div>
-      <div style="margin-top:2mm">Banque : <span class="lc-field">${esc(r.banque||'')}</span></div>
-    </div>
-    <div class="lc-box">
-      <div class="lc-box-title">TIREUR (créancier)</div>
-      <div>Nom : <span class="lc-field">AllTEC Distribution</span></div>
-      <div style="margin-top:2mm">Adresse : <span class="lc-field">Charguia, Tunis</span></div>
-    </div>
-  </div>
-  <div class="lc-grid">
-    <div class="lc-sig"><div class="lc-sig-label">Signature du tireur</div></div>
-    <div class="lc-sig"><div class="lc-sig-label">Acceptation du tiré</div></div>
-  </div>
-</div>
+${f(P.echeance1, ech, '10pt', true)}
+${f(P.ville1, A.lieu, '10pt', true)}
+${f(P.dateCreation1, emission, '10pt')}
+${f(P.cn, A.cn, '9pt')}
+${f(P.rib1, rib, '9pt', true)}
+${f(P.montantChif1, montantFmt, '10pt', true)}
+${f(P.montantChif2, montantFmt, '10pt', true)}
+${f(P.beneficiaire1, beneficiaire, '10pt', true)}
+${f(P.beneficiaire2, beneficiaire, '10pt', true)}
+${f(P.montantLettres, esc(lettres), '8.5pt')}
+${f(P.lieu2, A.lieu, '9pt', true)}
+${f(P.dateCreation2, emission, '9pt')}
+${f(P.echeance2, ech, '9pt', true)}
+${f(P.rib2, rib.slice(0,-2), '9pt')}
+${f(P.cle, ribCle, '9pt')}
+${f(P.tirenom, A.nom, '10pt', true)}
+${f(P.domicil1, 'AL', '9pt', true)}
+${f(P.domicil2, 'BARAKA', '9pt', true)}
+${f(P.domicil3, 'BANK', '9pt', true)}
+${f(P.signataire, A.signataire, '9pt')}
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
-  const w = window.open('','_blank','width=800,height=600');
+  const w = window.open('','_blank','width=700,height=500');
   if (w){ w.document.write(html); w.document.close(); }
 }
 
