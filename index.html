@@ -1610,9 +1610,11 @@ textarea.form-control{resize:vertical;min-height:80px}
               <option value="">Tous statuts</option>
               <option>En attente</option><option>Payé</option><option>Impayé</option><option>Reporté</option><option>Partiel</option><option>En litige</option><option>Annulé</option>
             </select>
-            <input class="form-control" id="dt-f-frs" placeholder="Fournisseur…" oninput="loadDettes()" style="width:130px">
-            <select class="form-control" id="dt-f-mois" onchange="loadDettes()" style="width:90px">
-              <option value="">Mois</option>
+            <select class="form-control" id="dt-f-frs" onchange="loadDettes()" style="width:160px">
+              <option value="">Tous bénéficiaires</option>
+            </select>
+            <select class="form-control" id="dt-f-mois" onchange="loadDettes()" style="width:110px">
+              <option value="">Éch. : tous mois</option>
               <option value="1">Jan</option><option value="2">Fév</option><option value="3">Mar</option>
               <option value="4">Avr</option><option value="5">Mai</option><option value="6">Jun</option>
               <option value="7">Jul</option><option value="8">Aoû</option><option value="9">Sep</option>
@@ -3061,7 +3063,7 @@ supabase functions deploy send-sms
                   <input type="text" class="form-control" id="soc-banque-adresse" placeholder="Ex: Agence Charguia, Tunis">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Signataire des traites</label>
+                  <label class="form-label">Aval (traites)</label>
                   <input type="text" class="form-control" id="soc-signataire" placeholder="Ex: Ayachi Iheb">
                 </div>
               </div>
@@ -11548,15 +11550,52 @@ async function loadDettes(){
   const fAnnee = document.getElementById('dt-f-annee')?.value||'';
   if (fCat) conds.push('categorie=eq.'+encodeURIComponent(fCat));
   if (fStat) conds.push('statut=eq.'+encodeURIComponent(fStat));
-  if (fFrs) conds.push('fournisseur=ilike.*'+encodeURIComponent(fFrs)+'*');
-  if (fMois) conds.push('mois_comptable=eq.'+fMois);
-  if (fAnnee) conds.push('annee_comptable=eq.'+fAnnee);
+  if (fFrs) conds.push('fournisseur=eq.'+encodeURIComponent(fFrs));
+  // Filtre par mois/année d'ÉCHÉANCE (pas mois_comptable)
+  if (fMois && fAnnee){
+    const m = String(fMois).padStart(2,'0');
+    const lastDay = new Date(Number(fAnnee), Number(fMois), 0).getDate();
+    conds.push('date_echeance=gte.'+fAnnee+'-'+m+'-01');
+    conds.push('date_echeance=lte.'+fAnnee+'-'+m+'-'+lastDay);
+  } else if (fMois){
+    const yr = new Date().getFullYear();
+    const m = String(fMois).padStart(2,'0');
+    const lastDay = new Date(yr, Number(fMois), 0).getDate();
+    conds.push('date_echeance=gte.'+yr+'-'+m+'-01');
+    conds.push('date_echeance=lte.'+yr+'-'+m+'-'+lastDay);
+  } else if (fAnnee){
+    conds.push('date_echeance=gte.'+fAnnee+'-01-01');
+    conds.push('date_echeance=lte.'+fAnnee+'-12-31');
+  }
   try {
     const rows = await sb('dettes', { order:'date_echeance.asc', filter:conds.join('&') });
     DT_CACHE = rows || [];
     dtRenderStats(DT_CACHE);
     dtRenderTable(DT_CACHE);
+    dtPopulateFrsFilter(DT_CACHE);
   } catch(e){ if (tb) tb.innerHTML = errorRow(9, e.message); }
+}
+
+function dtPopulateFrsFilter(rows){
+  const sel = document.getElementById('dt-f-frs');
+  if (!sel) return;
+  const current = sel.value;
+  // Calculer encours par fournisseur
+  const map = {};
+  rows.forEach(r => {
+    const nom = r.fournisseur||'';
+    if (!nom) return;
+    if (!map[nom]) map[nom] = { total:0, encours:0, count:0 };
+    map[nom].total += dtNum(r.montant);
+    map[nom].count++;
+    if (r.statut!=='Payé'&&r.statut!=='Annulé') map[nom].encours += dtNum(r.montant) - dtNum(r.montant_paye||0);
+  });
+  const sorted = Object.entries(map).sort((a,b) => b[1].encours - a[1].encours);
+  sel.innerHTML = '<option value="">Tous bénéficiaires</option>' +
+    sorted.map(([nom, d]) => {
+      const label = nom + (d.encours > 0 ? ' — encours ' + fmtMoney(d.encours) : '');
+      return '<option value="'+esc(nom)+'"'+(nom===current?' selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
 }
 
 function dtRenderStats(rows){
@@ -11721,9 +11760,9 @@ const LC_POS = {
   ville1:         { top:14, left:72 },    // "À [ville]" — CENTRE
   dateCreation1:  { top:19, left:72 },    // "Le [date]" — EN DESSOUS de ville
   ribBanque1:     { top:28, left:33 },    // Code Banque (2 chiffres)
-  ribAgence1:     { top:28, left:48 },    // Code Agence (3 chiffres)
-  ribCompte1:     { top:28, left:62 },    // N° de Compte
-  ribCle1:        { top:28, left:100 },   // Clé RIB (2 chiffres)
+  ribAgence1:     { top:28, left:43 },    // Code Agence — resserré (≤7cm total)
+  ribCompte1:     { top:28, left:53 },    // N° de Compte
+  ribCle1:        { top:28, left:88 },    // Clé RIB — fin à ~93mm (7cm zone: 33→96)
   montantChif1:   { top:25, left:138 },   // # montant DT # case 1 — DROITE
   tireur:         { top:42, left:8 },     // Tireur (vendeur) = fournisseur — GAUCHE
   beneficiaire:   { top:46, left:58 },    // Payer à l'ordre de — CENTRE
@@ -11731,17 +11770,17 @@ const LC_POS = {
   montantLettres: { top:54, left:8 },     // Montant en toutes lettres — large
   /* ══ PARTIE BASSE : Souche ══ */
   lieu2:          { top:65, left:8 },     // Lieu de création — GAUCHE
-  dateCreation2:  { top:65, left:38 },    // Date de création — espacé
-  echeance2:      { top:65, left:76 },    // Échéance — espacé
+  dateCreation2:  { top:65, left:28 },    // Date de création — resserré (≤7.5cm total)
+  echeance2:      { top:65, left:53 },    // Échéance — fin à ~75mm (7.5cm zone: 8→79)
   ribBanque2:     { top:73, left:8 },     // Code Banque
-  ribAgence2:     { top:73, left:22 },    // Code Agence
-  ribCompte2:     { top:73, left:38 },    // N° de Compte
-  ribCle2:        { top:73, left:62 },    // Clé RIB
-  valeur:         { top:73, left:88 },    // "Dinars"
-  domicil:        { top:70, left:122 },   // Domiciliation (banque) — case DROITE
+  ribAgence2:     { top:73, left:18 },    // Code Agence — resserré
+  ribCompte2:     { top:73, left:28 },    // N° de Compte
+  ribCle2:        { top:73, left:55 },    // Clé RIB
+  valeur:         { top:73, left:72 },    // "Dinars"
+  domicil:        { top:70, left:122 },   // Domiciliation (banque+adresse) — case DROITE
   tirenom:        { top:85, left:70 },    // Nom du tiré (acheteur = ALLTEC) — CENTRE
   tireadresse:    { top:90, left:70 },    // Adresse du tiré — sous le nom
-  signataire:     { top:96, left:125 },   // Signature du tireur (vendeur) — BAS DROITE
+  aval:           { top:95, left:38 },    // Aval — zone centre-gauche souche
 };
 
 function dtFmtDateLC(d){
@@ -11815,7 +11854,7 @@ ${f(P.valeur, 'Dinars', '8pt')}
 ${f(P.domicil, socBanque+'<br>'+esc(socBanqueAdr), '8pt', true, 42)}
 ${f(P.tirenom, socNom, '8pt', true, 40)}
 ${f(P.tireadresse, esc(socAdresse), '6pt', false, 40)}
-${f(P.signataire, socSignataire, '8pt')}
+${f(P.aval, socSignataire, '9pt', true)}
 <script>window.onload=()=>window.print();<\/script>
 </body></html>`;
   const w = window.open('','_blank','width=700,height=500');
