@@ -1593,6 +1593,46 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
 
+
+      <!-- ═══════════ DETTES ═══════════ -->
+      <div class="page" id="page-dettes">
+        <div class="page-header">
+          <div>
+            <div class="page-title">🏦 Dettes & Engagements</div>
+            <div class="page-sub">Fournisseurs · Loyers · Administration · Balance âgée</div>
+          </div>
+          <div class="toolbar">
+            <select class="form-control" id="dt-f-cat" onchange="loadDettes()" style="width:130px">
+              <option value="">Toutes catégories</option>
+              <option>Fournisseur</option><option>Loyer</option><option>Administration</option><option>Bancaire</option><option>Équipement</option><option>Autre</option>
+            </select>
+            <select class="form-control" id="dt-f-statut" onchange="loadDettes()" style="width:120px">
+              <option value="">Tous statuts</option>
+              <option>En attente</option><option>Payé</option><option>Impayé</option><option>Reporté</option><option>Partiel</option><option>En litige</option><option>Annulé</option>
+            </select>
+            <input class="form-control" id="dt-f-frs" placeholder="Fournisseur…" oninput="loadDettes()" style="width:130px">
+            <select class="form-control" id="dt-f-mois" onchange="loadDettes()" style="width:90px">
+              <option value="">Mois</option>
+              <option value="1">Jan</option><option value="2">Fév</option><option value="3">Mar</option>
+              <option value="4">Avr</option><option value="5">Mai</option><option value="6">Jun</option>
+              <option value="7">Jul</option><option value="8">Aoû</option><option value="9">Sep</option>
+              <option value="10">Oct</option><option value="11">Nov</option><option value="12">Déc</option>
+            </select>
+            <input class="form-control" id="dt-f-annee" type="number" placeholder="Année" style="width:80px" oninput="loadDettes()">
+            <button class="btn btn-primary" onclick="openDetteModal()">+ Nouvelle dette</button>
+          </div>
+        </div>
+        <div class="stats-grid" id="dt-stats"></div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr>
+            <th>Fournisseur</th><th>Instrument</th><th>N° pièce</th>
+            <th>Échéance</th><th style="text-align:right">Montant</th>
+            <th>Statut</th><th>Observation</th><th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody id="dt-tbody"></tbody>
+        </table></div></div>
+      </div>
+
       <!-- ═══════════ RAPPORT ACTIVITÉ ═══════════ -->
       <div class="page" id="page-rapportActivite">
         <div class="page-header">
@@ -4301,6 +4341,56 @@ supabase functions deploy send-sms
   </div>
 </div>
 
+<!-- ═══ MODAL DETTE ═══ -->
+<div class="overlay" id="dt-modal-overlay"><div class="modal" style="max-width:780px">
+  <div class="card-header"><div class="card-title">🏦 Dette / Engagement</div></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Catégorie</label>
+      <select class="form-control" id="dt-categorie" onchange="dtToggleSousCat()">
+        <option>Fournisseur</option><option>Loyer</option><option>Administration</option><option>Bancaire</option><option>Équipement</option><option>Autre</option>
+      </select></div>
+    <div id="dt-sous-cat-wrap" style="display:none"><label class="page-sub">Sous-catégorie</label><select class="form-control" id="dt-sous-cat"></select></div>
+    <div><label class="page-sub">Fournisseur / Bénéficiaire *</label><input class="form-control" id="dt-frs"></div>
+    <div><label class="page-sub">Instrument</label>
+      <select class="form-control" id="dt-instrument"><option>Traite</option><option>Chèque</option><option>Virement</option><option>Espèces</option><option>Prélèvement</option><option>Effet à ordre</option><option>Autre</option></select></div>
+    <div><label class="page-sub">N° pièce</label><input class="form-control" id="dt-numero"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Montant *</label><input class="form-control" id="dt-montant" type="number" step="0.001"></div>
+    <div><label class="page-sub">Devise</label><input class="form-control" id="dt-devise" value="TND"></div>
+    <div><label class="page-sub">Date émission</label><input class="form-control" id="dt-emission" type="date"></div>
+    <div><label class="page-sub">Date échéance *</label><input class="form-control" id="dt-echeance" type="date"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Ancienne échéance</label><input class="form-control" id="dt-anc-ech" type="date"></div>
+    <div><label class="page-sub">Statut</label>
+      <select class="form-control" id="dt-statut"><option>En attente</option><option>Payé</option><option>Impayé</option><option>Reporté</option><option>Partiel</option><option>En litige</option><option>Annulé</option></select></div>
+    <div><label class="page-sub">Date paiement</label><input class="form-control" id="dt-date-paie" type="date"></div>
+    <div><label class="page-sub">Montant payé</label><input class="form-control" id="dt-montant-paye" type="number" step="0.001"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:.8rem">
+    <div><label class="page-sub">Agence</label>
+      <select class="form-control" id="dt-agence"><option>Charguia</option><option>Kairouan</option><option>Sousse</option></select></div>
+    <div><label class="page-sub">Banque</label><input class="form-control" id="dt-banque" placeholder="Domiciliation"></div>
+    <div><label class="page-sub">Mois comptable</label><input class="form-control" id="dt-mois" type="number" min="1" max="12"></div>
+    <div><label class="page-sub">Année comptable</label><input class="form-control" id="dt-annee-c" type="number"></div>
+  </div>
+  <div style="margin-bottom:.8rem"><label class="page-sub">Observation</label>
+    <textarea class="form-control" id="dt-observation" rows="2"></textarea></div>
+  <div style="display:flex;justify-content:flex-end;gap:.5rem">
+    <button class="btn btn-ghost" onclick="closeModal('dt-modal-overlay')">Annuler</button>
+    <button class="btn btn-primary" onclick="saveDette()">💾 Enregistrer</button>
+  </div>
+</div></div>
+
+<!-- ═══ FICHE FOURNISSEUR ═══ -->
+<div class="overlay" id="dt-frs-overlay"><div class="modal" style="max-width:760px">
+  <div id="dt-frs-body"></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+    <button class="btn btn-ghost" onclick="closeModal('dt-frs-overlay')">Fermer</button>
+  </div>
+</div></div>
+
 <!-- ═══ MODAL RAPPORT ACTIVITÉ (onglets) ═══ -->
 <div class="overlay" id="ra-modal-overlay"><div class="modal" style="max-width:900px;max-height:88vh;overflow-y:auto">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
@@ -4456,6 +4546,7 @@ const MODULES = [
   { id:'rh', name:'Ressources Humaines', icon:'👤', desc:'Employés, paie, congés, sanctions' },
   { id:'sms', name:'SMS', icon:'📱', desc:'Notifications SMS automatiques' },
   { id:'rapportActivite', name:'Rapport Activité', icon:'📈', desc:'Suivi & évaluation des commerciaux' },
+  { id:'dettes', name:'Dettes', icon:'🏦', desc:'Suivi des engagements financiers' },
 ];
 
 function mergeRolePerms(roleStr) {
@@ -4471,10 +4562,10 @@ function mergeRolePerms(roleStr) {
 }
 
 const ROLE_PRESETS = {
-  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw', rapportActivite:'rw' },
-  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'' },
-  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'rw' },
-  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r', rapportActivite:'' },
+  Admin:      { clients:'rw', devis:'rw', commandes:'rw', sav:'rw', caisse:'rw', rapports:'rw', analyse:'rw', commercial:'rw', maintenance:'rw', quarantaine:'rw', rh:'rw', sms:'rw', rapportActivite:'rw', dettes:'rw' },
+  Technicien: { clients:'r',  devis:'',   commandes:'',   sav:'rw', caisse:'',   rapports:'r',  analyse:'',   commercial:'', maintenance:'rw', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'', dettes:'' },
+  Commercial: { clients:'rw', devis:'rw', commandes:'rw', sav:'r',  caisse:'',   rapports:'r',  analyse:'r',  commercial:'rw', maintenance:'', quarantaine:'rw', rh:'', sms:'r', rapportActivite:'rw', dettes:'r' },
+  Caisse:     { clients:'r',  devis:'r',  commandes:'r',  sav:'',   caisse:'rw', rapports:'r',  analyse:'r',  commercial:'', maintenance:'', quarantaine:'r', rh:'', sms:'r', rapportActivite:'', dettes:'r' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4638,6 +4729,7 @@ function buildSidebar() {
       { id:'caisse', icon:'💰', name:'Caisse', perm:'caisse' },
       { id:'rapports', icon:'📊', name:'Rapports', perm:'rapports' },
       { id:'analyse', icon:'📈', name:'Analyse', perm:'analyse' },
+      { id:'dettes', icon:'🏦', name:'Dettes', perm:'dettes' },
     ]},
   ];
 
@@ -4684,6 +4776,7 @@ function showPage(id) {
     maintenance: loadMaintenance, quarantaine: loadQuarantaine,
     rh: loadRH, sms: loadSMS,
     rapportActivite: loadRapportActivite,
+    dettes: loadDettes,
     admin: () => { switchAdminTab('societe'); renderUsersTable(); renderMatrix(); }
   };
   if (loaders[id]) loaders[id]();
@@ -11153,6 +11246,350 @@ async function deleteMaint(id) {
   try { await sbDelete('registre_maintenance', id); toast('Supprimé'); loadMaintenance(); }
   catch(e) { toast('Erreur: '+e.message,'error'); }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DETTES — Suivi des engagements financiers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* ============================================================
+   MODULE : DETTES — Suivi des engagements financiers
+   id : dettes  |  table : dettes  |  perm : dettes
+   Catégories : Fournisseur, Loyer, Administration, Bancaire, Autre
+   ============================================================ */
+
+const DT_CATEGORIES = ['Fournisseur','Loyer','Administration','Bancaire','Équipement','Autre'];
+const DT_SOUS_CAT = {
+  Administration: ['CNSS','TVA','IRPP','TCL','TFP','FOPROLOS','Droit de timbre','Autre'],
+  Loyer: ['Charguia','Kairouan','Sousse'],
+};
+const DT_INSTRUMENTS = ['Traite','Chèque','Virement','Espèces','Prélèvement','Effet à ordre','Autre'];
+const DT_STATUTS = ['En attente','Payé','Impayé','Reporté','Partiel','En litige','Annulé'];
+const DT_STATUT_COLORS = {
+  'En attente':'var(--accent-light)','Payé':'var(--success-light)','Impayé':'var(--danger-light)',
+  'Reporté':'var(--warning-light)','Partiel':'var(--purple-light)','En litige':'var(--warning-light)','Annulé':'var(--text2)'
+};
+
+let DT_CACHE = [];
+let DT_EDIT_ID = null;
+
+function dtChip(text, color){
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;color:${color};background:${color}18;border:1px solid ${color}55">${esc(text)}</span>`;
+}
+
+/* ---------- Calculs ---------- */
+function dtNum(v){ const n = parseFloat(v); return isNaN(n)?0:n; }
+function dtDaysUntil(dateStr){
+  if (!dateStr) return 999;
+  const d = new Date(dateStr); const now = new Date();
+  now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.round((d-now)/(86400000));
+}
+function dtAging(r){
+  if (r.statut==='Payé'||r.statut==='Annulé') return null;
+  const days = -dtDaysUntil(r.date_echeance);
+  if (days <= 0) return { label:'À échoir', color:'var(--accent-light)', bucket:0 };
+  if (days <= 30) return { label:'0-30j', color:'var(--warning-light)', bucket:1 };
+  if (days <= 60) return { label:'31-60j', color:'var(--warning)', bucket:2 };
+  if (days <= 90) return { label:'61-90j', color:'var(--danger-light)', bucket:3 };
+  return { label:'>90j', color:'var(--danger)', bucket:4 };
+}
+
+/* ---------- Nombre en lettres (français tunisien) ---------- */
+function dtEnLettres(n){
+  if (n===0) return 'zéro';
+  const u=['','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix',
+    'onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
+  const d=['','','vingt','trente','quarante','cinquante','soixante','soixante','quatre-vingt','quatre-vingt'];
+  function c2(x){
+    if(x<20) return u[x];
+    const dz=Math.floor(x/10), un=x%10;
+    if(dz===7||dz===9) return d[dz]+'-'+u[10+un];
+    let s=d[dz]; if(un===1&&dz!==8) s+='-et-un'; else if(un) s+='-'+u[un]; else if(dz===8) s+='s';
+    return s;
+  }
+  function c3(x){
+    if(x<100) return c2(x);
+    const h=Math.floor(x/100), r=x%100;
+    let s = h===1?'cent':(u[h]+' cent');
+    if(r) s+=' '+c2(r); else if(h>1) s+='s';
+    return s;
+  }
+  const int = Math.floor(Math.abs(n));
+  const dec = Math.round((Math.abs(n)-int)*1000);
+  let parts = [];
+  if (int >= 1000000){
+    const m=Math.floor(int/1000000);
+    parts.push(m===1?'un million':(c3(m)+' millions'));
+  }
+  const r1 = int % 1000000;
+  if (r1 >= 1000){
+    const k=Math.floor(r1/1000);
+    parts.push(k===1?'mille':(c3(k)+' mille'));
+  }
+  const r2 = r1 % 1000;
+  if (r2) parts.push(c3(r2));
+  let res = parts.join(' ') || 'zéro';
+  res += ' dinars';
+  if (dec > 0) res += ' et '+c3(dec)+' millimes';
+  return res.charAt(0).toUpperCase()+res.slice(1);
+}
+
+/* ---------- Chargement ---------- */
+async function loadDettes(){
+  const tb = document.getElementById('dt-tbody');
+  if (tb) tb.innerHTML = loadingRow(9);
+  const conds = [];
+  const fCat  = document.getElementById('dt-f-cat')?.value||'';
+  const fStat = document.getElementById('dt-f-statut')?.value||'';
+  const fFrs  = document.getElementById('dt-f-frs')?.value||'';
+  const fMois = document.getElementById('dt-f-mois')?.value||'';
+  const fAnnee = document.getElementById('dt-f-annee')?.value||'';
+  if (fCat) conds.push('categorie=eq.'+encodeURIComponent(fCat));
+  if (fStat) conds.push('statut=eq.'+encodeURIComponent(fStat));
+  if (fFrs) conds.push('fournisseur=ilike.*'+encodeURIComponent(fFrs)+'*');
+  if (fMois) conds.push('mois_comptable=eq.'+fMois);
+  if (fAnnee) conds.push('annee_comptable=eq.'+fAnnee);
+  try {
+    const rows = await sb('dettes', { order:'date_echeance.asc', filter:conds.join('&') });
+    DT_CACHE = rows || [];
+    dtRenderStats(DT_CACHE);
+    dtRenderTable(DT_CACHE);
+  } catch(e){ if (tb) tb.innerHTML = errorRow(9, e.message); }
+}
+
+function dtRenderStats(rows){
+  const host = document.getElementById('dt-stats');
+  if (!host) return;
+  const actives = rows.filter(r=>r.statut!=='Payé'&&r.statut!=='Annulé');
+  const totalEnCours = actives.reduce((s,r)=> s+dtNum(r.montant)-dtNum(r.montant_paye||0),0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  const endWeek = new Date(now); endWeek.setDate(endWeek.getDate()+7);
+  const endMonth = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const semaine = actives.filter(r => { const d=new Date(r.date_echeance); return d>=now && d<=endWeek; });
+  const moisCourant = actives.filter(r => { const d=new Date(r.date_echeance); return d>=now && d<=endMonth; });
+  const impayes = rows.filter(r => r.statut==='Impayé');
+  const totalPaye = rows.filter(r=>r.statut==='Payé').reduce((s,r)=>s+dtNum(r.montant),0);
+  const totalSemaine = semaine.reduce((s,r)=>s+dtNum(r.montant),0);
+  // Aging buckets
+  const buckets = [0,0,0,0,0]; // a_echoir,0-30,31-60,61-90,90+
+  actives.forEach(r => { const a=dtAging(r); if(a) buckets[a.bucket]+=dtNum(r.montant)-dtNum(r.montant_paye||0); });
+  host.innerHTML = `
+    <div class="card"><div class="card-title">Encours total</div><div style="font-size:1.3rem;font-weight:700;color:var(--danger-light)">${fmtMoney(totalEnCours)}</div></div>
+    <div class="card"><div class="card-title">Échéances 7j</div><div style="font-size:1.2rem;font-weight:700;color:var(--warning-light)">${fmtMoney(totalSemaine)}</div><div class="page-sub">${semaine.length} traite(s)</div></div>
+    <div class="card"><div class="card-title">Ce mois</div><div style="font-size:1.2rem;font-weight:700">${fmtMoney(moisCourant.reduce((s,r)=>s+dtNum(r.montant),0))}</div><div class="page-sub">${moisCourant.length} échéance(s)</div></div>
+    <div class="card"><div class="card-title">Impayés</div><div style="font-size:1.5rem;font-weight:700;color:var(--danger-light)">${impayes.length}</div><div class="page-sub">${fmtMoney(impayes.reduce((s,r)=>s+dtNum(r.montant),0))}</div></div>
+    <div class="card"><div class="card-title">Total payé</div><div style="font-size:1.2rem;font-weight:700;color:var(--success-light)">${fmtMoney(totalPaye)}</div></div>
+    <div class="card"><div class="card-title">Balance âgée</div>
+      <div style="font-size:.75rem;line-height:1.6">
+        <span style="color:var(--accent-light)">À échoir: ${fmtMoney(buckets[0])}</span><br>
+        <span style="color:var(--warning-light)">0-30j: ${fmtMoney(buckets[1])}</span><br>
+        <span style="color:var(--danger-light)">>30j: ${fmtMoney(buckets[2]+buckets[3]+buckets[4])}</span>
+      </div>
+    </div>`;
+}
+
+function dtRenderTable(rows){
+  const tb = document.getElementById('dt-tbody');
+  if (!tb) return;
+  if (!rows.length){ tb.innerHTML = emptyRow(9,'Aucune dette enregistrée'); return; }
+  tb.innerHTML = rows.map(r => {
+    const days = dtDaysUntil(r.date_echeance);
+    const aging = dtAging(r);
+    const urgence = (r.statut!=='Payé'&&r.statut!=='Annulé'&&days<=3&&days>=0) ? 'background:var(--danger)15;' : '';
+    const statColor = DT_STATUT_COLORS[r.statut]||'var(--text)';
+    const ech = r.date_echeance ? new Date(r.date_echeance).toLocaleDateString('fr-TN') : '—';
+    const w = canWrite('dettes');
+    return `<tr style="${urgence}">
+      <td><a href="#" onclick="dtViewFournisseur('${esc(r.fournisseur||'')}');return false" style="color:var(--accent-light);cursor:pointer">${esc(r.fournisseur||'—')}</a><div class="page-sub">${esc(r.categorie||'')}${r.sous_categorie?' · '+esc(r.sous_categorie):''}</div></td>
+      <td>${esc(r.instrument||'Traite')}</td>
+      <td>${esc(r.numero_piece||'—')}</td>
+      <td>${ech}${aging?'<div class="page-sub" style="color:'+aging.color+'">'+aging.label+'</div>':''}</td>
+      <td style="text-align:right;font-weight:700">${fmtMoney(dtNum(r.montant))}</td>
+      <td>${dtChip(r.statut||'En attente', statColor)}</td>
+      <td>${esc(r.observation||'')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        ${w&&r.instrument==='Traite' ? `<button class="btn btn-sm btn-ghost" onclick="dtPrintLC('${r.id}')" title="Imprimer traite">🖨️</button>` : ''}
+        ${w ? `<button class="btn btn-sm btn-ghost" onclick="openDetteModal('${r.id}')">✏️</button>` : ''}
+        ${w&&r.statut!=='Payé' ? `<button class="btn btn-sm btn-primary" onclick="dtMarquerPaye('${r.id}')">✓ Payé</button>` : ''}
+        ${w ? `<button class="btn btn-sm btn-ghost" onclick="deleteRecord('dettes','${r.id}',loadDettes)">🗑️</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- Modal création / édition ---------- */
+function openDetteModal(id){
+  DT_EDIT_ID = id || null;
+  const r = id ? DT_CACHE.find(x=>x.id===id) : null;
+  const set = (sel,val) => { const el=document.getElementById(sel); if(el) el.value=(val??''); };
+  set('dt-categorie', r?.categorie||'Fournisseur');
+  dtToggleSousCat();
+  set('dt-sous-cat', r?.sous_categorie);
+  set('dt-frs', r?.fournisseur);
+  set('dt-instrument', r?.instrument||'Traite');
+  set('dt-numero', r?.numero_piece);
+  set('dt-montant', r?.montant);
+  set('dt-devise', r?.devise||'TND');
+  set('dt-emission', r?.date_emission);
+  set('dt-echeance', r?.date_echeance);
+  set('dt-anc-ech', r?.ancienne_echeance);
+  set('dt-statut', r?.statut||'En attente');
+  set('dt-date-paie', r?.date_paiement);
+  set('dt-montant-paye', r?.montant_paye);
+  set('dt-agence', r?.agence||'Charguia');
+  set('dt-banque', r?.banque);
+  set('dt-observation', r?.observation);
+  set('dt-mois', r?.mois_comptable||(new Date().getMonth()+1));
+  set('dt-annee-c', r?.annee_comptable||new Date().getFullYear());
+  openModal('dt-modal-overlay');
+}
+
+function dtToggleSousCat(){
+  const cat = document.getElementById('dt-categorie')?.value||'';
+  const wrap = document.getElementById('dt-sous-cat-wrap');
+  const sel = document.getElementById('dt-sous-cat');
+  if (!wrap||!sel) return;
+  const opts = DT_SOUS_CAT[cat];
+  if (opts){
+    wrap.style.display = '';
+    sel.innerHTML = '<option value="">—</option>'+opts.map(o=>`<option>${o}</option>`).join('');
+  } else {
+    wrap.style.display = 'none';
+    sel.innerHTML = '';
+  }
+}
+
+function dtCollect(){
+  const v = sel => { const el=document.getElementById(sel); return el?el.value.trim():''; };
+  const num = sel => dtNum(v(sel));
+  return {
+    categorie: v('dt-categorie'), sous_categorie: v('dt-sous-cat')||null,
+    fournisseur: v('dt-frs'), instrument: v('dt-instrument'), numero_piece: v('dt-numero'),
+    montant: num('dt-montant'), devise: v('dt-devise')||'TND',
+    date_emission: v('dt-emission')||null, date_echeance: v('dt-echeance'),
+    ancienne_echeance: v('dt-anc-ech')||null,
+    statut: v('dt-statut'), date_paiement: v('dt-date-paie')||null,
+    montant_paye: num('dt-montant-paye'),
+    agence: v('dt-agence'), banque: v('dt-banque'), observation: v('dt-observation'),
+    mois_comptable: num('dt-mois'), annee_comptable: num('dt-annee-c'),
+  };
+}
+
+async function saveDette(){
+  const body = dtCollect();
+  if (!body.fournisseur){ toast('Fournisseur / bénéficiaire obligatoire','error'); return; }
+  if (!body.date_echeance){ toast('Date d\'échéance obligatoire','error'); return; }
+  if (!body.montant){ toast('Montant obligatoire','error'); return; }
+  try {
+    if (DT_EDIT_ID) await sbPatch('dettes', DT_EDIT_ID, body);
+    else await sbPost('dettes', body);
+    closeModal('dt-modal-overlay'); loadDettes(); toast('Dette enregistrée');
+  } catch(e){ toast('Erreur: '+e.message,'error'); }
+}
+
+async function dtMarquerPaye(id){
+  if (!confirm('Marquer cette dette comme payée ?')) return;
+  try {
+    const r = DT_CACHE.find(x=>x.id===id);
+    await sbPatch('dettes', id, {
+      statut:'Payé', date_paiement: new Date().toISOString().slice(0,10),
+      montant_paye: r ? dtNum(r.montant) : 0
+    });
+    loadDettes(); toast('Marquée payée');
+  } catch(e){ toast('Erreur: '+e.message,'error'); }
+}
+
+/* ---------- Impression Lettre de Change tunisienne ---------- */
+function dtPrintLC(id){
+  const r = DT_CACHE.find(x=>x.id===id);
+  if (!r) return;
+  const montant = dtNum(r.montant);
+  const lettres = dtEnLettres(montant);
+  const ech = r.date_echeance ? new Date(r.date_echeance).toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'}) : '___________';
+  const emission = r.date_emission ? new Date(r.date_emission).toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'}) : new Date().toLocaleDateString('fr-TN',{day:'2-digit',month:'long',year:'numeric'});
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lettre de Change</title>
+<style>
+  @page{size:A5 landscape;margin:10mm}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;padding:8mm}
+  .lc-border{border:2px solid #000;padding:6mm;position:relative;min-height:140mm}
+  .lc-header{text-align:center;font-size:16pt;font-weight:bold;letter-spacing:3px;border-bottom:2px solid #000;padding-bottom:4mm;margin-bottom:4mm}
+  .lc-row{display:flex;justify-content:space-between;margin:3mm 0;font-size:10pt}
+  .lc-field{border-bottom:1px dotted #000;min-width:50mm;display:inline-block;padding:1mm 2mm}
+  .lc-montant{font-size:14pt;font-weight:bold;text-align:center;border:2px solid #000;padding:3mm;margin:4mm 0}
+  .lc-lettres{font-style:italic;font-size:10pt;text-align:center;margin:2mm 0;min-height:12mm;border:1px solid #ccc;padding:2mm}
+  .lc-box{border:1px solid #000;padding:3mm;margin:3mm 0;min-height:20mm}
+  .lc-box-title{font-weight:bold;font-size:9pt;margin-bottom:2mm}
+  .lc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+  .lc-sig{text-align:center;margin-top:6mm;min-height:25mm}
+  .lc-sig-label{font-size:9pt;color:#555;border-top:1px solid #000;padding-top:2mm;margin-top:15mm}
+</style></head><body>
+<div class="lc-border">
+  <div class="lc-header">LETTRE DE CHANGE</div>
+  <div class="lc-row">
+    <div>N° <span class="lc-field">${esc(r.numero_piece||'________')}</span></div>
+    <div>Lieu : <span class="lc-field">Tunis</span></div>
+    <div>Date : <span class="lc-field">${emission}</span></div>
+  </div>
+  <div class="lc-row"><div>Échéance : <span class="lc-field" style="font-weight:bold">${ech}</span></div></div>
+  <div class="lc-montant">${fmtMoney(montant)} TND</div>
+  <div class="lc-lettres">${esc(lettres)}</div>
+  <div class="lc-grid">
+    <div class="lc-box">
+      <div class="lc-box-title">TIRÉ (débiteur)</div>
+      <div>Nom : <span class="lc-field">${esc(r.fournisseur||'')}</span></div>
+      <div style="margin-top:2mm">Banque : <span class="lc-field">${esc(r.banque||'')}</span></div>
+    </div>
+    <div class="lc-box">
+      <div class="lc-box-title">TIREUR (créancier)</div>
+      <div>Nom : <span class="lc-field">AllTEC Distribution</span></div>
+      <div style="margin-top:2mm">Adresse : <span class="lc-field">Charguia, Tunis</span></div>
+    </div>
+  </div>
+  <div class="lc-grid">
+    <div class="lc-sig"><div class="lc-sig-label">Signature du tireur</div></div>
+    <div class="lc-sig"><div class="lc-sig-label">Acceptation du tiré</div></div>
+  </div>
+</div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+  const w = window.open('','_blank','width=800,height=600');
+  if (w){ w.document.write(html); w.document.close(); }
+}
+
+/* ---------- Vue fournisseur (drill-down) ---------- */
+function dtViewFournisseur(nom){
+  const rows = DT_CACHE.filter(r => (r.fournisseur||'').toLowerCase()===nom.toLowerCase());
+  const host = document.getElementById('dt-frs-body');
+  if (!host) return;
+  if (!rows.length){ host.innerHTML='<p>Aucune donnée.</p>'; openModal('dt-frs-overlay'); return; }
+  const total = rows.reduce((s,r)=>s+dtNum(r.montant),0);
+  const paye = rows.filter(r=>r.statut==='Payé').reduce((s,r)=>s+dtNum(r.montant),0);
+  const impayes = rows.filter(r=>r.statut==='Impayé');
+  const enCours = rows.filter(r=>r.statut!=='Payé'&&r.statut!=='Annulé');
+  const solde = enCours.reduce((s,r)=>s+dtNum(r.montant)-dtNum(r.montant_paye||0),0);
+  const tauxPaie = total>0 ? (paye/total*100).toFixed(0) : 0;
+  const histo = rows.slice(0,15).map(r => {
+    const ech = r.date_echeance?new Date(r.date_echeance).toLocaleDateString('fr-TN'):'—';
+    const sc = DT_STATUT_COLORS[r.statut]||'var(--text)';
+    return `<tr><td>${ech}</td><td>${esc(r.instrument||'')}</td><td style="text-align:right">${fmtMoney(dtNum(r.montant))}</td><td>${dtChip(r.statut||'',sc)}</td><td>${esc(r.observation||'')}</td></tr>`;
+  }).join('');
+  host.innerHTML = `
+    <div class="page-header"><div><div class="page-title">${esc(nom)}</div><div class="page-sub">${rows.length} dette(s) enregistrée(s)</div></div></div>
+    <div class="stats-grid" style="margin:.8rem 0">
+      <div class="card"><div class="card-title">Total engagé</div><div style="font-size:1.3rem;font-weight:700">${fmtMoney(total)}</div></div>
+      <div class="card"><div class="card-title">Payé</div><div style="font-size:1.3rem;font-weight:700;color:var(--success-light)">${fmtMoney(paye)}</div></div>
+      <div class="card"><div class="card-title">Solde dû</div><div style="font-size:1.3rem;font-weight:700;color:var(--danger-light)">${fmtMoney(solde)}</div></div>
+      <div class="card"><div class="card-title">Impayés</div><div style="font-size:1.5rem;font-weight:700;color:var(--danger-light)">${impayes.length}</div></div>
+      <div class="card"><div class="card-title">Taux paiement</div><div style="font-size:1.5rem;font-weight:700">${tauxPaie}%</div></div>
+    </div>
+    <div class="card"><div class="card-title">Historique</div><div class="table-wrap"><table>
+      <thead><tr><th>Échéance</th><th>Instrument</th><th style="text-align:right">Montant</th><th>Statut</th><th>Observation</th></tr></thead>
+      <tbody>${histo}</tbody>
+    </table></div></div>`;
+  openModal('dt-frs-overlay');
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RAPPORT ACTIVITÉ — Suivi & évaluation des commerciaux (v2 + Journal)
